@@ -2,6 +2,10 @@
   <Folder Name="/solution-items/">
     <File Path=".gitignore" />
   </Folder>
-  <Folder Name="/src/" />
-  <Folder Name="/tests/" />
+  <Folder Name="/src/">
+    <Project Path="src\dotRenderer\dotRenderer.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\dotRenderer.Tests\dotRenderer.Tests.csproj" Type="Classic C#" />
+  </Folder>
 </Solution>
