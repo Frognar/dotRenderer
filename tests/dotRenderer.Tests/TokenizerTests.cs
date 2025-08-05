@@ -46,4 +46,52 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[1]);
         Assert.Equal("!", ((TextToken)tokens[1]).Text);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Handle_Multiple_Interpolations()
+    {
+        string template = "Hello @Model.Foo and @Model.Bar!";
+        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Equal(5, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Hello ", ((TextToken)tokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[1]);
+        Assert.Equal(["Model", "Foo"], ((InterpolationToken)tokens[1]).Path);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal(" and ", ((TextToken)tokens[2]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[3]);
+        Assert.Equal(["Model", "Bar"], ((InterpolationToken)tokens[3]).Path);
+
+        Assert.IsType<TextToken>(tokens[4]);
+        Assert.Equal("!", ((TextToken)tokens[4]).Text);
+    }
+    
+    
+    [Fact]
+    public void Tokenizer_Should_Handle_Interpolation_At_End()
+    {
+        string template = "Say hi to @Model.User";
+        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Equal(2, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Say hi to ", ((TextToken)tokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[1]);
+        Assert.Equal(["Model", "User"], ((InterpolationToken)tokens[1]).Path);
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_If_Interpolation_Missing_Identifier()
+    {
+        string template = "Hello @Model.";
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
+        Assert.Contains("@Model.", ex.Message, StringComparison.Ordinal);
+    }
 }
