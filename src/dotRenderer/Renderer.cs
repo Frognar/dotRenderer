@@ -16,8 +16,8 @@ public static class Renderer
                     sb.Append(t.Text);
                     break;
                 case EvalNode e:
-                    object? value = TryResolve(model, e.Path);
-                    sb.Append(value?.ToString() ?? "");
+                    object value = ResolveOrThrow(model, e.Path);
+                    sb.Append(value);
                     break;
             }
         }
@@ -25,25 +25,36 @@ public static class Renderer
         return sb.ToString();
     }
 
-    private static object? TryResolve(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
+    private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
     {
         object? current = model;
-        foreach (string segment in path.Skip(1))
+        foreach (var segment in path.Skip(1))
         {
             switch (current)
             {
                 case IReadOnlyDictionary<string, object> dict:
-                    dict.TryGetValue(segment, out current);
+                {
+                    if (!dict.TryGetValue(segment, out current))
+                    {
+                        throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
+                    }
+
                     break;
-                case Dictionary<string, string> leafDict when
-                    leafDict.TryGetValue(segment, out string? strVal):
+                }
+                case Dictionary<string, string> leafDict:
+                {
+                    if (!leafDict.TryGetValue(segment, out var strVal))
+                    {
+                        throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
+                    }
+
                     current = strVal;
                     break;
+                }
                 default:
-                    return null;
+                    throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
             }
         }
-
-        return current;
+        return current!;
     }
 }

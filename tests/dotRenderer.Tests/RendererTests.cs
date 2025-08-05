@@ -43,4 +43,18 @@ public class RendererTests
 
         Assert.Equal("Hello, Bob!", html);
     }
+    [Fact]
+    public void Renderer_Should_Throw_When_Nested_Path_Missing()
+    {
+        Dictionary<string, object> model = [];
+
+        var ast = new SequenceNode([
+            new TextNode("Hello, "),
+            new EvalNode(["Model", "User", "Name"]),
+            new TextNode("!")
+        ]);
+
+        var ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
+        Assert.Contains("User", ex.Message, StringComparison.Ordinal);
+    }
 }
