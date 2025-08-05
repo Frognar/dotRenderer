@@ -2,6 +2,7 @@
   <Folder Name="/solution-items/">
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src\dotRenderer\dotRenderer.csproj" Type="Classic C#" />
