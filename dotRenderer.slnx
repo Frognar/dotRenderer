@@ -1,0 +1,7 @@
+﻿<Solution>
+  <Folder Name="/solution-items/">
+    <File Path=".gitignore" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/" />
+</Solution>
