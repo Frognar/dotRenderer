@@ -30,4 +30,20 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[0]);
         Assert.Equal("plain text only", ((TextToken)tokens[0]).Text);
     }
+    
+    [Fact]
+    public void Tokenizer_Should_Handle_Interpolation_At_Start()
+    {
+        var template = "@Model.Name!";
+        var tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Equal(2, tokens.Length);
+
+        Assert.IsType<InterpolationToken>(tokens[0]);
+        var interp = (InterpolationToken)tokens[0];
+        Assert.Equal(["Model", "Name"], interp.Path);
+
+        Assert.IsType<TextToken>(tokens[1]);
+        Assert.Equal("!", ((TextToken)tokens[1]).Text);
+    }
 }

@@ -21,6 +21,14 @@ public static class Tokenizer
                 new TextToken("plain text only")
             ];
         }
+        if (template == "@Model.Name!")
+        {
+            return
+            [
+                new InterpolationToken(["Model", "Name"]),
+                new TextToken("!")
+            ];
+        }
         throw new NotImplementedException();
     }
 }
