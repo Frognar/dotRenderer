@@ -124,4 +124,22 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal(" @@", ((TextToken)tokens[2]).Text);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Handle_Dot_Separated_Path()
+    {
+        string template = "Hello @Model.User.Name!";
+        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Equal(3, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Hello ", ((TextToken)tokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[1]);
+        Assert.Equal(["Model", "User", "Name"], ((InterpolationToken)tokens[1]).Path);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal("!", ((TextToken)tokens[2]).Text);
+    }
 }

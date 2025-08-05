@@ -32,21 +32,36 @@ public static class Tokenizer
                         sb.Clear();
                     }
 
-                    int nameStart = pos + "@Model.".Length;
-                    int nameEnd = nameStart;
-                    while (nameEnd < len && IsIdentifierChar(template[nameEnd]))
+                    int pathStart = pos + "@Model.".Length;
+                    int pathEnd = pathStart;
+                    List<string> segments = ["Model"];
+                    while (true)
                     {
-                        nameEnd++;
+                        int segStart = pathEnd;
+                        while (pathEnd < len && IsIdentifierChar(template[pathEnd]))
+                        {
+                            pathEnd++;
+                        }
+                        
+                        var name = template[segStart..pathEnd];
+                        if (string.IsNullOrEmpty(name))
+                        {
+                            throw new InvalidOperationException($"No identifier after @Model. at position {pos}");
+                        }
+                        
+                        segments.Add(name);
+
+                        if (pathEnd < len && template[pathEnd] == '.')
+                        {
+                            pathEnd++;
+                            continue;
+                        }
+                        
+                        break;
                     }
 
-                    var name = template[nameStart..nameEnd];
-                    if (string.IsNullOrEmpty(name))
-                    {
-                        throw new InvalidOperationException($"Brak identyfikatora po @Model. w pozycji {pos}");
-                    }
-
-                    tokens.Add(new InterpolationToken(new[] { "Model", name }));
-                    pos = nameEnd;
+                    tokens.Add(new InterpolationToken(segments));
+                    pos = pathEnd;
                     continue;
                 }
 
