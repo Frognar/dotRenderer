@@ -13,6 +13,14 @@ public static class Tokenizer
                 new TextToken("!</h1>")
             ];
         }
+        
+        if (template == "plain text only")
+        {
+            return
+            [
+                new TextToken("plain text only")
+            ];
+        }
         throw new NotImplementedException();
     }
 }

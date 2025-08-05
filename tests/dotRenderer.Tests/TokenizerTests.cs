@@ -19,4 +19,15 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!</h1>", ((TextToken)tokens[2]).Text);
     }
+    
+    [Fact]
+    public void Tokenizer_Should_Return_Single_TextToken_When_No_Interpolation()
+    {
+        string template = "plain text only";
+        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Single(tokens);
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("plain text only", ((TextToken)tokens[0]).Text);
+    }
 }
