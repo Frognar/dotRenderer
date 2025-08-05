@@ -6,7 +6,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Split_Text_And_Model_Interpolation()
     {
         string template = "<h1>Hi @Model.Name!</h1>";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
         
         Assert.Equal(3, tokens.Length);
         Assert.IsType<TextToken>(tokens[0]);
@@ -24,7 +24,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Return_Single_TextToken_When_No_Interpolation()
     {
         string template = "plain text only";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Single(tokens);
         Assert.IsType<TextToken>(tokens[0]);
@@ -35,7 +35,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Handle_Interpolation_At_Start()
     {
         string template = "@Model.Name!";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Equal(2, tokens.Length);
 
@@ -51,7 +51,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Handle_Multiple_Interpolations()
     {
         string template = "Hello @Model.Foo and @Model.Bar!";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Equal(5, tokens.Length);
 
@@ -76,7 +76,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Handle_Interpolation_At_End()
     {
         string template = "Say hi to @Model.User";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Equal(2, tokens.Length);
 
@@ -111,7 +111,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Handle_Mixed_Escaped_At_And_Interpolation()
     {
         string template = "@@ @Model.Price @@@";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Equal(3, tokens.Length);
 
@@ -129,7 +129,7 @@ public class TokenizerTests
     public void Tokenizer_Should_Handle_Dot_Separated_Path()
     {
         string template = "Hello @Model.User.Name!";
-        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         Assert.Equal(3, tokens.Length);
 
@@ -141,5 +141,23 @@ public class TokenizerTests
 
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!", ((TextToken)tokens[2]).Text);
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Terminate_Interpolation_On_Whitespace()
+    {
+        string template = "Hello @Model.Full Name!";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        Assert.Equal(3, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Hello ", ((TextToken)tokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[1]);
+        Assert.Equal(["Model", "Full"], ((InterpolationToken)tokens[1]).Path);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal(" Name!", ((TextToken)tokens[2]).Text);
     }
 }

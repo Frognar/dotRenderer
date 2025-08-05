@@ -1,4 +1,5 @@
 using System.Text;
+using DotMaybe;
 
 namespace dotRenderer;
 
@@ -25,6 +26,33 @@ public static class Renderer
         return sb.ToString();
     }
 
+    public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
+    {
+        ArgumentNullException.ThrowIfNull(ast);
+        ArgumentNullException.ThrowIfNull(accessor);
+        StringBuilder sb = new();
+        foreach (Node node in ast.Children)
+        {
+            switch (node)
+            {
+                case TextNode t:
+                    sb.Append(t.Text);
+                    break;
+                case EvalNode e:
+                    string[] path = e.Path.Skip(1).ToArray();
+                    string last = path.Last();
+                    Maybe<string> maybe = accessor.AccessValue(last, model);
+                    string value = maybe.OrDefault(() =>
+                        throw new KeyNotFoundException(
+                            $"Missing key '{last}' in model (path: {string.Join(".", path)}"));
+                    sb.Append(value);
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
+
     private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
     {
         object? current = model;
@@ -36,7 +64,8 @@ public static class Renderer
                 {
                     if (!dict.TryGetValue(segment, out current))
                     {
-                        throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
+                        throw new KeyNotFoundException(
+                            $"Missing key '{segment}' in model (path: {string.Join(".", path)})");
                     }
 
                     break;
@@ -45,16 +74,19 @@ public static class Renderer
                 {
                     if (!leafDict.TryGetValue(segment, out var strVal))
                     {
-                        throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
+                        throw new KeyNotFoundException(
+                            $"Missing key '{segment}' in model (path: {string.Join(".", path)})");
                     }
 
                     current = strVal;
                     break;
                 }
                 default:
-                    throw new KeyNotFoundException($"Missing key '{segment}' in model (path: {string.Join(".", path)})");
+                    throw new KeyNotFoundException(
+                        $"Missing key '{segment}' in model (path: {string.Join(".", path)})");
             }
         }
+
         return current!;
     }
 }
