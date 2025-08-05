@@ -106,4 +106,22 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[0]);
         Assert.Equal("Price: @Model.Price", ((TextToken)tokens[0]).Text);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Handle_Mixed_Escaped_At_And_Interpolation()
+    {
+        string template = "@@ @Model.Price @@@";
+        object[] tokens = Tokenizer.Tokenize(template).ToArray();
+
+        Assert.Equal(3, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("@ ", ((TextToken)tokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(tokens[1]);
+        Assert.Equal(["Model", "Price"], ((InterpolationToken)tokens[1]).Path);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal(" @@", ((TextToken)tokens[2]).Text);
+    }
 }
