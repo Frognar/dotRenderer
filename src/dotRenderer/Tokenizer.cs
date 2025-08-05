@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace dotRenderer;
 
 public static class Tokenizer
@@ -5,43 +7,61 @@ public static class Tokenizer
     public static IEnumerable<object> Tokenize(string template)
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
-        List<object> tokens = [];
+
+        var tokens = new List<object>();
         int pos = 0;
         int len = template.Length;
+        StringBuilder sb = new();
 
         while (pos < len)
         {
-            int at = template.IndexOf("@Model.", pos, StringComparison.Ordinal);
-            if (at == -1)
+            if (template[pos] == '@')
             {
-                if (pos < len)
+                if (pos + 1 < len && template[pos + 1] == '@')
                 {
-                    tokens.Add(new TextToken(template[pos..]));
+                    sb.Append('@');
+                    pos += 2;
+                    continue;
                 }
 
-                break;
+                if (template.IndexOf("@Model.", pos, StringComparison.Ordinal) == pos)
+                {
+                    if (sb.Length > 0)
+                    {
+                        tokens.Add(new TextToken(sb.ToString()));
+                        sb.Clear();
+                    }
+
+                    int nameStart = pos + "@Model.".Length;
+                    int nameEnd = nameStart;
+                    while (nameEnd < len && IsIdentifierChar(template[nameEnd]))
+                    {
+                        nameEnd++;
+                    }
+
+                    var name = template[nameStart..nameEnd];
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        throw new InvalidOperationException($"Brak identyfikatora po @Model. w pozycji {pos}");
+                    }
+
+                    tokens.Add(new InterpolationToken(new[] { "Model", name }));
+                    pos = nameEnd;
+                    continue;
+                }
+
+                sb.Append('@');
+                pos++;
+                continue;
             }
 
-            if (at > pos)
-            {
-                tokens.Add(new TextToken(template[pos..at]));
-            }
+            sb.Append(template[pos]);
+            pos++;
+        }
 
-            int nameStart = at + "@Model.".Length;
-            int nameEnd = nameStart;
-            while (nameEnd < len && IsIdentifierChar(template[nameEnd]))
-            {
-                nameEnd++;
-            }
-
-            string name = template[nameStart..nameEnd];
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new InvalidOperationException($"No identifier after @Model. at position {at}");
-            }
-
-            tokens.Add(new InterpolationToken(["Model", name]));
-            pos = nameEnd;
+        if (sb.Length > 0)
+        {
+            tokens.Add(new TextToken(sb.ToString()));
         }
 
         return tokens;

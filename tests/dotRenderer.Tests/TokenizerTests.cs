@@ -94,4 +94,16 @@ public class TokenizerTests
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
         Assert.Contains("@Model.", ex.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Handle_Escaping_At_Sign()
+    {
+        string template = "Price: @@Model.Price";
+
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        Assert.Single(tokens);
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Price: @Model.Price", ((TextToken)tokens[0]).Text);
+    }
 }
