@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Folder Name="/solution-items/">
     <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src\dotRenderer\dotRenderer.csproj" Type="Classic C#" />
