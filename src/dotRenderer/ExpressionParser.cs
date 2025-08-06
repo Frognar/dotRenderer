@@ -65,27 +65,91 @@ public static class ExpressionParser
 
         private ExprNode ParseEquality()
         {
-            ExprNode left = ParseUnary();
+            ExprNode left = ParseRelational();
             SkipWhitespace();
             while (true)
             {
                 if (Match("=="))
                 {
                     SkipWhitespace();
-                    ExprNode right = ParseUnary();
+                    ExprNode right = ParseRelational();
                     left = new BinaryExpr("==", left, right);
                 }
                 else if (Match("!="))
                 {
                     SkipWhitespace();
-                    ExprNode right = ParseUnary();
+                    ExprNode right = ParseRelational();
                     left = new BinaryExpr("!=", left, right);
                 }
-                else if (Match(">="))
+                else
+                {
+                    break;
+                }
+
+                SkipWhitespace();
+            }
+
+            return left;
+        }
+
+        private ExprNode ParseRelational()
+        {
+            ExprNode left = ParseAdditive();
+            SkipWhitespace();
+            while (true)
+            {
+                if (Match(">="))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseAdditive();
+                    left = new BinaryExpr(">=", left, right);
+                }
+                else if (Match("<="))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseAdditive();
+                    left = new BinaryExpr("<=", left, right);
+                }
+                else if (Match(">"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseAdditive();
+                    left = new BinaryExpr(">", left, right);
+                }
+                else if (Match("<"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseAdditive();
+                    left = new BinaryExpr("<", left, right);
+                }
+                else
+                {
+                    break;
+                }
+
+                SkipWhitespace();
+            }
+
+            return left;
+        }
+
+        private ExprNode ParseAdditive()
+        {
+            ExprNode left = ParseUnary();
+            SkipWhitespace();
+            while (true)
+            {
+                if (Match("+"))
                 {
                     SkipWhitespace();
                     ExprNode right = ParseUnary();
-                    left = new BinaryExpr(">=", left, right);
+                    left = new BinaryExpr("+", left, right);
+                }
+                else if (Match("-"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseUnary();
+                    left = new BinaryExpr("-", left, right);
                 }
                 else
                 {

@@ -3,6 +3,16 @@ namespace dotRenderer.Tests;
 public class ExpressionParserTests
 {
     [Fact]
+    public void ExpressionParser_Should_Throw_On_Unknown_Token()
+    {
+        string expr = "???";
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
+        Assert.Contains("Unknown token near:", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("???", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ExpressionParser_Should_Parse_Bool_Property()
     {
         string expr = "Model.IsAdmin";
@@ -22,6 +32,15 @@ public class ExpressionParserTests
 
         PropertyExpr prop = Assert.IsType<PropertyExpr>(node);
         Assert.Equal(["Model", "User", "Name"], prop.Path);
+    }
+
+    [Theory]
+    [InlineData("Model.")]
+    [InlineData("Model.User.")]
+    public void ExpressionParser_Should_Throw_On_Missing_Property_Segment(string expr)
+    {
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
+        Assert.Contains("Expected property segment after '.'", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -83,6 +102,21 @@ public class ExpressionParserTests
 
         BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
         Assert.Equal(">=", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Age"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(18, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_LessThanOrEqual()
+    {
+        string expr = "Model.Age <= 18";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("<=", bin.Operator);
         PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
         Assert.Equal(["Model", "Age"], left.Path);
         LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
@@ -162,6 +196,15 @@ public class ExpressionParserTests
         LiteralExpr<double> right = Assert.IsType<LiteralExpr<double>>(bin.Right);
         Assert.Equal(1.5, right.Value);
     }
+    
+    [Fact]
+    public void ExpressionParser_Should_Throw_On_Multiple_Dots_In_Number()
+    {
+        string expr = "Model.Val == 1.2.3";
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
+        Assert.Contains("Multiple dots in number", ex.Message, StringComparison.Ordinal);
+    }
 
     [Fact]
     public void ExpressionParser_Should_Parse_Binary_Equality_With_String_Literal()
@@ -179,6 +222,15 @@ public class ExpressionParserTests
     }
 
     [Fact]
+    public void ExpressionParser_Should_Throw_On_Unclosed_String_Literal()
+    {
+        string expr = "Model.Name == \"Alice";
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
+        Assert.Contains("Unclosed string literal", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ExpressionParser_Should_Parse_Binary_Inequality()
     {
         string expr = "Model.Name != \"Alice\"";
@@ -193,4 +245,64 @@ public class ExpressionParserTests
         Assert.Equal("Alice", right.Value);
     }
 
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_LessThan()
+    {
+        string expr = "Model.Count < 10";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("<", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(10, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_GreaterThan()
+    {
+        string expr = "Model.Count > 1";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal(">", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(1, right.Value);
+    }
+
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Addition()
+    {
+        string expr = "Model.Count + 1";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("+", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(1, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Subtraction()
+    {
+        string expr = "Model.Count - 1";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("-", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(1, right.Value);
+    }
 }
