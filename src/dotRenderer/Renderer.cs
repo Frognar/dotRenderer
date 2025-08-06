@@ -36,11 +36,14 @@ public static class Renderer
     {
         return cond switch
         {
-            LiteralExpr<bool> { Value: true } => true,
+            LiteralExpr<bool> lit => lit.Value,
             PropertyExpr prop => ResolveOrThrow(model, prop.Path) switch
             {
                 bool b => b,
-                _ => false
+                { } v => throw new InvalidOperationException(
+                    $"If condition path '{string.Join(".", prop.Path)}' must resolve to a bool, but got '{v.GetType().Name}'."),
+                null => throw new InvalidOperationException(
+                    $"If condition path '{string.Join(".", prop.Path)}' must resolve to a bool, but got 'null'.")
             },
             _ => false
         };

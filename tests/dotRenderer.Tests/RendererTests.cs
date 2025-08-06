@@ -86,17 +86,18 @@ public class RendererTests
         SequenceNode ast = new([
             new EvalNode(["Model", "User", "Name"])
         ]);
-        
+
         KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
         Assert.Contains("Name", ex.Message, StringComparison.Ordinal);
     }
+
     [Fact]
     public void Renderer_Should_Render_IfNode_With_True_Literal()
     {
         SequenceNode ast = new([
             new TextNode("A"),
             new IfNode(new LiteralExpr<bool>(true),
-                new SequenceNode([ new TextNode("Yes") ])
+                new SequenceNode([new TextNode("Yes")])
             ),
             new TextNode("B")
         ]);
@@ -111,7 +112,7 @@ public class RendererTests
         SequenceNode ast = new([
             new TextNode("A"),
             new IfNode(new LiteralExpr<bool>(false),
-                new SequenceNode([ new TextNode("No") ])
+                new SequenceNode([new TextNode("No")])
             ),
             new TextNode("B")
         ]);
@@ -119,6 +120,7 @@ public class RendererTests
         string html = Renderer.Render(ast, new Dictionary<string, object>());
         Assert.Equal("AB", html);
     }
+
     [Fact]
     public void Renderer_Should_Render_IfNode_With_PropertyExpr_Bool_True()
     {
@@ -126,7 +128,7 @@ public class RendererTests
             new TextNode("X"),
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
-                new SequenceNode([ new TextNode("ON") ])
+                new SequenceNode([new TextNode("ON")])
             ),
             new TextNode("Y")
         ]);
@@ -143,7 +145,7 @@ public class RendererTests
             new TextNode("X"),
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
-                new SequenceNode([ new TextNode("OFF") ])
+                new SequenceNode([new TextNode("OFF")])
             ),
             new TextNode("Y")
         ]);
@@ -153,4 +155,52 @@ public class RendererTests
         Assert.Equal("XY", html);
     }
 
+    [Fact]
+    public void Renderer_Should_Throw_If_PropertyExpr_Value_Is_String()
+    {
+        var ast = new SequenceNode([
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([new TextNode("ON")])
+            )
+        ]);
+        var model = new Dictionary<string, object> { { "Flag", "true" } };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
+        Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Throw_If_PropertyExpr_Value_Is_Int()
+    {
+        var ast = new SequenceNode([
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([new TextNode("ON")])
+            )
+        ]);
+        var model = new Dictionary<string, object> { { "Flag", 1 } };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
+        Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Throw_If_PropertyExpr_Value_Is_Null()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([new TextNode("ON")])
+            )
+        ]);
+        
+        Dictionary<string, object> model = new() { { "Flag", null! } };
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
+        Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
+    }
 }
