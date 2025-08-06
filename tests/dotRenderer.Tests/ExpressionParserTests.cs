@@ -45,6 +45,7 @@ public class ExpressionParserTests
         LiteralExpr<bool> lit = Assert.IsType<LiteralExpr<bool>>(node);
         Assert.False(lit.Value);
     }
+
     [Fact]
     public void ExpressionParser_Should_Parse_Unary_Not_On_Property()
     {
@@ -57,6 +58,7 @@ public class ExpressionParserTests
         PropertyExpr arg = Assert.IsType<PropertyExpr>(not.Operand);
         Assert.Equal(["Model", "IsAdmin"], arg.Path);
     }
+
     [Fact]
     public void ExpressionParser_Should_Parse_Binary_Equality_Expression()
     {
@@ -124,6 +126,7 @@ public class ExpressionParserTests
         PropertyExpr right = Assert.IsType<PropertyExpr>(bin.Right);
         Assert.Equal(["Model", "IsAdmin"], right.Path);
     }
+
     [Fact]
     public void ExpressionParser_Should_Parse_Binary_And_With_Unary_Not()
     {
@@ -158,5 +161,20 @@ public class ExpressionParserTests
         Assert.Equal(["Model", "Ratio"], left.Path);
         LiteralExpr<double> right = Assert.IsType<LiteralExpr<double>>(bin.Right);
         Assert.Equal(1.5, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Equality_With_String_Literal()
+    {
+        string expr = "Model.Name == \"Alice\"";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("==", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Name"], left.Path);
+        LiteralExpr<string> right = Assert.IsType<LiteralExpr<string>>(bin.Right);
+        Assert.Equal("Alice", right.Value);
     }
 }

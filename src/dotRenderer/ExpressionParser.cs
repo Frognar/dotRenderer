@@ -116,6 +116,25 @@ public static class ExpressionParser
                 return new LiteralExpr<bool>(false);
             }
 
+            if (Peek() == '"')
+            {
+                _pos++;
+                int start = _pos;
+                while (!End && Peek() != '"')
+                {
+                    _pos++;
+                }
+
+                if (End)
+                {
+                    throw new InvalidOperationException("Unclosed string literal");
+                }
+
+                string lit = _expr[start.._pos];
+                _pos++;
+                return new LiteralExpr<string>(lit);
+            }
+
             if (char.IsDigit(Peek()))
             {
                 int start = _pos;
