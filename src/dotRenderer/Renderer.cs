@@ -50,9 +50,71 @@ public static class Renderer
                                                     EvalIfCondition(binary.Right, model),
             BinaryExpr { Operator: "||" } binary => EvalIfCondition(binary.Left, model) ||
                                                     EvalIfCondition(binary.Right, model),
-            _ => false
+            BinaryExpr { Operator: "==" or "!=" or ">" or "<" or ">=" or "<=" } binary =>
+                (EvalOperand(binary.Left, model), EvalOperand(binary.Right, model)) switch
+                {
+                    (int l, int r) => CompareInts(l, r, binary.Operator),
+                    (double l, double r) => CompareDoubles(l, r, binary.Operator),
+                    (string l, string r) => CompareStrings(l, r, binary.Operator),
+                    (bool l, bool r) => CompareBools(l, r, binary.Operator),
+                    (int l, double r) => CompareDoubles(l, r, binary.Operator),
+                    (double l, int r) => CompareDoubles(l, r, binary.Operator),
+                    ({} l, { } r) => throw new InvalidOperationException(
+                        $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
+                },
+            _ => throw new InvalidOperationException(
+                $"Unsupported expression node '{cond.GetType().Name}' in if condition")
         };
     }
+
+    private static object EvalOperand(ExprNode expr, IReadOnlyDictionary<string, object> model)
+    {
+        return expr switch
+        {
+            LiteralExpr<int> litInt => litInt.Value,
+            LiteralExpr<double> litDouble => litDouble.Value,
+            LiteralExpr<string> litStr => litStr.Value,
+            LiteralExpr<bool> litBool => litBool.Value,
+            PropertyExpr prop => ResolveOrThrow(model, prop.Path),
+            _ => throw new InvalidOperationException($"Unsupported operand type: {expr.GetType().Name}")
+        };
+    }
+
+    private static bool CompareInts(int l, int r, string op) => op switch
+    {
+        "==" => l == r,
+        "!=" => l != r,
+        ">" => l > r,
+        "<" => l < r,
+        ">=" => l >= r,
+        "<=" => l <= r,
+        _ => throw new InvalidOperationException("Invalid operator for int")
+    };
+
+    private static bool CompareDoubles(double l, double r, string op) => op switch
+    {
+        "==" => Math.Abs(l - r) < 0.001,
+        "!=" => Math.Abs(l - r) > 0.001,
+        ">" => l > r,
+        "<" => l < r,
+        ">=" => l >= r,
+        "<=" => l <= r,
+        _ => throw new InvalidOperationException("Invalid operator for double")
+    };
+
+    private static bool CompareStrings(string l, string r, string op) => op switch
+    {
+        "==" => l == r,
+        "!=" => l != r,
+        _ => throw new InvalidOperationException("Only == and != are supported for string")
+    };
+
+    private static bool CompareBools(bool l, bool r, string op) => op switch
+    {
+        "==" => l == r,
+        "!=" => l != r,
+        _ => throw new InvalidOperationException("Only == and != are supported for bool")
+    };
 
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {

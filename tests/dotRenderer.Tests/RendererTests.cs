@@ -324,4 +324,119 @@ public class RendererTests
         
         Assert.Equal("", html);
     }
+
+    [Theory]
+    [InlineData(5, 5, "==", "OK")]
+    [InlineData(5, 3, "==", "")]
+    [InlineData(5, 3, "!=", "OK")]
+    [InlineData(5, 5, "!=", "")]
+    [InlineData(3, 5, "<", "OK")]
+    [InlineData(5, 3, "<", "")]
+    [InlineData(3, 3, "<=", "OK")]
+    [InlineData(5, 3, "<=", "")]
+    [InlineData(5, 3, ">", "OK")]
+    [InlineData(3, 5, ">", "")]
+    [InlineData(3, 3, ">=", "OK")]
+    [InlineData(3, 5, ">=", "")]
+    public void Renderer_Should_Compare_Ints(int left, int right, string op, string expected)
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, new LiteralExpr<int>(left), new LiteralExpr<int>(right)),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+        
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(5.0, 5.0, "==", "OK")]
+    [InlineData(5.1, 5.0, "==", "")]
+    [InlineData(2.0, 3.5, "!=", "OK")]
+    [InlineData(3.5, 3.5, "!=", "")]
+    [InlineData(2.0, 3.5, "<", "OK")]
+    [InlineData(4.0, 2.0, "<", "")]
+    [InlineData(3.0, 3.0, "<=", "OK")]
+    [InlineData(4.0, 3.0, "<=", "")]
+    [InlineData(4.0, 3.0, ">", "OK")]
+    [InlineData(2.0, 3.0, ">", "")]
+    [InlineData(3.0, 3.0, ">=", "OK")]
+    [InlineData(2.0, 3.0, ">=", "")]
+    public void Renderer_Should_Compare_Doubles(double left, double right, string op, string expected)
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, new LiteralExpr<double>(left), new LiteralExpr<double>(right)),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+        
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData("abc", "abc", "==", "OK")]
+    [InlineData("abc", "def", "==", "")]
+    [InlineData("abc", "def", "!=", "OK")]
+    [InlineData("abc", "abc", "!=", "")]
+    public void Renderer_Should_Compare_Strings(string left, string right, string op, string expected)
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, new LiteralExpr<string>(left), new LiteralExpr<string>(right)),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+        
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(true, true, "==", "OK")]
+    [InlineData(true, false, "==", "")]
+    [InlineData(true, false, "!=", "OK")]
+    [InlineData(false, false, "!=", "")]
+    public void Renderer_Should_Compare_Bools(bool left, bool right, string op, string expected)
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, new LiteralExpr<bool>(left), new LiteralExpr<bool>(right)),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+        
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(2, 2.0, "==", "OK")]
+    [InlineData(2, 3.1, "==", "")]
+    [InlineData(2.0, 2, "==", "OK")]
+    [InlineData(2.0, 4, "!=", "OK")]
+    [InlineData(2.0, 4, ">", "")]
+    public void Renderer_Should_Compare_Mixed_Int_Double(object left, object right, string op, string expected)
+    {
+        ExprNode leftExpr = left is int li ? new LiteralExpr<int>(li) : new LiteralExpr<double>((double)left);
+        ExprNode rightExpr = right is int ri ? new LiteralExpr<int>(ri) : new LiteralExpr<double>((double)right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+        
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        
+        Assert.Equal(expected, html);
+    }
 }
