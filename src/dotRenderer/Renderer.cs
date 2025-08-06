@@ -45,6 +45,10 @@ public static class Renderer
                 null => throw new InvalidOperationException(
                     $"If condition path '{string.Join(".", prop.Path)}' must resolve to a bool, but got 'null'.")
             },
+            BinaryExpr { Operator: "&&" } binary => EvalIfCondition(binary.Left, model) &&
+                                                    EvalIfCondition(binary.Right, model),
+            BinaryExpr { Operator: "||" } binary => EvalIfCondition(binary.Left, model) ||
+                                                    EvalIfCondition(binary.Right, model),
             _ => false
         };
     }
@@ -65,9 +69,9 @@ public static class Renderer
                     string[] path = e.Path.Skip(1).ToArray();
                     string last = path.Last();
                     string value = accessor.AccessValue(last, model)
-                        ?? throw new KeyNotFoundException(
-                            $"Missing key '{last}' in model (path: {string.Join(".", path)}");
-                        
+                                   ?? throw new KeyNotFoundException(
+                                       $"Missing key '{last}' in model (path: {string.Join(".", path)}");
+
                     sb.Append(value);
                     break;
             }

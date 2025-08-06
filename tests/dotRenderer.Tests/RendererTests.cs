@@ -158,15 +158,15 @@ public class RendererTests
     [Fact]
     public void Renderer_Should_Throw_If_PropertyExpr_Value_Is_String()
     {
-        var ast = new SequenceNode([
+        SequenceNode ast = new([
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
                 new SequenceNode([new TextNode("ON")])
             )
         ]);
-        var model = new Dictionary<string, object> { { "Flag", "true" } };
+        Dictionary<string, object> model = new() { { "Flag", "true" } };
 
-        var ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
         Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
     }
@@ -174,15 +174,15 @@ public class RendererTests
     [Fact]
     public void Renderer_Should_Throw_If_PropertyExpr_Value_Is_Int()
     {
-        var ast = new SequenceNode([
+        SequenceNode ast = new([
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
                 new SequenceNode([new TextNode("ON")])
             )
         ]);
-        var model = new Dictionary<string, object> { { "Flag", 1 } };
+        Dictionary<string, object> model = new() { { "Flag", 1 } };
 
-        var ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
         Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
     }
@@ -196,11 +196,86 @@ public class RendererTests
                 new SequenceNode([new TextNode("ON")])
             )
         ]);
-        
+
         Dictionary<string, object> model = new() { { "Flag", null! } };
 
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, model));
         Assert.Contains("bool", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Render_IfNode_With_Binary_And_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "&&",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([new TextNode("T")])
+            )
+        ]);
+
+        Dictionary<string, object> model = new()
+        {
+            { "A", true },
+            { "B", true }
+        };
+
+        string html = Renderer.Render(ast, model);
+        
+        Assert.Equal("T", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Not_Render_IfNode_With_Binary_And_Condition_False()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "&&",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([new TextNode("T")])
+            )
+        ]);
+
+        Dictionary<string, object> model = new()
+        {
+            { "A", true },
+            { "B", false }
+        };
+
+        string html = Renderer.Render(ast, model);
+        
+        Assert.Equal("", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Render_IfNode_With_Binary_Or_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "||",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([new TextNode("T")])
+            )
+        ]);
+
+        Dictionary<string, object> model = new()
+        {
+            { "A", false },
+            { "B", true }
+        };
+
+        string html = Renderer.Render(ast, model);
+        
+        Assert.Equal("T", html);
     }
 }
