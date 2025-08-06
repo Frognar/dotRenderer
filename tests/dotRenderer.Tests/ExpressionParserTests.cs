@@ -45,4 +45,16 @@ public class ExpressionParserTests
         LiteralExpr<bool> lit = Assert.IsType<LiteralExpr<bool>>(node);
         Assert.False(lit.Value);
     }
+    [Fact]
+    public void ExpressionParser_Should_Parse_Unary_Not_On_Property()
+    {
+        string expr = "!Model.IsAdmin";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        UnaryExpr not = Assert.IsType<UnaryExpr>(node);
+        Assert.Equal("!", not.Operator);
+        PropertyExpr arg = Assert.IsType<PropertyExpr>(not.Operand);
+        Assert.Equal(["Model", "IsAdmin"], arg.Path);
+    }
 }
