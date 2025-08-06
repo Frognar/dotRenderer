@@ -12,4 +12,15 @@ public class ExpressionParserTests
         PropertyExpr prop = Assert.IsType<PropertyExpr>(node);
         Assert.Equal(["Model", "IsAdmin"], prop.Path);
     }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Nested_Property()
+    {
+        string expr = "Model.User.Name";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        PropertyExpr prop = Assert.IsType<PropertyExpr>(node);
+        Assert.Equal(["Model", "User", "Name"], prop.Path);
+    }
 }

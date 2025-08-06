@@ -4,8 +4,9 @@ public static class ExpressionParser
 {
     public static ExprNode Parse(string expr)
     {
-        return expr == "Model.IsAdmin"
-            ? new PropertyExpr(new List<string> { "Model", "IsAdmin" })
+        ArgumentNullException.ThrowIfNull(expr);
+        return expr.StartsWith("Model.", StringComparison.Ordinal)
+            ? new PropertyExpr(expr.Split('.'))
             : throw new NotImplementedException();
     }
 }
