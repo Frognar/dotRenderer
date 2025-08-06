@@ -71,4 +71,19 @@ public class ExpressionParserTests
         LiteralExpr<bool> right = Assert.IsType<LiteralExpr<bool>>(bin.Right);
         Assert.True(right.Value);
     }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_GreaterEqual_Expression()
+    {
+        string expr = "Model.Age >= 18";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal(">=", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Age"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(18, right.Value);
+    }
 }

@@ -11,6 +11,10 @@ public static class ExpressionParser
                 "==",
                 new PropertyExpr(["Model", "IsAdmin"]),
                 new LiteralExpr<bool>(true)),
+            "Model.Age >= 18" => new BinaryExpr(
+                ">=",
+                new PropertyExpr(["Model", "Age"]),
+                new LiteralExpr<int>(18)),
             _ when expr.StartsWith('!') => new UnaryExpr("!", Parse(expr[1..])),
             "true" => new LiteralExpr<bool>(true),
             "false" => new LiteralExpr<bool>(false),
