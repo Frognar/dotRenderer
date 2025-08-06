@@ -26,7 +26,7 @@ public class ParserTests
         Assert.IsType<TextNode>(seq.Children[2]);
         Assert.Equal("!", ((TextNode)seq.Children[2]).Text);
     }
-    
+
     [Fact]
     public void Parser_Should_Parse_If_Block_With_Text_And_Interpolation()
     {
@@ -41,7 +41,7 @@ public class ParserTests
             ),
             new TextToken("!")
         ];
-        
+
         SequenceNode ast = Parser.Parse(tokens);
 
         SequenceNode seq = Assert.IsType<SequenceNode>(ast);
@@ -62,5 +62,15 @@ public class ParserTests
 
         Assert.IsType<TextNode>(seq.Children[2]);
         Assert.Equal("!", ((TextNode)seq.Children[2]).Text);
+    }
+
+    [Fact]
+    public void Parser_Should_Throw_On_Unknown_Token_Type()
+    {
+        object[] tokens = [42];
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Parser.Parse(tokens));
+        Assert.Contains("Unknown token of type", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Int32", ex.Message, StringComparison.Ordinal);
     }
 }
