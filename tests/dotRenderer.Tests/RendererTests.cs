@@ -398,6 +398,21 @@ public class RendererTests
         Assert.Equal(expected, html);
     }
 
+    [Fact]
+    public void Renderer_Should_Compare_Properties()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr("==", new PropertyExpr(["Model", "Name"]), new LiteralExpr<string>("Alice")),
+                new SequenceNode([new TextNode("Alice")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, new Dictionary<string, object> { { "Name", "Alice" } });
+        
+        Assert.Equal("Alice", html);
+    }
+
     [Theory]
     [InlineData(true, true, "==", "OK")]
     [InlineData(true, false, "==", "")]
@@ -438,5 +453,61 @@ public class RendererTests
         string html = Renderer.Render(ast, new Dictionary<string, object>());
         
         Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData("<", typeof(string), typeof(string), "Only == and != are supported for string")]
+    [InlineData(">", typeof(bool), typeof(bool), "Only == and != are supported for bool")]
+    [InlineData("==", typeof(int), typeof(bool), "Cannot compare values of types")]
+    [InlineData("!=", typeof(int), typeof(string), "Cannot compare values of types")]
+    [InlineData("<=", typeof(string), typeof(int), "Cannot compare values of types")]
+    public void Renderer_Should_Throw_On_Comparison_With_Incompatible_Types(string op, Type leftType, Type rightType, string expectedMsg)
+    {
+        ExprNode left = leftType == typeof(int)
+            ? new LiteralExpr<int>(1)
+            : leftType == typeof(bool)
+                ? new LiteralExpr<bool>(true)
+                : new LiteralExpr<string>("abc");
+
+        ExprNode right = rightType == typeof(int)
+            ? new LiteralExpr<int>(1)
+            : rightType == typeof(bool)
+                ? new LiteralExpr<bool>(true)
+                : new LiteralExpr<string>("def");
+
+        SequenceNode ast = new([
+            new IfNode(new BinaryExpr(op, left, right), new SequenceNode([ new TextNode("err") ]))
+        ]);
+        
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+        Assert.Contains(expectedMsg, ex.Message, StringComparison.Ordinal);
+    }
+
+    private sealed record DummyExpr : ExprNode;
+
+    [Fact]
+    public void Renderer_Should_Throw_On_Unsupported_Expression_Node()
+    {
+        SequenceNode ast = new([
+            new IfNode(new DummyExpr(), new SequenceNode([new TextNode("err")]))
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+        Assert.Contains("Unsupported expression node", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("DummyExpr", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Throw_On_Unsupported_Operand_Type()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr("==", new DummyExpr(), new DummyExpr()),
+                new SequenceNode([new TextNode("err")]))
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+        Assert.Contains("Unsupported operand type", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("DummyExpr", ex.Message, StringComparison.Ordinal);
     }
 }
