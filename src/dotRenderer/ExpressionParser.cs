@@ -135,21 +135,56 @@ public static class ExpressionParser
 
         private ExprNode ParseAdditive()
         {
-            ExprNode left = ParseUnary();
+            ExprNode left = ParseMultiplicative();
             SkipWhitespace();
             while (true)
             {
                 if (Match("+"))
                 {
                     SkipWhitespace();
-                    ExprNode right = ParseUnary();
+                    ExprNode right = ParseMultiplicative();
                     left = new BinaryExpr("+", left, right);
                 }
                 else if (Match("-"))
                 {
                     SkipWhitespace();
-                    ExprNode right = ParseUnary();
+                    ExprNode right = ParseMultiplicative();
                     left = new BinaryExpr("-", left, right);
+                }
+                else
+                {
+                    break;
+                }
+
+                SkipWhitespace();
+            }
+
+            return left;
+        }
+
+        private ExprNode ParseMultiplicative()
+        {
+            ExprNode left = ParseUnary();
+            SkipWhitespace();
+            while (true)
+            {
+                if (Match("*"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseUnary();
+                    left = new BinaryExpr("*", left, right);
+                }
+                else if (Match("/"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseUnary();
+                    left = new BinaryExpr("/", left, right);
+                }
+                else if (Match("%"))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseUnary();
+                    left = new BinaryExpr("%", left, right);
                 }
                 else
                 {
@@ -191,7 +226,7 @@ public static class ExpressionParser
                 _pos++;
                 return node;
             }
-            
+
             if (Match("true"))
             {
                 return new LiteralExpr<bool>(true);

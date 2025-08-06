@@ -356,4 +356,67 @@ public class ExpressionParserTests
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
         Assert.Contains("Unclosed parenthesis", ex.Message, StringComparison.Ordinal);
     }
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Multiplication()
+    {
+        string expr = "Model.Count * 2";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("*", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(2, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Division()
+    {
+        string expr = "Model.Count / 2";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("/", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(2, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Modulo()
+    {
+        string expr = "Model.Count % 2";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("%", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
+        Assert.Equal(2, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Respect_Operator_Precedence_Multiplication_Addition()
+    {
+        string expr = "Model.Count + 2 * 3";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr add = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("+", add.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(add.Left);
+        Assert.Equal(["Model", "Count"], left.Path);
+        BinaryExpr mul = Assert.IsType<BinaryExpr>(add.Right);
+        Assert.Equal("*", mul.Operator);
+        LiteralExpr<int> mulLeft = Assert.IsType<LiteralExpr<int>>(mul.Left);
+        Assert.Equal(2, mulLeft.Value);
+        LiteralExpr<int> mulRight = Assert.IsType<LiteralExpr<int>>(mul.Right);
+        Assert.Equal(3, mulRight.Value);
+    }
 }
