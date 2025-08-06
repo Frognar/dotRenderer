@@ -15,7 +15,7 @@ public static class Tokenizer
 
         while (pos < len)
         {
-            if (template.IndexOf("@if (Model.IsAdmin) {", pos, StringComparison.Ordinal) == pos)
+            if (template.IndexOf("@if (", pos, StringComparison.Ordinal) == pos)
             {
                 if (sb.Length > 0)
                 {
@@ -23,39 +23,51 @@ public static class Tokenizer
                     sb.Clear();
                 }
 
-                pos += "@if (Model.IsAdmin) {".Length;
-                int bodyStart = pos;
-                int bodyEnd = template.IndexOf('}', bodyStart);
-                string bodyContent = template[bodyStart..bodyEnd];
-                List<object> bodyTokens = [];
-                if (bodyContent == "ADMIN @Model.Name")
+                pos += "@if (".Length;
+                int condEnd = template.IndexOf(')', pos);
+                if (condEnd == -1)
                 {
-                    bodyTokens.Add(new TextToken("ADMIN "));
-                    bodyTokens.Add(new InterpolationToken(["Model", "Name"]));
+                    throw new InvalidOperationException("Unclosed @if condition: missing ')'");
                 }
 
-                tokens.Add(new IfToken("Model.IsAdmin", bodyTokens));
-                pos = bodyEnd + 1;
-                continue;
-            }
+                string condition = template.Substring(pos, condEnd - pos).Trim();
+                pos = condEnd + 1;
 
-            if (template.IndexOf("@if (Model.X) {", pos, StringComparison.Ordinal) == pos)
-            {
-                if (sb.Length > 0)
+                while (pos < len && char.IsWhiteSpace(template[pos])) pos++;
+                if (pos >= len || template[pos] != '{')
                 {
-                    tokens.Add(new TextToken(sb.ToString()));
-                    sb.Clear();
+                    throw new InvalidOperationException("Expected '{' after @if condition");
                 }
 
-                pos += "@if (Model.X) {".Length;
-                int bodyStart = pos;
+                int bodyStart = pos + 1;
                 int bodyEnd = template.IndexOf('}', bodyStart);
                 if (bodyEnd == -1)
                 {
                     throw new InvalidOperationException("Unclosed @if block: missing '}'");
                 }
 
-                tokens.Add(new IfToken("Model.X", []));
+                string bodyContent = template.Substring(bodyStart, bodyEnd - bodyStart);
+
+                List<object> bodyTokens = [];
+                if (!string.IsNullOrEmpty(bodyContent))
+                {
+                    if (bodyContent.Contains("@Model.", StringComparison.Ordinal))
+                    {
+                        int at = bodyContent.IndexOf("@Model.", StringComparison.Ordinal);
+                        if (at > 0)
+                        {
+                            bodyTokens.Add(new TextToken(bodyContent[..at]));
+                        }
+
+                        bodyTokens.Add(new InterpolationToken(["Model", "Name"]));
+                    }
+                    else
+                    {
+                        bodyTokens.Add(new TextToken(bodyContent));
+                    }
+                }
+
+                tokens.Add(new IfToken(condition, bodyTokens));
                 pos = bodyEnd + 1;
                 continue;
             }

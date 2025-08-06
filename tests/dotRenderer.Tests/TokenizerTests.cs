@@ -7,7 +7,7 @@ public class TokenizerTests
     {
         string template = "<h1>Hi @Model.Name!</h1>";
         object[] tokens = [.. Tokenizer.Tokenize(template)];
-        
+
         Assert.Equal(3, tokens.Length);
         Assert.IsType<TextToken>(tokens[0]);
         Assert.Equal("<h1>Hi ", ((TextToken)tokens[0]).Text);
@@ -19,7 +19,7 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!</h1>", ((TextToken)tokens[2]).Text);
     }
-    
+
     [Fact]
     public void Tokenizer_Should_Return_Single_TextToken_When_No_Interpolation()
     {
@@ -30,7 +30,7 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[0]);
         Assert.Equal("plain text only", ((TextToken)tokens[0]).Text);
     }
-    
+
     [Fact]
     public void Tokenizer_Should_Handle_Interpolation_At_Start()
     {
@@ -70,8 +70,8 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[4]);
         Assert.Equal("!", ((TextToken)tokens[4]).Text);
     }
-    
-    
+
+
     [Fact]
     public void Tokenizer_Should_Handle_Interpolation_At_End()
     {
@@ -91,7 +91,8 @@ public class TokenizerTests
     public void Tokenizer_Should_Throw_If_Interpolation_Missing_Identifier()
     {
         string template = "Hello @Model.";
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
         Assert.Contains("@Model.", ex.Message, StringComparison.Ordinal);
     }
 
@@ -165,7 +166,8 @@ public class TokenizerTests
     public void Tokenizer_Should_Tokenize_If_Block_With_Text_And_Interpolation()
     {
         string template = "Hello @if (Model.IsAdmin) {ADMIN @Model.Name}!";
-        object[] tokens = [.. Tokenizer.Tokenize(template)];Assert.Equal(3, tokens.Length);
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+        Assert.Equal(3, tokens.Length);
 
         Assert.IsType<TextToken>(tokens[0]);
         Assert.Equal("Hello ", ((TextToken)tokens[0]).Text);
@@ -184,7 +186,7 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!", ((TextToken)tokens[2]).Text);
     }
-    
+
     [Fact]
     public void Tokenizer_Should_Tokenize_If_Block_With_Empty_Body()
     {
@@ -206,10 +208,31 @@ public class TokenizerTests
     public void Tokenizer_Should_Throw_On_Unclosed_If_Block()
     {
         string template = "Hi@if (Model.X) { ...";
-        
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-            () => Tokenizer.Tokenize(template).ToArray());
-        
+
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
+
         Assert.Contains("@if", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_With_Arbitrary_Condition_And_Body()
+    {
+        string template = "A@if (fooBar) {abc}B";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+        Assert.Equal(3, tokens.Length);
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("A", ((TextToken)tokens[0]).Text);
+
+        IfToken ifToken = Assert.IsType<IfToken>(tokens[1]);
+        Assert.Equal("fooBar", ifToken.Condition);
+
+        var bodyTokens = ifToken.Body.ToArray();
+        Assert.Single(bodyTokens);
+        Assert.IsType<TextToken>(bodyTokens[0]);
+        Assert.Equal("abc", ((TextToken)bodyTokens[0]).Text);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal("B", ((TextToken)tokens[2]).Text);
     }
 }
