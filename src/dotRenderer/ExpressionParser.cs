@@ -15,6 +15,20 @@ public static class ExpressionParser
                 ">=",
                 new PropertyExpr(["Model", "Age"]),
                 new LiteralExpr<int>(18)),
+            "Model.Age >= 18 && Model.IsAdmin" => new BinaryExpr(
+                "&&",
+                new BinaryExpr(
+                    ">=",
+                    new PropertyExpr(["Model", "Age"]),
+                    new LiteralExpr<int>(18)),
+                new PropertyExpr(["Model", "IsAdmin"])),
+            "Model.Age >= 18 || Model.IsAdmin" => new BinaryExpr(
+                "||",
+                new BinaryExpr(
+                    ">=",
+                    new PropertyExpr(["Model", "Age"]),
+                    new LiteralExpr<int>(18)),
+                new PropertyExpr(["Model", "IsAdmin"])),
             _ when expr.StartsWith('!') => new UnaryExpr("!", Parse(expr[1..])),
             "true" => new LiteralExpr<bool>(true),
             "false" => new LiteralExpr<bool>(false),
@@ -26,9 +40,7 @@ public static class ExpressionParser
 }
 
 public abstract record ExprNode;
-
 public sealed record PropertyExpr(IReadOnlyList<string> Path) : ExprNode;
-
 public sealed record LiteralExpr<T>(T Value) : ExprNode;
 public sealed record UnaryExpr(string Operator, ExprNode Operand) : ExprNode;
 public sealed record BinaryExpr(string Operator, ExprNode Left, ExprNode Right) : ExprNode;

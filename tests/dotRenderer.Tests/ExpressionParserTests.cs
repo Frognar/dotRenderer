@@ -86,4 +86,42 @@ public class ExpressionParserTests
         LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
         Assert.Equal(18, right.Value);
     }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_And_Expression()
+    {
+        string expr = "Model.Age >= 18 && Model.IsAdmin";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("&&", bin.Operator);
+        BinaryExpr left = Assert.IsType<BinaryExpr>(bin.Left);
+        Assert.Equal(">=", left.Operator);
+        PropertyExpr leftLeft = Assert.IsType<PropertyExpr>(left.Left);
+        Assert.Equal(["Model", "Age"], leftLeft.Path);
+        LiteralExpr<int> leftRight = Assert.IsType<LiteralExpr<int>>(left.Right);
+        Assert.Equal(18, leftRight.Value);
+        PropertyExpr right = Assert.IsType<PropertyExpr>(bin.Right);
+        Assert.Equal(["Model", "IsAdmin"], right.Path);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Or_Expression()
+    {
+        string expr = "Model.Age >= 18 || Model.IsAdmin";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("||", bin.Operator);
+        BinaryExpr left = Assert.IsType<BinaryExpr>(bin.Left);
+        Assert.Equal(">=", left.Operator);
+        PropertyExpr leftLeft = Assert.IsType<PropertyExpr>(left.Left);
+        Assert.Equal(["Model", "Age"], leftLeft.Path);
+        LiteralExpr<int> leftRight = Assert.IsType<LiteralExpr<int>>(left.Right);
+        Assert.Equal(18, leftRight.Value);
+        PropertyExpr right = Assert.IsType<PropertyExpr>(bin.Right);
+        Assert.Equal(["Model", "IsAdmin"], right.Path);
+    }
 }
