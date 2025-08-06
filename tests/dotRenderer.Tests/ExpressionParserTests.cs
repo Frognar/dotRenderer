@@ -57,4 +57,18 @@ public class ExpressionParserTests
         PropertyExpr arg = Assert.IsType<PropertyExpr>(not.Operand);
         Assert.Equal(["Model", "IsAdmin"], arg.Path);
     }
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Equality_Expression()
+    {
+        string expr = "Model.IsAdmin == true";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("==", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "IsAdmin"], left.Path);
+        LiteralExpr<bool> right = Assert.IsType<LiteralExpr<bool>>(bin.Right);
+        Assert.True(right.Value);
+    }
 }

@@ -7,6 +7,10 @@ public static class ExpressionParser
         ArgumentNullException.ThrowIfNull(expr);
         return expr switch
         {
+            "Model.IsAdmin == true" => new BinaryExpr(
+                "==",
+                new PropertyExpr(["Model", "IsAdmin"]),
+                new LiteralExpr<bool>(true)),
             _ when expr.StartsWith('!') => new UnaryExpr("!", Parse(expr[1..])),
             "true" => new LiteralExpr<bool>(true),
             "false" => new LiteralExpr<bool>(false),
@@ -23,3 +27,4 @@ public sealed record PropertyExpr(IReadOnlyList<string> Path) : ExprNode;
 
 public sealed record LiteralExpr<T>(T Value) : ExprNode;
 public sealed record UnaryExpr(string Operator, ExprNode Operand) : ExprNode;
+public sealed record BinaryExpr(string Operator, ExprNode Left, ExprNode Right) : ExprNode;
