@@ -278,4 +278,50 @@ public class RendererTests
         
         Assert.Equal("T", html);
     }
+
+    [Fact]
+    public void Renderer_Should_Render_IfNode_With_Unary_Not_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new UnaryExpr(
+                    "!",
+                    new PropertyExpr(["Model", "IsGuest"])
+                ),
+                new SequenceNode([ new TextNode("Hi!") ])
+            )
+        ]);
+        
+        Dictionary<string, object> model = new()
+        {
+            { "IsGuest", false }
+        };
+
+        string html = Renderer.Render(ast, model);
+        
+        Assert.Equal("Hi!", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Not_Render_IfNode_With_Unary_Not_Condition_False()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new UnaryExpr(
+                    "!",
+                    new PropertyExpr(["Model", "IsGuest"])
+                ),
+                new SequenceNode([ new TextNode("Hi!") ])
+            )
+        ]);
+        
+        Dictionary<string, object> model = new()
+        {
+            { "IsGuest", true }
+        };
+
+        string html = Renderer.Render(ast, model);
+        
+        Assert.Equal("", html);
+    }
 }

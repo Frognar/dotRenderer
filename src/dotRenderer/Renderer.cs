@@ -45,6 +45,7 @@ public static class Renderer
                 null => throw new InvalidOperationException(
                     $"If condition path '{string.Join(".", prop.Path)}' must resolve to a bool, but got 'null'.")
             },
+            UnaryExpr { Operator: "!" } unary => !EvalIfCondition(unary.Operand, model),
             BinaryExpr { Operator: "&&" } binary => EvalIfCondition(binary.Left, model) &&
                                                     EvalIfCondition(binary.Right, model),
             BinaryExpr { Operator: "||" } binary => EvalIfCondition(binary.Left, model) ||
