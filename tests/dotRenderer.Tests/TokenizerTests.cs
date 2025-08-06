@@ -184,4 +184,21 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!", ((TextToken)tokens[2]).Text);
     }
+    
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_With_Empty_Body()
+    {
+        string template = "Hi@if (Model.X) {}!";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+        Assert.Equal(3, tokens.Length);
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Hi", ((TextToken)tokens[0]).Text);
+
+        IfToken ifToken = Assert.IsType<IfToken>(tokens[1]);
+        Assert.Equal("Model.X", ifToken.Condition);
+        Assert.Empty(ifToken.Body);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal("!", ((TextToken)tokens[2]).Text);
+    }
 }

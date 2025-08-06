@@ -33,12 +33,28 @@ public static class Tokenizer
                     bodyTokens.Add(new TextToken("ADMIN "));
                     bodyTokens.Add(new InterpolationToken(["Model", "Name"]));
                 }
-                
+
                 tokens.Add(new IfToken("Model.IsAdmin", bodyTokens));
                 pos = bodyEnd + 1;
                 continue;
             }
-            
+
+            if (template.IndexOf("@if (Model.X) {", pos, StringComparison.Ordinal) == pos)
+            {
+                if (sb.Length > 0)
+                {
+                    tokens.Add(new TextToken(sb.ToString()));
+                    sb.Clear();
+                }
+
+                pos += "@if (Model.X) {".Length;
+                int bodyStart = pos;
+                int bodyEnd = template.IndexOf('}', bodyStart);
+                tokens.Add(new IfToken("Model.X", []));
+                pos = bodyEnd + 1;
+                continue;
+            }
+
             if (template[pos] == '@')
             {
                 if (pos + 1 < len && template[pos + 1] == '@')
@@ -66,13 +82,13 @@ public static class Tokenizer
                         {
                             pathEnd++;
                         }
-                        
-                        var name = template[segStart..pathEnd];
+
+                        string name = template[segStart..pathEnd];
                         if (string.IsNullOrEmpty(name))
                         {
                             throw new InvalidOperationException($"No identifier after @Model. at position {pos}");
                         }
-                        
+
                         segments.Add(name);
 
                         if (pathEnd < len && template[pathEnd] == '.')
@@ -80,7 +96,7 @@ public static class Tokenizer
                             pathEnd++;
                             continue;
                         }
-                        
+
                         break;
                     }
 
@@ -113,4 +129,5 @@ public static class Tokenizer
 public sealed record TextToken(string Text);
 
 public sealed record InterpolationToken(IEnumerable<string> Path);
+
 public sealed record IfToken(string Condition, IEnumerable<object> Body);
