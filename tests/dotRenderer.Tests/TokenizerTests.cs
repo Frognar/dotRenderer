@@ -160,4 +160,28 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal(" Name!", ((TextToken)tokens[2]).Text);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_With_Text_And_Interpolation()
+    {
+        string template = "Hello @if (Model.IsAdmin) {ADMIN @Model.Name}!";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];Assert.Equal(3, tokens.Length);
+
+        Assert.IsType<TextToken>(tokens[0]);
+        Assert.Equal("Hello ", ((TextToken)tokens[0]).Text);
+
+        IfToken ifToken = Assert.IsType<IfToken>(tokens[1]);
+        Assert.Equal("Model.IsAdmin", ifToken.Condition);
+
+        var bodyTokens = ifToken.Body.ToArray();
+        Assert.Equal(2, bodyTokens.Length);
+        Assert.IsType<TextToken>(bodyTokens[0]);
+        Assert.Equal("ADMIN ", ((TextToken)bodyTokens[0]).Text);
+
+        Assert.IsType<InterpolationToken>(bodyTokens[1]);
+        Assert.Equal(["Model", "Name"], ((InterpolationToken)bodyTokens[1]).Path);
+
+        Assert.IsType<TextToken>(tokens[2]);
+        Assert.Equal("!", ((TextToken)tokens[2]).Text);
+    }
 }

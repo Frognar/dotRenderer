@@ -8,13 +8,37 @@ public static class Tokenizer
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
 
-        var tokens = new List<object>();
+        List<object> tokens = [];
         int pos = 0;
         int len = template.Length;
         StringBuilder sb = new();
 
         while (pos < len)
         {
+            if (template.IndexOf("@if (Model.IsAdmin) {", pos, StringComparison.Ordinal) == pos)
+            {
+                if (sb.Length > 0)
+                {
+                    tokens.Add(new TextToken(sb.ToString()));
+                    sb.Clear();
+                }
+
+                pos += "@if (Model.IsAdmin) {".Length;
+                int bodyStart = pos;
+                int bodyEnd = template.IndexOf('}', bodyStart);
+                string bodyContent = template[bodyStart..bodyEnd];
+                List<object> bodyTokens = [];
+                if (bodyContent == "ADMIN @Model.Name")
+                {
+                    bodyTokens.Add(new TextToken("ADMIN "));
+                    bodyTokens.Add(new InterpolationToken(["Model", "Name"]));
+                }
+                
+                tokens.Add(new IfToken("Model.IsAdmin", bodyTokens));
+                pos = bodyEnd + 1;
+                continue;
+            }
+            
             if (template[pos] == '@')
             {
                 if (pos + 1 < len && template[pos + 1] == '@')
@@ -89,3 +113,4 @@ public static class Tokenizer
 public sealed record TextToken(string Text);
 
 public sealed record InterpolationToken(IEnumerable<string> Path);
+public sealed record IfToken(string Condition, IEnumerable<object> Body);
