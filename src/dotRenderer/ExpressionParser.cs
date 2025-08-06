@@ -207,6 +207,13 @@ public static class ExpressionParser
                 return new UnaryExpr("!", operand);
             }
 
+            if (Match("-"))
+            {
+                SkipWhitespace();
+                ExprNode operand = ParseUnary();
+                return new UnaryExpr("-", operand);
+            }
+
             return ParsePrimary();
         }
 

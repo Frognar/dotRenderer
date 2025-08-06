@@ -419,4 +419,42 @@ public class ExpressionParserTests
         LiteralExpr<int> mulRight = Assert.IsType<LiteralExpr<int>>(mul.Right);
         Assert.Equal(3, mulRight.Value);
     }
+    [Fact]
+    public void ExpressionParser_Should_Parse_Unary_Minus_Int()
+    {
+        string expr = "-5";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        UnaryExpr unary = Assert.IsType<UnaryExpr>(node);
+        Assert.Equal("-", unary.Operator);
+        LiteralExpr<int> val = Assert.IsType<LiteralExpr<int>>(unary.Operand);
+        Assert.Equal(5, val.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Unary_Minus_Double()
+    {
+        string expr = "-1.5";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        UnaryExpr unary = Assert.IsType<UnaryExpr>(node);
+        Assert.Equal("-", unary.Operator);
+        LiteralExpr<double> val = Assert.IsType<LiteralExpr<double>>(unary.Operand);
+        Assert.Equal(1.5, val.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Unary_Minus_On_Property()
+    {
+        string expr = "-Model.Val";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        UnaryExpr unary = Assert.IsType<UnaryExpr>(node);
+        Assert.Equal("-", unary.Operator);
+        PropertyExpr prop = Assert.IsType<PropertyExpr>(unary.Operand);
+        Assert.Equal(["Model", "Val"], prop.Path);
+    }
 }
