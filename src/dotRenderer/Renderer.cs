@@ -33,7 +33,18 @@ public static class Renderer
     }
 
     private static bool EvalIfCondition(ExprNode cond, IReadOnlyDictionary<string, object> model)
-        => cond is LiteralExpr<bool> { Value: true };
+    {
+        return cond switch
+        {
+            LiteralExpr<bool> { Value: true } => true,
+            PropertyExpr prop => ResolveOrThrow(model, prop.Path) switch
+            {
+                bool b => b,
+                _ => false
+            },
+            _ => false
+        };
+    }
 
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {

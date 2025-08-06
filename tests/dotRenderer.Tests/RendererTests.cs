@@ -62,7 +62,7 @@ public class RendererTests
     [Fact]
     public void Renderer_Should_Throw_When_Leaf_Dictionary_String_Missing_Key()
     {
-        Dictionary<string, object> model = new Dictionary<string, object>
+        Dictionary<string, object> model = new()
         {
             { "User", new Dictionary<string, string>() }
         };
@@ -119,4 +119,38 @@ public class RendererTests
         string html = Renderer.Render(ast, new Dictionary<string, object>());
         Assert.Equal("AB", html);
     }
+    [Fact]
+    public void Renderer_Should_Render_IfNode_With_PropertyExpr_Bool_True()
+    {
+        SequenceNode ast = new([
+            new TextNode("X"),
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([ new TextNode("ON") ])
+            ),
+            new TextNode("Y")
+        ]);
+        Dictionary<string, object> model = new() { { "Flag", true } };
+
+        string html = Renderer.Render(ast, model);
+        Assert.Equal("XONY", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Not_Render_IfNode_With_PropertyExpr_Bool_False()
+    {
+        SequenceNode ast = new([
+            new TextNode("X"),
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([ new TextNode("OFF") ])
+            ),
+            new TextNode("Y")
+        ]);
+        Dictionary<string, object> model = new() { { "Flag", false } };
+
+        string html = Renderer.Render(ast, model);
+        Assert.Equal("XY", html);
+    }
+
 }
