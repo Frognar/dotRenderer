@@ -31,7 +31,9 @@ public static class ExpressionParser
             }
         }
 
-        public ExprNode ParseExpression()
+        public ExprNode ParseExpression() => ParseOr();
+
+        private ExprNode ParseOr()
         {
             ExprNode left = ParseAnd();
             SkipWhitespace();
