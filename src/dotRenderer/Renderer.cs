@@ -19,11 +19,21 @@ public static class Renderer
                     object value = ResolveOrThrow(model, e.Path);
                     sb.Append(value);
                     break;
+                case IfNode i:
+                    if (EvalIfCondition(i.Condition, model))
+                    {
+                        sb.Append(Render(i.Body, model));
+                    }
+
+                    break;
             }
         }
 
         return sb.ToString();
     }
+
+    private static bool EvalIfCondition(ExprNode cond, IReadOnlyDictionary<string, object> model)
+        => cond is LiteralExpr<bool> { Value: true };
 
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {

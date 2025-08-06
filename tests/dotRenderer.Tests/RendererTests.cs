@@ -62,7 +62,7 @@ public class RendererTests
     [Fact]
     public void Renderer_Should_Throw_When_Leaf_Dictionary_String_Missing_Key()
     {
-        var model = new Dictionary<string, object>
+        Dictionary<string, object> model = new Dictionary<string, object>
         {
             { "User", new Dictionary<string, string>() }
         };
@@ -89,5 +89,34 @@ public class RendererTests
         
         KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
         Assert.Contains("Name", ex.Message, StringComparison.Ordinal);
+    }
+    [Fact]
+    public void Renderer_Should_Render_IfNode_With_True_Literal()
+    {
+        SequenceNode ast = new([
+            new TextNode("A"),
+            new IfNode(new LiteralExpr<bool>(true),
+                new SequenceNode([ new TextNode("Yes") ])
+            ),
+            new TextNode("B")
+        ]);
+
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        Assert.Equal("AYesB", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Not_Render_IfNode_With_False_Literal()
+    {
+        SequenceNode ast = new([
+            new TextNode("A"),
+            new IfNode(new LiteralExpr<bool>(false),
+                new SequenceNode([ new TextNode("No") ])
+            ),
+            new TextNode("B")
+        ]);
+
+        string html = Renderer.Render(ast, new Dictionary<string, object>());
+        Assert.Equal("AB", html);
     }
 }
