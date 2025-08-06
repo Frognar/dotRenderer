@@ -119,13 +119,26 @@ public static class ExpressionParser
             if (char.IsDigit(Peek()))
             {
                 int start = _pos;
-                while (!End && char.IsDigit(Peek()))
+                bool hasDot = false;
+                while (!End && (char.IsDigit(Peek()) || Peek() == '.'))
                 {
+                    if (Peek() == '.')
+                    {
+                        if (hasDot)
+                        {
+                            throw new InvalidOperationException("Multiple dots in number");
+                        }
+
+                        hasDot = true;
+                    }
+
                     _pos++;
                 }
 
                 string lit = _expr[start.._pos];
-                return new LiteralExpr<int>(int.Parse(lit, CultureInfo.InvariantCulture));
+                return hasDot
+                    ? new LiteralExpr<double>(double.Parse(lit, CultureInfo.InvariantCulture))
+                    : new LiteralExpr<int>(int.Parse(lit, CultureInfo.InvariantCulture));
             }
 
             if (Match("Model."))

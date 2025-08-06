@@ -144,4 +144,19 @@ public class ExpressionParserTests
         PropertyExpr arg = Assert.IsType<PropertyExpr>(right.Operand);
         Assert.Equal(["Model", "IsAdmin"], arg.Path);
     }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Equality_With_Double_Literal()
+    {
+        string expr = "Model.Ratio == 1.5";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("==", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Ratio"], left.Path);
+        LiteralExpr<double> right = Assert.IsType<LiteralExpr<double>>(bin.Right);
+        Assert.Equal(1.5, right.Value);
+    }
 }
