@@ -201,4 +201,15 @@ public class TokenizerTests
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("!", ((TextToken)tokens[2]).Text);
     }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Unclosed_If_Block()
+    {
+        string template = "Hi@if (Model.X) { ...";
+        
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+            () => Tokenizer.Tokenize(template).ToArray());
+        
+        Assert.Contains("@if", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

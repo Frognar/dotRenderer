@@ -50,6 +50,11 @@ public static class Tokenizer
                 pos += "@if (Model.X) {".Length;
                 int bodyStart = pos;
                 int bodyEnd = template.IndexOf('}', bodyStart);
+                if (bodyEnd == -1)
+                {
+                    throw new InvalidOperationException("Unclosed @if block: missing '}'");
+                }
+
                 tokens.Add(new IfToken("Model.X", []));
                 pos = bodyEnd + 1;
                 continue;
