@@ -177,4 +177,20 @@ public class ExpressionParserTests
         LiteralExpr<string> right = Assert.IsType<LiteralExpr<string>>(bin.Right);
         Assert.Equal("Alice", right.Value);
     }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Binary_Inequality()
+    {
+        string expr = "Model.Name != \"Alice\"";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr bin = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("!=", bin.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(bin.Left);
+        Assert.Equal(["Model", "Name"], left.Path);
+        LiteralExpr<string> right = Assert.IsType<LiteralExpr<string>>(bin.Right);
+        Assert.Equal("Alice", right.Value);
+    }
+
 }

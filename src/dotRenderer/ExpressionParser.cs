@@ -73,6 +73,12 @@ public static class ExpressionParser
                     ExprNode right = ParseUnary();
                     left = new BinaryExpr("==", left, right);
                 }
+                else if (Match("!="))
+                {
+                    SkipWhitespace();
+                    ExprNode right = ParseUnary();
+                    left = new BinaryExpr("!=", left, right);
+                }
                 else if (Match(">="))
                 {
                     SkipWhitespace();
