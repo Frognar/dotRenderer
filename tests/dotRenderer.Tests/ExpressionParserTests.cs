@@ -196,7 +196,7 @@ public class ExpressionParserTests
         LiteralExpr<double> right = Assert.IsType<LiteralExpr<double>>(bin.Right);
         Assert.Equal(1.5, right.Value);
     }
-    
+
     [Fact]
     public void ExpressionParser_Should_Throw_On_Multiple_Dots_In_Number()
     {
@@ -304,5 +304,56 @@ public class ExpressionParserTests
         Assert.Equal(["Model", "Count"], left.Path);
         LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(bin.Right);
         Assert.Equal(1, right.Value);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Parenthesized_Expression()
+    {
+        string expr = "(Model.Age > 18) && Model.IsAdmin";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr and = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("&&", and.Operator);
+        BinaryExpr paren = Assert.IsType<BinaryExpr>(and.Left);
+        Assert.Equal(">", paren.Operator);
+        PropertyExpr left = Assert.IsType<PropertyExpr>(paren.Left);
+        Assert.Equal(["Model", "Age"], left.Path);
+        LiteralExpr<int> right = Assert.IsType<LiteralExpr<int>>(paren.Right);
+        Assert.Equal(18, right.Value);
+        PropertyExpr rightAnd = Assert.IsType<PropertyExpr>(and.Right);
+        Assert.Equal(["Model", "IsAdmin"], rightAnd.Path);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Nested_Parentheses()
+    {
+        string expr = "Model.Age > 18 && (Model.IsAdmin || Model.IsMod)";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        BinaryExpr and = Assert.IsType<BinaryExpr>(node);
+        Assert.Equal("&&", and.Operator);
+        BinaryExpr gt = Assert.IsType<BinaryExpr>(and.Left);
+        Assert.Equal(">", gt.Operator);
+        PropertyExpr age = Assert.IsType<PropertyExpr>(gt.Left);
+        Assert.Equal(["Model", "Age"], age.Path);
+        LiteralExpr<int> gtRight = Assert.IsType<LiteralExpr<int>>(gt.Right);
+        Assert.Equal(18, gtRight.Value);
+        BinaryExpr or = Assert.IsType<BinaryExpr>(and.Right);
+        Assert.Equal("||", or.Operator);
+        PropertyExpr leftOr = Assert.IsType<PropertyExpr>(or.Left);
+        Assert.Equal(["Model", "IsAdmin"], leftOr.Path);
+        PropertyExpr rightOr = Assert.IsType<PropertyExpr>(or.Right);
+        Assert.Equal(["Model", "IsMod"], rightOr.Path);
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Throw_On_Unclosed_Parenthesis()
+    {
+        string expr = "(Model.Age > 18";
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => ExpressionParser.Parse(expr));
+        Assert.Contains("Unclosed parenthesis", ex.Message, StringComparison.Ordinal);
     }
 }

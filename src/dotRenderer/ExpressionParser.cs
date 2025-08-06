@@ -178,6 +178,20 @@ public static class ExpressionParser
         private ExprNode ParsePrimary()
         {
             SkipWhitespace();
+            if (Peek() == '(')
+            {
+                _pos++;
+                ExprNode node = ParseExpression();
+                SkipWhitespace();
+                if (Peek() != ')')
+                {
+                    throw new InvalidOperationException("Unclosed parenthesis");
+                }
+
+                _pos++;
+                return node;
+            }
+            
             if (Match("true"))
             {
                 return new LiteralExpr<bool>(true);
