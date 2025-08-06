@@ -55,7 +55,7 @@ public static class Renderer
     private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
     {
         object? current = model;
-        foreach (var segment in path.Skip(1))
+        foreach (string segment in path.Skip(1))
         {
             switch (current)
             {
@@ -71,7 +71,7 @@ public static class Renderer
                 }
                 case Dictionary<string, string> leafDict:
                 {
-                    if (!leafDict.TryGetValue(segment, out var strVal))
+                    if (!leafDict.TryGetValue(segment, out string? strVal))
                     {
                         throw new KeyNotFoundException(
                             $"Missing key '{segment}' in model (path: {string.Join(".", path)})");

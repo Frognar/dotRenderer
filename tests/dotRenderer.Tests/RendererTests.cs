@@ -43,18 +43,51 @@ public class RendererTests
 
         Assert.Equal("Hello, Bob!", html);
     }
+
     [Fact]
     public void Renderer_Should_Throw_When_Nested_Path_Missing()
     {
         Dictionary<string, object> model = [];
 
-        var ast = new SequenceNode([
+        SequenceNode ast = new([
             new TextNode("Hello, "),
             new EvalNode(["Model", "User", "Name"]),
             new TextNode("!")
         ]);
 
-        var ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
+        KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
         Assert.Contains("User", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Throw_When_Leaf_Dictionary_String_Missing_Key()
+    {
+        var model = new Dictionary<string, object>
+        {
+            { "User", new Dictionary<string, string>() }
+        };
+
+        SequenceNode ast = new([
+            new EvalNode(["Model", "User", "Name"])
+        ]);
+
+        KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
+        Assert.Contains("Name", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Renderer_Should_Throw_When_Model_Is_Not_Dictionary()
+    {
+        Dictionary<string, object> model = new()
+        {
+            { "User", new object() }
+        };
+
+        SequenceNode ast = new([
+            new EvalNode(["Model", "User", "Name"])
+        ]);
+        
+        KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() => Renderer.Render(ast, model));
+        Assert.Contains("Name", ex.Message, StringComparison.Ordinal);
     }
 }
