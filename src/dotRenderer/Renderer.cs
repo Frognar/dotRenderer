@@ -1,5 +1,4 @@
 using System.Text;
-using DotMaybe;
 
 namespace dotRenderer;
 
@@ -41,10 +40,10 @@ public static class Renderer
                 case EvalNode e:
                     string[] path = e.Path.Skip(1).ToArray();
                     string last = path.Last();
-                    Maybe<string> maybe = accessor.AccessValue(last, model);
-                    string value = maybe.OrDefault(() =>
-                        throw new KeyNotFoundException(
-                            $"Missing key '{last}' in model (path: {string.Join(".", path)}"));
+                    string value = accessor.AccessValue(last, model)
+                        ?? throw new KeyNotFoundException(
+                            $"Missing key '{last}' in model (path: {string.Join(".", path)}");
+                        
                     sb.Append(value);
                     break;
             }
@@ -87,6 +86,6 @@ public static class Renderer
             }
         }
 
-        return current!;
+        return current;
     }
 }

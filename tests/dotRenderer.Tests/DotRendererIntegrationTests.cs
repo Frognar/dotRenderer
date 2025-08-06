@@ -1,5 +1,3 @@
-using DotMaybe;
-
 namespace dotRenderer.Tests;
 
 public class DotRendererIntegrationTests
@@ -20,9 +18,9 @@ public class DotRendererIntegrationTests
 
     private sealed class UserAccessor : IValueAccessor<User>
     {
-        public Maybe<string> AccessValue(string path, User model)
+        public string? AccessValue(string path, User model)
         {
-            return path == "Name" ? Some.With(model.Name) : None.OfType<string>();
+            return path == "Name" ? model.Name : null;
         }
     }
 

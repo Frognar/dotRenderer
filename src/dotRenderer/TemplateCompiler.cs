@@ -1,5 +1,3 @@
-using System.Security.AccessControl;
-
 namespace dotRenderer;
 
 public static class TemplateCompiler
