@@ -231,8 +231,29 @@ public class TokenizerTests
         Assert.Single(bodyTokens);
         Assert.IsType<TextToken>(bodyTokens[0]);
         Assert.Equal("abc", ((TextToken)bodyTokens[0]).Text);
-
         Assert.IsType<TextToken>(tokens[2]);
         Assert.Equal("B", ((TextToken)tokens[2]).Text);
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_If_Missing_Closing_Paren()
+    {
+        string template = "Hello @if (Model.X { body }";
+
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
+
+        Assert.Contains("Unclosed @if condition: missing ')'", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_If_Missing_Brace()
+    {
+        string template = "Hello @if (Model.X) body }";
+
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Tokenizer.Tokenize(template).ToArray());
+
+        Assert.Contains("Expected '{' after @if condition", ex.Message, StringComparison.Ordinal);
     }
 }
