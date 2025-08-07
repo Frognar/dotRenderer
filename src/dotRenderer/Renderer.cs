@@ -157,6 +157,7 @@ public static class Renderer
         {
             LiteralExpr<bool> lit => lit.Value,
             PropertyExpr prop => TryGetBool(prop, model, accessor),
+            UnaryExpr { Operator: "!" } unary => !EvalIfCondition(unary.Operand, model, accessor),
             _ => throw new InvalidOperationException(
                 $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
         };

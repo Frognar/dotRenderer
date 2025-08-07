@@ -674,6 +674,41 @@ public class RendererTests
 
         Assert.Equal("AB", html);
     }
+    [Fact]
+    public void Renderer_Generic_Should_Render_IfNode_With_Unary_Not_Condition_True()
+    {
+        TestModel model = new(false);
+        TestModelAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new UnaryExpr("!", new PropertyExpr(["Model", "Flag"])),
+                new SequenceNode([ new TextNode("OK") ])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("OK", html);
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Unary_Not_Condition_False()
+    {
+        TestModel model = new(true);
+        TestModelAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new UnaryExpr("!", new PropertyExpr(["Model", "Flag"])),
+                new SequenceNode([ new TextNode("NOPE") ])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("", html);
+    }
 
     private sealed record Dummy;
 
