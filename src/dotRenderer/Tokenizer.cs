@@ -24,29 +24,7 @@ public static class Tokenizer
                 }
                 
                 pos += "@if (".Length;
-                int condStart = pos;
-                int parens = 1;
-                while (pos < end && parens > 0)
-                {
-                    if (template[pos] == '(')
-                    {
-                        parens++;
-                    }
-                    else if (template[pos] == ')')
-                    {
-                        parens--;
-                    }
-
-                    pos++;
-                }
-                if (parens != 0)
-                {
-                    throw new InvalidOperationException("Unclosed @if condition: missing ')'");
-                }
-
-                int condEnd = pos - 1;
-                string condition = template.Substring(condStart, condEnd - condStart).Trim();
-
+                (string condition, pos) = ReadCondition(template, pos, end);
                 while (pos < end && char.IsWhiteSpace(template[pos]))
                 {
                     pos++;
@@ -144,6 +122,32 @@ public static class Tokenizer
         }
 
         return tokens;
+    }
+
+    private static (string condition, int nextPos) ReadCondition(string template, int pos, int end)
+    {
+        int condStart = pos;
+        int parens = 1;
+        while (pos < end && parens > 0)
+        {
+            if (template[pos] == '(')
+            {
+                parens++;
+            }
+            else if (template[pos] == ')')
+            {
+                parens--;
+            }
+
+            pos++;
+        }
+        if (parens != 0)
+        {
+            throw new InvalidOperationException("Unclosed @if condition: missing ')'");
+        }
+
+        int condEnd = pos - 1;
+        return (template.Substring(condStart, condEnd - condStart).Trim(), pos);
     }
 
     private static bool IsIdentifierChar(char c)
