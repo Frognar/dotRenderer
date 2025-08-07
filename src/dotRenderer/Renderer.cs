@@ -59,7 +59,7 @@ public static class Renderer
                     (bool l, bool r) => CompareBools(l, r, binary.Operator),
                     (int l, double r) => CompareDoubles(l, r, binary.Operator),
                     (double l, int r) => CompareDoubles(l, r, binary.Operator),
-                    ({} l, { } r) => throw new InvalidOperationException(
+                    ({ } l, { } r) => throw new InvalidOperationException(
                         $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
                 },
             _ => throw new InvalidOperationException(
@@ -129,11 +129,10 @@ public static class Renderer
                     sb.Append(t.Text);
                     break;
                 case EvalNode e:
-                    string[] path = e.Path.Skip(1).ToArray();
-                    string joinedPath = string.Join(".", path);
+                    string joinedPath = JoinModelPath(e.Path);
                     string value = accessor.AccessValue(joinedPath, model)
                                    ?? throw new KeyNotFoundException(
-                                       $"Missing key '{joinedPath}' in model (path: {string.Join(".", path)}");
+                                       $"Missing key '{joinedPath}' in model (path: {joinedPath}");
 
                     sb.Append(value);
                     break;
@@ -142,6 +141,8 @@ public static class Renderer
 
         return sb.ToString();
     }
+
+    private static string JoinModelPath(IEnumerable<string> pathSegments) => string.Join('.', pathSegments.Skip(1));
 
     private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
     {
