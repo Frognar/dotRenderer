@@ -635,6 +635,53 @@ public class RendererTests
         Assert.Contains("false", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Renderer_Generic_Should_Render_IfNode_With_Literal_True()
+    {
+        Dummy model = new();
+        DummyAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("A"),
+            new IfNode(
+                new LiteralExpr<bool>(true),
+                new SequenceNode([new TextNode("YES")])
+            ),
+            new TextNode("B")
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("AYESB", html);
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Literal_False()
+    {
+        Dummy model = new();
+        DummyAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("A"),
+            new IfNode(
+                new LiteralExpr<bool>(false),
+                new SequenceNode([new TextNode("NO")])
+            ),
+            new TextNode("B")
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("AB", html);
+    }
+
+    private sealed record Dummy;
+
+    private sealed class DummyAccessor : IValueAccessor<Dummy>
+    {
+        public string? AccessValue(string path, Dummy model) => null;
+    }
+
     private sealed record TestModel(bool Flag);
 
     private sealed class TestModelAccessor : IValueAccessor<TestModel>

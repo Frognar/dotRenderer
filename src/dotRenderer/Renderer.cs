@@ -155,6 +155,7 @@ public static class Renderer
     {
         return cond switch
         {
+            LiteralExpr<bool> lit => lit.Value,
             PropertyExpr prop => TryGetBool(prop, model, accessor),
             _ => throw new InvalidOperationException(
                 $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
