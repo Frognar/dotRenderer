@@ -149,11 +149,31 @@ public class TokenizerTests
         string template = "A@if ((Model.X && Model.Y)) {abc}B";
 
         object[] tokens = [..Tokenizer.Tokenize(template)];
-        
+
         TokenizerAssert.TokenSequence(tokens,
             new TextToken("A"),
             new IfToken("(Model.X && Model.Y)", [new TextToken("abc")]),
             new TextToken("B"));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Handle_Nested_If_Blocks()
+    {
+        string template = "A@if (x) {B@if (y) {C}@Model.Z}D";
+
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("A"),
+            new IfToken("x", [
+                new TextToken("B"),
+                new IfToken("y", [
+                    new TextToken("C")
+                ]),
+                new InterpolationToken(["Model", "Z"])
+            ]),
+            new TextToken("D")
+        );
     }
 
     [Fact]
