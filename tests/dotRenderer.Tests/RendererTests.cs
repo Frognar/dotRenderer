@@ -591,12 +591,38 @@ public class RendererTests
         Assert.Equal("XY", html);
     }
 
+    [Fact]
+    public void Renderer_Generic_Should_Throw_If_Accessor_Returns_NonBoolean_String()
+    {
+        TestModel model = new(true);
+        FlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new PropertyExpr(["Model", "OtherFlag"]),
+                new SequenceNode([ new TextNode("YES") ])
+            )
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            Renderer.Render(ast, model, accessor)
+        );
+
+        Assert.Contains("must resolve to \"true\" or \"false\"", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("yes", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed record TestModel(bool Flag);
 
     private sealed class FlagAccessor : IValueAccessor<TestModel>
     {
         public string? AccessValue(string path, TestModel model)
-            => path == "Flag"  ? model.Flag.ToString() : null;
+            => path switch
+            {
+                "Flag" => model.Flag.ToString(),
+                "OtherFlag" => "yes",
+                _ => null
+            };
     }
 
     private sealed record UserHolder(User User);
