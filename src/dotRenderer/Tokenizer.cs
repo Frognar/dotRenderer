@@ -24,13 +24,29 @@ public static class Tokenizer
                 }
 
                 pos += "@if (".Length;
-                int condEnd = template.IndexOf(')', pos);
-                if (condEnd == -1)
+                int condStart = pos;
+                int parens = 1;
+                while (pos < len && parens > 0)
+                {
+                    if (template[pos] == '(')
+                    {
+                        parens++;
+                    }
+                    else if (template[pos] == ')')
+                    {
+                        parens--;
+                    }
+
+                    pos++;
+                }
+
+                if (parens != 0)
                 {
                     throw new InvalidOperationException("Unclosed @if condition: missing ')'");
                 }
 
-                string condition = template.Substring(pos, condEnd - pos).Trim();
+                int condEnd = pos - 1;
+                string condition = template.Substring(condStart, condEnd - condStart).Trim();
                 pos = condEnd + 1;
 
                 while (pos < len && char.IsWhiteSpace(template[pos])) pos++;

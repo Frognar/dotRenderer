@@ -144,6 +144,19 @@ public class TokenizerTests
     }
 
     [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_With_Parenthesized_Condition()
+    {
+        string template = "A@if ((Model.X && Model.Y)) {abc}B";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+        
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("A"),
+            new IfToken("(Model.X && Model.Y)", [new TextToken("abc")]),
+            new TextToken("B"));
+    }
+
+    [Fact]
     public void Tokenizer_Should_Throw_If_Interpolation_Missing_Identifier()
     {
         string template = "Hello @Model.";
