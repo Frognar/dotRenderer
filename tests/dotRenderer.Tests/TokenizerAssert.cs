@@ -5,28 +5,28 @@ internal static class TokenizerAssert
     public static void TokenSequence(object[] tokens, params object[] expected)
     {
         Assert.Equal(expected.Length, tokens.Length);
-        for (int i = 0; i < tokens.Length; i++)
+        foreach ((object act, object exp) in tokens.Zip(expected))
         {
-            switch (expected[i])
+            switch (exp)
             {
                 case InterpolationToken interp:
-                    InterpolationToken actualInter = Assert.IsType<InterpolationToken>(tokens[i]);
+                    InterpolationToken actualInter = Assert.IsType<InterpolationToken>(act);
                     Assert.Equal(interp.Path, actualInter.Path);
                     break;
 
                 case TextToken textTok:
-                    TextToken actualText = Assert.IsType<TextToken>(tokens[i]);
+                    TextToken actualText = Assert.IsType<TextToken>(act);
                     Assert.Equal(textTok.Text, actualText.Text);
                     break;
 
                 case IfToken ifTok:
-                    IfToken actualIf = Assert.IsType<IfToken>(tokens[i]);
+                    IfToken actualIf = Assert.IsType<IfToken>(act);
                     Assert.Equal(ifTok.Condition, actualIf.Condition);
                     TokenSequence([.. actualIf.Body], [.. ifTok.Body]);
                     break;
 
                 default:
-                    throw new InvalidOperationException($"Unsupported expected type: {expected[i].GetType()}");
+                    throw new InvalidOperationException($"Unsupported expected type: {exp.GetType()}");
             }
         }
     }
