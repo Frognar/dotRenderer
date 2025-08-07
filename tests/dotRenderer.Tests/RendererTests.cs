@@ -555,13 +555,13 @@ public class RendererTests
     public void Renderer_Generic_Should_Render_IfNode_With_Flag_True()
     {
         TestModel model = new(true);
-        FlagAccessor accessor = new();
+        TestModelAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("X"),
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
-                new SequenceNode([ new TextNode("YES") ])
+                new SequenceNode([new TextNode("YES")])
             ),
             new TextNode("Y")
         ]);
@@ -575,13 +575,13 @@ public class RendererTests
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Flag_False()
     {
         TestModel model = new(false);
-        FlagAccessor accessor = new();
+        TestModelAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("X"),
             new IfNode(
                 new PropertyExpr(["Model", "Flag"]),
-                new SequenceNode([ new TextNode("YES") ])
+                new SequenceNode([new TextNode("YES")])
             ),
             new TextNode("Y")
         ]);
@@ -595,12 +595,12 @@ public class RendererTests
     public void Renderer_Generic_Should_Throw_If_Accessor_Returns_NonBoolean_String()
     {
         TestModel model = new(true);
-        FlagAccessor accessor = new();
+        TestModelAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
                 new PropertyExpr(["Model", "OtherFlag"]),
-                new SequenceNode([ new TextNode("YES") ])
+                new SequenceNode([new TextNode("YES")])
             )
         ]);
 
@@ -612,9 +612,32 @@ public class RendererTests
         Assert.Contains("yes", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Renderer_Generic_Should_Throw_If_Accessor_Returns_Null_For_IfNode()
+    {
+        TestModel model = new(false);
+        TestModelAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new PropertyExpr(["Model", "YetAnotherFlag"]),
+                new SequenceNode([new TextNode("YES")])
+            )
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            Renderer.Render(ast, model, accessor)
+        );
+
+        Assert.Contains("returned null", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Flag", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("true", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("false", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed record TestModel(bool Flag);
 
-    private sealed class FlagAccessor : IValueAccessor<TestModel>
+    private sealed class TestModelAccessor : IValueAccessor<TestModel>
     {
         public string? AccessValue(string path, TestModel model)
             => path switch
