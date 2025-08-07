@@ -158,6 +158,8 @@ public static class Renderer
             LiteralExpr<bool> lit => lit.Value,
             PropertyExpr prop => TryGetBool(prop, model, accessor),
             UnaryExpr { Operator: "!" } unary => !EvalIfCondition(unary.Operand, model, accessor),
+            BinaryExpr { Operator: "&&" } binary => EvalIfCondition(binary.Left, model, accessor) &&
+                                                    EvalIfCondition(binary.Right, model, accessor),
             _ => throw new InvalidOperationException(
                 $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
         };
@@ -169,7 +171,8 @@ public static class Renderer
         string? str = accessor.AccessValue(joinedPath, model);
         if (str is null)
         {
-            throw new InvalidOperationException($"If condition path '{joinedPath}' returned null (expected \"true\" or \"false\")");
+            throw new InvalidOperationException(
+                $"If condition path '{joinedPath}' returned null (expected \"true\" or \"false\")");
         }
 
         if (string.Equals(str, "true", StringComparison.OrdinalIgnoreCase))
@@ -182,7 +185,8 @@ public static class Renderer
             return false;
         }
 
-        throw new InvalidOperationException($"If condition path '{joinedPath}' must resolve to \"true\" or \"false\", got '{str}'.");
+        throw new InvalidOperationException(
+            $"If condition path '{joinedPath}' must resolve to \"true\" or \"false\", got '{str}'.");
     }
 
     private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)

@@ -709,6 +709,62 @@ public class RendererTests
 
         Assert.Equal("", html);
     }
+    [Fact]
+    public void Renderer_Generic_Should_Render_IfNode_With_Binary_And_Condition_True()
+    {
+        DoubleFlagModel model = new(true, true);
+        DoubleFlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "&&",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([ new TextNode("YES") ])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("YES", html);
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_And_Condition_False()
+    {
+        DoubleFlagModel model = new(true, false);
+        DoubleFlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "&&",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([ new TextNode("NO") ])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("", html);
+    }
+    
+    private sealed record DoubleFlagModel(bool A, bool B);
+
+    private sealed class DoubleFlagAccessor : IValueAccessor<DoubleFlagModel>
+    {
+        public string? AccessValue(string path, DoubleFlagModel model)
+            => path switch
+            {
+                "A" => model.A.ToString(),
+                "B" => model.B.ToString(),
+                _ => null
+            };
+    }
 
     private sealed record Dummy;
 
