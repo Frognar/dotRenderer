@@ -733,10 +733,13 @@ public class RendererTests
         Assert.Equal("YES", html);
     }
 
-    [Fact]
-    public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_And_Condition_False()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_And_Condition_False(bool a, bool b)
     {
-        DoubleFlagModel model = new(true, false);
+        DoubleFlagModel model = new(a, b);
         DoubleFlagAccessor accessor = new();
 
         SequenceNode ast = new([
