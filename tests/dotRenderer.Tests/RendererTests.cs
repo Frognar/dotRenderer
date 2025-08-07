@@ -225,7 +225,7 @@ public class RendererTests
         };
 
         string html = Renderer.Render(ast, model);
-        
+
         Assert.Equal("T", html);
     }
 
@@ -250,7 +250,7 @@ public class RendererTests
         };
 
         string html = Renderer.Render(ast, model);
-        
+
         Assert.Equal("", html);
     }
 
@@ -275,7 +275,7 @@ public class RendererTests
         };
 
         string html = Renderer.Render(ast, model);
-        
+
         Assert.Equal("T", html);
     }
 
@@ -288,17 +288,17 @@ public class RendererTests
                     "!",
                     new PropertyExpr(["Model", "IsGuest"])
                 ),
-                new SequenceNode([ new TextNode("Hi!") ])
+                new SequenceNode([new TextNode("Hi!")])
             )
         ]);
-        
+
         Dictionary<string, object> model = new()
         {
             { "IsGuest", false }
         };
 
         string html = Renderer.Render(ast, model);
-        
+
         Assert.Equal("Hi!", html);
     }
 
@@ -311,17 +311,17 @@ public class RendererTests
                     "!",
                     new PropertyExpr(["Model", "IsGuest"])
                 ),
-                new SequenceNode([ new TextNode("Hi!") ])
+                new SequenceNode([new TextNode("Hi!")])
             )
         ]);
-        
+
         Dictionary<string, object> model = new()
         {
             { "IsGuest", true }
         };
 
         string html = Renderer.Render(ast, model);
-        
+
         Assert.Equal("", html);
     }
 
@@ -343,12 +343,12 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, new LiteralExpr<int>(left), new LiteralExpr<int>(right)),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
-        
+
         string html = Renderer.Render(ast, new Dictionary<string, object>());
-        
+
         Assert.Equal(expected, html);
     }
 
@@ -370,12 +370,12 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, new LiteralExpr<double>(left), new LiteralExpr<double>(right)),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
-        
+
         string html = Renderer.Render(ast, new Dictionary<string, object>());
-        
+
         Assert.Equal(expected, html);
     }
 
@@ -389,12 +389,12 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, new LiteralExpr<string>(left), new LiteralExpr<string>(right)),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
-        
+
         string html = Renderer.Render(ast, new Dictionary<string, object>());
-        
+
         Assert.Equal(expected, html);
     }
 
@@ -409,7 +409,7 @@ public class RendererTests
         ]);
 
         string html = Renderer.Render(ast, new Dictionary<string, object> { { "Name", "Alice" } });
-        
+
         Assert.Equal("Alice", html);
     }
 
@@ -423,12 +423,12 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, new LiteralExpr<bool>(left), new LiteralExpr<bool>(right)),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
-        
+
         string html = Renderer.Render(ast, new Dictionary<string, object>());
-        
+
         Assert.Equal(expected, html);
     }
 
@@ -446,12 +446,12 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, leftExpr, rightExpr),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
-        
+
         string html = Renderer.Render(ast, new Dictionary<string, object>());
-        
+
         Assert.Equal(expected, html);
     }
 
@@ -461,7 +461,8 @@ public class RendererTests
     [InlineData("==", typeof(int), typeof(bool), "Cannot compare values of types")]
     [InlineData("!=", typeof(int), typeof(string), "Cannot compare values of types")]
     [InlineData("<=", typeof(string), typeof(int), "Cannot compare values of types")]
-    public void Renderer_Should_Throw_On_Comparison_With_Incompatible_Types(string op, Type leftType, Type rightType, string expectedMsg)
+    public void Renderer_Should_Throw_On_Comparison_With_Incompatible_Types(string op, Type leftType, Type rightType,
+        string expectedMsg)
     {
         ExprNode left = leftType == typeof(int)
             ? new LiteralExpr<int>(1)
@@ -476,10 +477,11 @@ public class RendererTests
                 : new LiteralExpr<string>("def");
 
         SequenceNode ast = new([
-            new IfNode(new BinaryExpr(op, left, right), new SequenceNode([ new TextNode("err") ]))
+            new IfNode(new BinaryExpr(op, left, right), new SequenceNode([new TextNode("err")]))
         ]);
-        
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
         Assert.Contains(expectedMsg, ex.Message, StringComparison.Ordinal);
     }
 
@@ -492,7 +494,8 @@ public class RendererTests
             new IfNode(new DummyExpr(), new SequenceNode([new TextNode("err")]))
         ]);
 
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
         Assert.Contains("Unsupported expression node", ex.Message, StringComparison.Ordinal);
         Assert.Contains("DummyExpr", ex.Message, StringComparison.Ordinal);
     }
@@ -506,7 +509,8 @@ public class RendererTests
                 new SequenceNode([new TextNode("err")]))
         ]);
 
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
+        InvalidOperationException ex =
+            Assert.Throws<InvalidOperationException>(() => Renderer.Render(ast, new Dictionary<string, object>()));
         Assert.Contains("Unsupported operand type", ex.Message, StringComparison.Ordinal);
         Assert.Contains("DummyExpr", ex.Message, StringComparison.Ordinal);
     }
@@ -527,13 +531,38 @@ public class RendererTests
 
         Assert.Equal("Hello Alice!", html);
     }
-    
+
+    [Fact]
+    public void Renderer_Generic_Should_Throw_When_Nested_Path_Missing()
+    {
+        UserHolder model = new(new User("Alice"));
+        UserHolderAccessorReturnsNull accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("Hello "),
+            new EvalNode(["Model", "User", "Name"]),
+            new TextNode("!")
+        ]);
+
+        KeyNotFoundException ex = Assert.Throws<KeyNotFoundException>(() =>
+            Renderer.Render(ast, model, accessor)
+        );
+
+        Assert.Contains("User.Name", ex.Message, StringComparison.Ordinal);
+    }
+
     private sealed record UserHolder(User User);
+
     private sealed record User(string Name);
 
     private sealed class UserHolderAccessor : IValueAccessor<UserHolder>
     {
         public string? AccessValue(string path, UserHolder model)
             => path == "User.Name" && model.User is { Name: var name } ? name : null;
+    }
+
+    private sealed class UserHolderAccessorReturnsNull : IValueAccessor<UserHolder>
+    {
+        public string? AccessValue(string path, UserHolder model) => null;
     }
 }
