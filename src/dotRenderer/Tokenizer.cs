@@ -15,7 +15,8 @@ public static class Tokenizer
 
         while (pos < end)
         {
-            if (template.IndexOf("@if (", pos, StringComparison.Ordinal) == pos)
+            if (template.IndexOf("@if (", pos, StringComparison.Ordinal) == pos
+                && (pos == 0 || char.IsWhiteSpace(template[pos - 1])))
             {
                 if (sb.Length > 0)
                 {
@@ -37,7 +38,6 @@ public static class Tokenizer
                 }
 
                 pos++;
-
                 (int blockStart, int blockEnd, pos) = FindBracedSpan(template, pos, end);
                 IEnumerable<object> bodyTokens = Tokenize(template, blockStart, blockEnd);
                 tokens.Add(new IfToken(condition, bodyTokens));

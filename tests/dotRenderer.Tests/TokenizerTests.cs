@@ -120,12 +120,12 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Tokenize_If_Block_With_Empty_Body()
     {
-        string template = "Hi@if (Model.X) {}!";
+        string template = "Hi @if (Model.X) {}!";
 
         object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         TokenizerAssert.TokenSequence(tokens,
-            new TextToken("Hi"),
+            new TextToken("Hi "),
             new IfToken("Model.X", []),
             new TextToken("!"));
     }
@@ -133,12 +133,12 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Tokenize_If_Block_With_Arbitrary_Condition_And_Body()
     {
-        string template = "A@if (fooBar) {abc}B";
+        string template = "A @if (fooBar) {abc}B";
 
         object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         TokenizerAssert.TokenSequence(tokens,
-            new TextToken("A"),
+            new TextToken("A "),
             new IfToken("fooBar", [new TextToken("abc")]),
             new TextToken("B"));
     }
@@ -146,12 +146,12 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Tokenize_If_Block_With_Parenthesized_Condition()
     {
-        string template = "A@if ((Model.X && Model.Y)) {abc}B";
+        string template = "A @if ((Model.X && Model.Y)) {abc}B";
 
         object[] tokens = [..Tokenizer.Tokenize(template)];
 
         TokenizerAssert.TokenSequence(tokens,
-            new TextToken("A"),
+            new TextToken("A "),
             new IfToken("(Model.X && Model.Y)", [new TextToken("abc")]),
             new TextToken("B"));
     }
@@ -159,20 +159,82 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Handle_Nested_If_Blocks()
     {
-        string template = "A@if (x) {B@if (y) {C}@Model.Z}D";
+        string template = "A @if (x) {B @if (y) {C}@Model.Z}D";
 
         object[] tokens = [.. Tokenizer.Tokenize(template)];
 
         TokenizerAssert.TokenSequence(tokens,
-            new TextToken("A"),
+            new TextToken("A "),
             new IfToken("x", [
-                new TextToken("B"),
+                new TextToken("B "),
                 new IfToken("y", [
                     new TextToken("C")
                 ]),
                 new InterpolationToken(["Model", "Z"])
             ]),
             new TextToken("D")
+        );
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Treat_Inline_If_As_Text()
+    {
+        string template = "X@if (Model.Foo) {YES}";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("X@if (Model.Foo) {YES}")
+        );
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_After_Whitespace()
+    {
+        string template = "X @if (Model.Foo) {YES}";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("X "),
+            new IfToken("Model.Foo", [new TextToken("YES")])
+        );
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_At_Start()
+    {
+        string template = "@if (Model.Foo) {YES}";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("Model.Foo", [new TextToken("YES")])
+        );
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Treat_If_Embedded_In_Word_As_Text()
+    {
+        string template = "foo@if (Model.Foo) {YES}bar";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("foo@if (Model.Foo) {YES}bar")
+        );
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_After_Newline()
+    {
+        string template = "abc\n@if (Model.Foo) {YES}";
+
+        object[] tokens = [..Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("abc\n"),
+            new IfToken("Model.Foo", [new TextToken("YES")])
         );
     }
 
@@ -187,7 +249,7 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Throw_On_Unclosed_If_Block()
     {
-        string template = "Hi@if (Model.X) { ...";
+        string template = "Hi @if (Model.X) { ...";
 
         TokenizerAssert.Throws<InvalidOperationException>(
             template,

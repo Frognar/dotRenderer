@@ -94,17 +94,17 @@ public class ParserTests
     [Fact]
     public void Parser_Should_Handle_Nested_If_Blocks()
     {
-        IEnumerable<object> tokens = Tokenizer.Tokenize("A@if (Model.x) {B@if (Model.y) {C}@Model.Z}D");
+        IEnumerable<object> tokens = Tokenizer.Tokenize("A @if (Model.x) {B @if (Model.y) {C}@Model.Z}D");
 
         SequenceNode ast = Parser.Parse(tokens);
 
         ParserAssert.AstEquals(ast,
             new SequenceNode([
-                new TextNode("A"),
+                new TextNode("A "),
                 new IfNode(
                     new PropertyExpr(["Model", "x"]),
                     new SequenceNode([
-                        new TextNode("B"),
+                        new TextNode("B "),
                         new IfNode(
                             new PropertyExpr(["Model", "y"]),
                             new SequenceNode([new TextNode("C")])
