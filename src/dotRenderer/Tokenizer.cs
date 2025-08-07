@@ -22,9 +22,10 @@ public static class Tokenizer
                     tokens.Add(new TextToken(sb.ToString()));
                     sb.Clear();
                 }
-                
+
                 pos += "@if (".Length;
-                (string condition, pos) = ReadCondition(template, pos, end);
+                (int condStart, int condEnd, pos) = FindParenthesizedSpan(template, pos, end);
+                string condition = template[condStart..condEnd].Trim();
                 while (pos < end && char.IsWhiteSpace(template[pos]))
                 {
                     pos++;
@@ -36,30 +37,9 @@ public static class Tokenizer
                 }
 
                 pos++;
-                
-                int bodyStart = pos;
-                int braces = 1;
-                while (pos < end && braces > 0)
-                {
-                    if (template[pos] == '{')
-                    {
-                        braces++;
-                    }
-                    else if (template[pos] == '}')
-                    {
-                        braces--;
-                    }
 
-                    pos++;
-                }
-                
-                if (braces != 0)
-                {
-                    throw new InvalidOperationException("Unclosed @if block: missing '}'");
-                }
-                
-                int bodyEnd = pos - 1;
-                IEnumerable<object> bodyTokens = Tokenize(template, bodyStart, bodyEnd);
+                (int blockStart, int blockEnd, pos) = FindBracedSpan(template, pos, end);
+                IEnumerable<object> bodyTokens = Tokenize(template, blockStart, blockEnd);
                 tokens.Add(new IfToken(condition, bodyTokens));
                 continue;
             }
@@ -78,7 +58,7 @@ public static class Tokenizer
                     tokens.Add(new TextToken(sb.ToString()));
                     sb.Clear();
                 }
-                
+
                 int pathStart = pos + "@Model.".Length;
                 int pathEnd = pathStart;
                 List<string> segments = ["Model"];
@@ -89,13 +69,13 @@ public static class Tokenizer
                     {
                         pathEnd++;
                     }
-                    
+
                     string name = template[segStart..pathEnd];
                     if (string.IsNullOrEmpty(name))
                     {
                         throw new InvalidOperationException($"No identifier after @Model. at position {pos}");
                     }
-                    
+
                     segments.Add(name);
 
                     if (pathEnd < end && template[pathEnd] == '.')
@@ -103,15 +83,15 @@ public static class Tokenizer
                         pathEnd++;
                         continue;
                     }
-                    
+
                     break;
                 }
-                
+
                 tokens.Add(new InterpolationToken(segments));
                 pos = pathEnd;
                 continue;
             }
-            
+
             sb.Append(template[pos]);
             pos++;
         }
@@ -124,30 +104,54 @@ public static class Tokenizer
         return tokens;
     }
 
-    private static (string condition, int nextPos) ReadCondition(string template, int pos, int end)
+    private static (int start, int end, int nextPos) FindParenthesizedSpan(string template, int pos, int end)
     {
-        int condStart = pos;
         int parens = 1;
+        int start = pos;
         while (pos < end && parens > 0)
         {
-            if (template[pos] == '(')
+            parens = template[pos] switch
             {
-                parens++;
-            }
-            else if (template[pos] == ')')
-            {
-                parens--;
-            }
+                '(' => parens + 1,
+                ')' => parens - 1,
+                _ => parens,
+            };
 
             pos++;
         }
+
         if (parens != 0)
         {
             throw new InvalidOperationException("Unclosed @if condition: missing ')'");
         }
 
-        int condEnd = pos - 1;
-        return (template.Substring(condStart, condEnd - condStart).Trim(), pos);
+        int finish = pos - 1;
+        return (start, finish, pos);
+    }
+
+    private static (int start, int end, int nextPos) FindBracedSpan(string template, int pos, int end)
+    {
+        int braces = 1;
+        int start = pos;
+        while (pos < end && braces > 0)
+        {
+            braces = template[pos] switch
+            {
+                '{' => braces + 1,
+                '}' => braces -1,
+                _ => braces,
+            };
+
+            pos++;
+        }
+
+        if (braces != 0)
+        {
+            throw new InvalidOperationException("Unclosed @if block: missing '}'");
+        }
+
+        int finish = pos - 1;
+        return (start, finish, pos);
     }
 
     private static bool IsIdentifierChar(char c)
