@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace dotRenderer.Tests;
 
 public class RendererTests
@@ -803,6 +805,240 @@ public class RendererTests
         string html = Renderer.Render(ast, model, accessor);
 
         Assert.Equal("", html);
+    }
+
+    [Theory]
+    [InlineData(42, 42, "==", "OK")]
+    [InlineData(42, 42, "!=", "")]
+    [InlineData(42, 43, "==", "")]
+    [InlineData(42, 43, "!=", "OK")]
+    [InlineData(5, 3, ">", "OK")]
+    [InlineData(2, 3, ">", "")]
+    [InlineData(2, 3, "<", "OK")]
+    [InlineData(3, 3, "<=", "OK")]
+    [InlineData(2, 3, "<=", "OK")]
+    [InlineData(5, 3, ">=", "OK")]
+    [InlineData(3, 5, ">=", "")]
+    public void Renderer_Generic_Should_Compare_Int_Values(int left, int right, string op, string expected)
+    {
+        CompareIntModel model = new(left);
+        CompareIntAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<int>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(42.0, 42.0, "==", "OK")]
+    [InlineData(42.0, 42.0, "!=", "")]
+    [InlineData(42.0, 43.0, "==", "")]
+    [InlineData(42.0, 43.0, "!=", "OK")]
+    [InlineData(5.0, 3.0, ">", "OK")]
+    [InlineData(2.0, 3.0, ">", "")]
+    [InlineData(2.0, 3.0, "<", "OK")]
+    [InlineData(3.0, 3.0, "<=", "OK")]
+    [InlineData(2.0, 3.0, "<=", "OK")]
+    [InlineData(5.0, 3.0, ">=", "OK")]
+    [InlineData(3.0, 5.0, ">=", "")]
+    public void Renderer_Generic_Should_Compare_Double_Values(double left, double right, string op, string expected)
+    {
+        CompareDoubleModel model = new(left);
+        CompareDoubleAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<double>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(42, 42.0, "==", "OK")]
+    [InlineData(42, 42.0, "!=", "")]
+    [InlineData(42, 43.0, "==", "")]
+    [InlineData(42, 43.0, "!=", "OK")]
+    [InlineData(5, 3.0, ">", "OK")]
+    [InlineData(2, 3.0, ">", "")]
+    [InlineData(2, 3.0, "<", "OK")]
+    [InlineData(3, 3.0, "<=", "OK")]
+    [InlineData(2, 3.0, "<=", "OK")]
+    [InlineData(5, 3.0, ">=", "OK")]
+    [InlineData(3, 5.0, ">=", "")]
+    public void Renderer_Generic_Should_Compare_Int_And_Double_Values(int left, double right, string op, string expected)
+    {
+        CompareIntModel model = new(left);
+        CompareIntAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<double>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(42.0, 42, "==", "OK")]
+    [InlineData(42.0, 42, "!=", "")]
+    [InlineData(42.0, 43, "==", "")]
+    [InlineData(42.0, 43, "!=", "OK")]
+    [InlineData(5.0, 3, ">", "OK")]
+    [InlineData(2.0, 3, ">", "")]
+    [InlineData(2.0, 3, "<", "OK")]
+    [InlineData(3.0, 3, "<=", "OK")]
+    [InlineData(2.0, 3, "<=", "OK")]
+    [InlineData(5.0, 3, ">=", "OK")]
+    [InlineData(3.0, 5, ">=", "")]
+    public void Renderer_Generic_Should_Compare_Double_And_Int_Values(double left, int right, string op, string expected)
+    {
+        CompareDoubleModel model = new(left);
+        CompareDoubleAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<int>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData(true, true, "==", "OK")]
+    [InlineData(true, true, "!=", "")]
+    [InlineData(true, false, "==", "")]
+    [InlineData(true, false, "!=", "OK")]
+    [InlineData(false, false, "==", "OK")]
+    [InlineData(false, false, "!=", "")]
+    [InlineData(false, true, "==", "")]
+    [InlineData(false, true, "!=", "OK")]
+    public void Renderer_Generic_Should_Compare_Bool_Values(bool left, bool right, string op, string expected)
+    {
+        CompareBoolModel model = new(left);
+        CompareBoolAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<bool>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData("abc", "abc", "==", "OK")]
+    [InlineData("abc", "abc", "!=", "")]
+    [InlineData("abc", "def", "==", "")]
+    [InlineData("abc", "def", "!=", "OK")]
+    public void Renderer_Generic_Should_Compare_String_Values(string left, string right, string op, string expected)
+    {
+        CompareStringModel model = new(left);
+        CompareStringAccessor accessor = new();
+
+        ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
+        ExprNode rightExpr = new LiteralExpr<string>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal(expected, html);
+    }
+
+    private sealed record CompareDoubleModel(double Value);
+
+    private sealed class CompareDoubleAccessor : IValueAccessor<CompareDoubleModel>
+    {
+        public string? AccessValue(string path, CompareDoubleModel model)
+            => path switch
+            {
+                "Value" => model.Value.ToString(CultureInfo.InvariantCulture) switch
+                {
+                    { } s when !s.Contains('.', StringComparison.Ordinal) => s + ".0",
+                    { } s => s
+                },
+                _ => null
+            };
+    }
+
+    private sealed record CompareIntModel(int Value);
+
+    private sealed class CompareIntAccessor : IValueAccessor<CompareIntModel>
+    {
+        public string? AccessValue(string path, CompareIntModel model)
+            => path switch
+            {
+                "Value" => model.Value.ToString(CultureInfo.InvariantCulture),
+                _ => null
+            };
+    }
+
+    private sealed record CompareBoolModel(bool Value);
+
+    private sealed class CompareBoolAccessor : IValueAccessor<CompareBoolModel>
+    {
+        public string? AccessValue(string path, CompareBoolModel model)
+            => path switch
+            {
+                "Value" => model.Value.ToString(CultureInfo.InvariantCulture),
+                _ => null
+            };
+    }
+
+    private sealed record CompareStringModel(string Value);
+
+    private sealed class CompareStringAccessor : IValueAccessor<CompareStringModel>
+    {
+        public string? AccessValue(string path, CompareStringModel model)
+            => path switch
+            {
+                "Value" => model.Value,
+                _ => null
+            };
     }
 
     private sealed record DoubleFlagModel(bool A, bool B);
