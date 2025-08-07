@@ -674,6 +674,7 @@ public class RendererTests
 
         Assert.Equal("AB", html);
     }
+
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Unary_Not_Condition_True()
     {
@@ -683,7 +684,7 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new UnaryExpr("!", new PropertyExpr(["Model", "Flag"])),
-                new SequenceNode([ new TextNode("OK") ])
+                new SequenceNode([new TextNode("OK")])
             )
         ]);
 
@@ -701,7 +702,7 @@ public class RendererTests
         SequenceNode ast = new([
             new IfNode(
                 new UnaryExpr("!", new PropertyExpr(["Model", "Flag"])),
-                new SequenceNode([ new TextNode("NOPE") ])
+                new SequenceNode([new TextNode("NOPE")])
             )
         ]);
 
@@ -709,6 +710,7 @@ public class RendererTests
 
         Assert.Equal("", html);
     }
+
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Binary_And_Condition_True()
     {
@@ -722,7 +724,7 @@ public class RendererTests
                     new PropertyExpr(["Model", "A"]),
                     new PropertyExpr(["Model", "B"])
                 ),
-                new SequenceNode([ new TextNode("YES") ])
+                new SequenceNode([new TextNode("YES")])
             )
         ]);
 
@@ -744,7 +746,7 @@ public class RendererTests
                     new PropertyExpr(["Model", "A"]),
                     new PropertyExpr(["Model", "B"])
                 ),
-                new SequenceNode([ new TextNode("NO") ])
+                new SequenceNode([new TextNode("NO")])
             )
         ]);
 
@@ -752,7 +754,54 @@ public class RendererTests
 
         Assert.Equal("", html);
     }
-    
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Renderer_Generic_Should_Render_IfNode_With_Binary_Or_Condition_True(bool a, bool b)
+    {
+        DoubleFlagModel model = new(a, b);
+        DoubleFlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "||",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([new TextNode("YES")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("YES", html);
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_Or_Condition_False()
+    {
+        DoubleFlagModel model = new(false, false);
+        DoubleFlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "||",
+                    new PropertyExpr(["Model", "A"]),
+                    new PropertyExpr(["Model", "B"])
+                ),
+                new SequenceNode([new TextNode("NO")])
+            )
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("", html);
+    }
+
     private sealed record DoubleFlagModel(bool A, bool B);
 
     private sealed class DoubleFlagAccessor : IValueAccessor<DoubleFlagModel>

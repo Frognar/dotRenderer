@@ -160,6 +160,8 @@ public static class Renderer
             UnaryExpr { Operator: "!" } unary => !EvalIfCondition(unary.Operand, model, accessor),
             BinaryExpr { Operator: "&&" } binary => EvalIfCondition(binary.Left, model, accessor) &&
                                                     EvalIfCondition(binary.Right, model, accessor),
+            BinaryExpr { Operator: "||" } binary => EvalIfCondition(binary.Left, model, accessor) ||
+                                                    EvalIfCondition(binary.Right, model, accessor),
             _ => throw new InvalidOperationException(
                 $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
         };
