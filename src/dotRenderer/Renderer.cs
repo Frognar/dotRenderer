@@ -205,6 +205,8 @@ public static class Renderer
             (bool lb, bool rb, "!=") => lb != rb,
             (string ls, string rs, "==") => ls == rs,
             (string ls, string rs, "!=") => ls != rs,
+            (string, string, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException("Only == and != are supported for string"),
+            (bool, bool, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException("Only == and != are supported for bool"),
             _ => throw new InvalidOperationException(
                     $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
         };

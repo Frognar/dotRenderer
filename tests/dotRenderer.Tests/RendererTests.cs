@@ -988,6 +988,68 @@ public class RendererTests
 
         Assert.Equal(expected, html);
     }
+    
+    [Theory]
+    [InlineData("abc", "3", "==")]
+    [InlineData("abc", "1.5", "==")]
+    [InlineData("true", "1", "==")]
+    [InlineData("true", "abc", "==")]
+    [InlineData("1", "true", "==")]
+    public void Renderer_Generic_Should_Throw_On_Comparison_With_Incompatible_Types(string left, string right, string op)
+    {
+        ExprNode leftExpr =
+            int.TryParse(left, out var li) ? new LiteralExpr<int>(li) :
+                double.TryParse(left, NumberStyles.Float, CultureInfo.InvariantCulture, out var ld) ? new LiteralExpr<double>(ld) :
+                bool.TryParse(left, out var lb) ? new LiteralExpr<bool>(lb) :
+                new LiteralExpr<string>(left);
+        ExprNode rightExpr =
+            int.TryParse(right, out var ri) ? new LiteralExpr<int>(ri) :
+            double.TryParse(right, NumberStyles.Float, CultureInfo.InvariantCulture, out var rd) ? new LiteralExpr<double>(rd) :
+            bool.TryParse(right, out var rb) ? new LiteralExpr<bool>(rb) :
+            new LiteralExpr<string>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([ new TextNode("err") ])
+            )
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            Renderer.Render(ast, new Dummy(), new DummyAccessor())
+        );
+
+        Assert.Contains("Cannot compare values of types", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("abc", "def", ">")]
+    [InlineData("abc", "def", "<")]
+    [InlineData("true", "false", ">")]
+    [InlineData("false", "true", "<=")]
+    public void Renderer_Generic_Should_Throw_On_Unsupported_Operator_For_Type(string left, string right, string op)
+    {
+        ExprNode leftExpr = 
+            bool.TryParse(left, out var lb) ? new LiteralExpr<bool>(lb) :
+                new LiteralExpr<string>(left);
+
+        ExprNode rightExpr =
+            bool.TryParse(right, out var rb) ? new LiteralExpr<bool>(rb) :
+                new LiteralExpr<string>(right);
+
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(op, leftExpr, rightExpr),
+                new SequenceNode([ new TextNode("err") ])
+            )
+        ]);
+
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            Renderer.Render(ast, new Dummy(), new DummyAccessor())
+        );
+
+        Assert.Contains("Only == and != are supported", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
 
     private sealed record CompareDoubleModel(double Value);
 
