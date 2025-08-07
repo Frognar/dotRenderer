@@ -510,4 +510,30 @@ public class RendererTests
         Assert.Contains("Unsupported operand type", ex.Message, StringComparison.Ordinal);
         Assert.Contains("DummyExpr", ex.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Renderer_Generic_Should_Render_Nested_Path_From_Model()
+    {
+        UserHolder model = new(new User("Alice"));
+        UserHolderAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("Hello "),
+            new EvalNode(["Model", "User", "Name"]),
+            new TextNode("!")
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("Hello Alice!", html);
+    }
+    
+    private sealed record UserHolder(User User);
+    private sealed record User(string Name);
+
+    private sealed class UserHolderAccessor : IValueAccessor<UserHolder>
+    {
+        public string? AccessValue(string path, UserHolder model)
+            => path == "User.Name" && model.User is { Name: var name } ? name : null;
+    }
 }

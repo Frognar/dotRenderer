@@ -130,10 +130,10 @@ public static class Renderer
                     break;
                 case EvalNode e:
                     string[] path = e.Path.Skip(1).ToArray();
-                    string last = path.Last();
-                    string value = accessor.AccessValue(last, model)
+                    string joinedPath = string.Join(".", path);
+                    string value = accessor.AccessValue(joinedPath, model)
                                    ?? throw new KeyNotFoundException(
-                                       $"Missing key '{last}' in model (path: {string.Join(".", path)}");
+                                       $"Missing key '{joinedPath}' in model (path: {string.Join(".", path)}");
 
                     sb.Append(value);
                     break;
