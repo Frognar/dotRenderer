@@ -11,7 +11,7 @@ public static class ExpressionParser
         ExprNode node = parser.ParseExpression();
         parser.SkipWhitespace();
         return !parser.End
-            ? throw new InvalidOperationException($"Unexpected token at end: {parser.Remaining}'")
+            ? throw new InvalidOperationException($"Unexpected token at end: '{parser.Remaining}'")
             : node;
     }
 
@@ -317,7 +317,7 @@ public static class ExpressionParser
                 return new PropertyExpr(segments);
             }
 
-            throw new InvalidOperationException($"Unknown token near: '{Remaining}");
+            throw new InvalidOperationException($"Unknown token near: '{Remaining}'");
         }
 
         private bool Match(string s)
