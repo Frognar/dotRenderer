@@ -551,6 +551,54 @@ public class RendererTests
         Assert.Contains("User.Name", ex.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Renderer_Generic_Should_Render_IfNode_With_Flag_True()
+    {
+        TestModel model = new(true);
+        FlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("X"),
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([ new TextNode("YES") ])
+            ),
+            new TextNode("Y")
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("XYESY", html);
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Not_Render_IfNode_With_Flag_False()
+    {
+        TestModel model = new(false);
+        FlagAccessor accessor = new();
+
+        SequenceNode ast = new([
+            new TextNode("X"),
+            new IfNode(
+                new PropertyExpr(["Model", "Flag"]),
+                new SequenceNode([ new TextNode("YES") ])
+            ),
+            new TextNode("Y")
+        ]);
+
+        string html = Renderer.Render(ast, model, accessor);
+
+        Assert.Equal("XY", html);
+    }
+
+    private sealed record TestModel(bool Flag);
+
+    private sealed class FlagAccessor : IValueAccessor<TestModel>
+    {
+        public string? AccessValue(string path, TestModel model)
+            => path == "Flag"  ? model.Flag.ToString() : null;
+    }
+
     private sealed record UserHolder(User User);
 
     private sealed record User(string Name);

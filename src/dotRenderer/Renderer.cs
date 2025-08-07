@@ -136,6 +136,13 @@ public static class Renderer
 
                     sb.Append(value);
                     break;
+                case IfNode ifNode:
+                    if (EvalIfCondition(ifNode.Condition, model, accessor))
+                    {
+                        sb.Append(Render(ifNode.Body, model, accessor));
+                    }
+
+                    break;
             }
         }
 
@@ -143,6 +150,38 @@ public static class Renderer
     }
 
     private static string JoinModelPath(IEnumerable<string> pathSegments) => string.Join('.', pathSegments.Skip(1));
+
+    private static bool EvalIfCondition<TModel>(ExprNode cond, TModel model, IValueAccessor<TModel> accessor)
+    {
+        return cond switch
+        {
+            PropertyExpr prop => TryGetBool(prop, model, accessor),
+            _ => throw new InvalidOperationException(
+                $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
+        };
+    }
+
+    private static bool TryGetBool<TModel>(PropertyExpr prop, TModel model, IValueAccessor<TModel> accessor)
+    {
+        string joinedPath = JoinModelPath(prop.Path);
+        string? str = accessor.AccessValue(joinedPath, model);
+        if (str is null)
+        {
+            throw new InvalidOperationException($"If condition path '{joinedPath}' returned null (expected \"true\" or \"false\")");
+        }
+
+        if (string.Equals(str, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(str, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        throw new InvalidOperationException($"If condition path '{joinedPath}' must resolve to \"true\" or \"false\", got '{str}'.");
+    }
 
     private static object ResolveOrThrow(IReadOnlyDictionary<string, object> model, IEnumerable<string> path)
     {
