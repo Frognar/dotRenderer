@@ -54,13 +54,33 @@ public static class Renderer
             BinaryExpr { Operator: "==" or "!=" or ">" or "<" or ">=" or "<=" } binary =>
                 CompareOperands(binary.Left, binary.Right, model, accessor, binary.Operator),
             _ => throw new InvalidOperationException(
-                $"IfNode in generic renderer supports only PropertyExpr for now (got {cond.GetType().Name})")
+                $"Unsupported expression in if condition: {cond.GetType().Name}")
         };
     }
 
     private static bool CompareOperands<TModel>(
-        ExprNode left, ExprNode right, TModel model, IValueAccessor<TModel> accessor, string op)
+        ExprNode left,
+        ExprNode right,
+        TModel model,
+        IValueAccessor<TModel> accessor,
+        string op)
     {
+        if (IsArithmetic(left) || IsArithmetic(right))
+        {
+            double lnum = EvalNumber(left, model, accessor);
+            double rnum = EvalNumber(right, model, accessor);
+            return op switch
+            {
+                "==" => Math.Abs(lnum - rnum) < 0.000001,
+                "!=" => Math.Abs(lnum - rnum) > 0.000001,
+                ">" => lnum > rnum,
+                "<" => lnum < rnum,
+                ">=" => lnum >= rnum,
+                "<=" => lnum <= rnum,
+                _ => throw new InvalidOperationException($"Unknown operator '{op}'")
+            };
+        }
+
         object l = EvalOperand(left, model, accessor);
         object r = EvalOperand(right, model, accessor);
 
@@ -94,10 +114,12 @@ public static class Renderer
             (bool lb, bool rb, "!=") => lb != rb,
             (string ls, string rs, "==") => ls == rs,
             (string ls, string rs, "!=") => ls != rs,
-            (string, string, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException("Only == and != are supported for string"),
-            (bool, bool, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException("Only == and != are supported for bool"),
+            (string, string, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException(
+                "Only == and != are supported for string"),
+            (bool, bool, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException(
+                "Only == and != are supported for bool"),
             _ => throw new InvalidOperationException(
-                    $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
+                $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
         };
     }
 
@@ -118,7 +140,7 @@ public static class Renderer
     {
         string joinedPath = JoinModelPath(prop.Path);
         string value = accessor.AccessValue(joinedPath, model)
-            ?? throw new KeyNotFoundException($"Missing key '{joinedPath}' in model (path: {joinedPath})");
+                       ?? throw new KeyNotFoundException($"Missing key '{joinedPath}' in model (path: {joinedPath})");
 
         if (bool.TryParse(value, out bool boolVal))
         {
@@ -160,5 +182,52 @@ public static class Renderer
 
         throw new InvalidOperationException(
             $"If condition path '{joinedPath}' must resolve to \"true\" or \"false\", got '{str}'.");
+    }
+
+    private static bool IsArithmetic(ExprNode expr) => expr switch
+    {
+        UnaryExpr { Operator: "-" } => true,
+        BinaryExpr { Operator: "+" or "-" or "*" or "/" or "%" } => true,
+        _ => false
+    };
+
+    private static double EvalNumber<TModel>(ExprNode expr, TModel model, IValueAccessor<TModel> accessor) =>
+        expr switch
+        {
+            LiteralExpr<int> li => li.Value,
+            LiteralExpr<double> ld => ld.Value,
+            UnaryExpr { Operator: "-" } u => -EvalNumber(u.Operand, model, accessor),
+            BinaryExpr { Operator: "+" } b =>
+                EvalNumber(b.Left, model, accessor) + EvalNumber(b.Right, model, accessor),
+            BinaryExpr { Operator: "-" } b =>
+                EvalNumber(b.Left, model, accessor) - EvalNumber(b.Right, model, accessor),
+            BinaryExpr { Operator: "*" } b =>
+                EvalNumber(b.Left, model, accessor) * EvalNumber(b.Right, model, accessor),
+            BinaryExpr { Operator: "/" } b =>
+                EvalNumber(b.Left, model, accessor) / EvalNumber(b.Right, model, accessor),
+            BinaryExpr { Operator: "%" } b =>
+                EvalNumber(b.Left, model, accessor) % EvalNumber(b.Right, model, accessor),
+            PropertyExpr p => TryParseNumberFromAccessor(p, model, accessor),
+            _ => throw new InvalidOperationException($"Expected numeric expression, got {expr.GetType().Name}")
+        };
+
+    private static double TryParseNumberFromAccessor<TModel>(PropertyExpr prop, TModel model,
+        IValueAccessor<TModel> accessor)
+    {
+        string joinedPath = JoinModelPath(prop.Path);
+        string value = accessor.AccessValue(joinedPath, model)
+                       ?? throw new KeyNotFoundException($"Missing key '{joinedPath}' in model (path: {joinedPath})");
+
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double d))
+        {
+            return d;
+        }
+
+        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int i))
+        {
+            return i;
+        }
+
+        throw new InvalidOperationException($"Value at '{joinedPath}' is not numeric: '{value}'");
     }
 }

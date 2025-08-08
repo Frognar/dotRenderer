@@ -448,7 +448,7 @@ public class RendererTests
                     : bool.TryParse(right, out var rb)
                         ? new LiteralExpr<bool>(rb)
                         : new LiteralExpr<string>(right);
-        
+
         RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
@@ -476,7 +476,7 @@ public class RendererTests
             bool.TryParse(right, out var rb)
                 ? new LiteralExpr<bool>(rb)
                 : new LiteralExpr<string>(right);
-        
+
         RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
@@ -486,5 +486,61 @@ public class RendererTests
             ]),
             TestDictModel.Empty,
             "Only == and != are supported");
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Evaluate_Arithmetic_Addition_In_If_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    ">",
+                    new BinaryExpr(
+                        "+",
+                        new PropertyExpr(["Model", "Age"]),
+                        new LiteralExpr<int>(1)),
+                    new LiteralExpr<int>(18)),
+                new SequenceNode([new TextNode("YES")])
+            )
+        ]);
+
+        RendererAssert.Renders(ast, TestDictModel.With(("Age", "18")), "YES");
+        RendererAssert.Renders(ast, TestDictModel.With(("Age", "17")), "");
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Evaluate_Arithmetic_UnaryMinus_In_If_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "<",
+                    new UnaryExpr("-", new PropertyExpr(["Model", "Debt"])),
+                    new LiteralExpr<int>(0)),
+                new SequenceNode([new TextNode("OK")])
+            )
+        ]);
+
+        RendererAssert.Renders(ast, TestDictModel.With(("Debt", "5")), "OK");
+        RendererAssert.Renders(ast, TestDictModel.With(("Debt", "-5")), "");
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Evaluate_Arithmetic_Complex_Expression_In_If_Condition()
+    {
+        SequenceNode ast = new([
+            new IfNode(
+                new BinaryExpr(
+                    "<=",
+                    new BinaryExpr("+",
+                        new BinaryExpr("*",
+                            new PropertyExpr(["Model", "X"]),
+                            new LiteralExpr<int>(2)),
+                        new LiteralExpr<int>(3)),
+                    new LiteralExpr<int>(11)), new SequenceNode([new TextNode("OK")]))
+        ]);
+
+        RendererAssert.Renders(ast, TestDictModel.With(("X", "4")), "OK");
+        RendererAssert.Renders(ast, TestDictModel.With(("X", "5")), "");
     }
 }
