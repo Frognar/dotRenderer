@@ -393,6 +393,45 @@ public class ExpressionParserTests
     }
 
     [Fact]
+    public void ExpressionParser_Should_Parse_Double_Scientific_Literal()
+    {
+        string expr = "1e3";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        ExpressionAssert.AstEquals(node, new LiteralExpr<double>(1000.0));
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Double_Scientific_Literal_With_Negative_Exponent()
+    {
+        string expr = "1e-3";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        ExpressionAssert.AstEquals(node, new LiteralExpr<double>(0.001));
+    }
+
+    [Fact]
+    public void ExpressionParser_Should_Parse_Double_Scientific_Literal_With_Plus_Exponent()
+    {
+        string expr = "2E+2";
+
+        ExprNode node = ExpressionParser.Parse(expr);
+
+        ExpressionAssert.AstEquals(node, new LiteralExpr<double>(200.0));
+    }
+
+    [Theory]
+    [InlineData("1e")]
+    [InlineData("1e+")]
+    [InlineData("1E-")]
+    public void ExpressionParser_Should_Throw_On_Invalid_Scientific_Notation(string expr)
+    {
+        ExpressionAssert.Throws<InvalidOperationException>(expr, "Invalid scientific notation");
+    }
+
+    [Fact]
     public void ExpressionParser_Should_Throw_On_Unknown_Token()
     {
         ExpressionAssert.Throws<InvalidOperationException>("???", "Unknown token near: '???'");

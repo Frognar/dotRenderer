@@ -267,9 +267,18 @@ public static class ExpressionParser
             {
                 int start = _pos;
                 bool hasDot = false;
-                while (!End && (char.IsDigit(Peek()) || Peek() == '.'))
+                bool hasExp = false;
+
+                while (!End)
                 {
-                    if (Peek() == '.')
+                    char c = Peek();
+                    if (char.IsDigit(c))
+                    {
+                        _pos++;
+                        continue;
+                    }
+                    
+                    if (c == '.')
                     {
                         if (hasDot)
                         {
@@ -277,13 +286,38 @@ public static class ExpressionParser
                         }
 
                         hasDot = true;
+                        _pos++;
+                        continue;
                     }
 
-                    _pos++;
+                    if ((c == 'e' || c == 'E') && !hasExp)
+                    {
+                        hasExp = true;
+                        _pos++;
+
+                        if (!End && (Peek() == '+' || Peek() == '-'))
+                        {
+                            _pos++;
+                        }
+                        
+                        if (End || !char.IsDigit(Peek()))
+                        {
+                            throw new InvalidOperationException("Invalid scientific notation");
+                        }
+
+                        while (!End && char.IsDigit(Peek()))
+                        {
+                            _pos++;
+                        }
+                        
+                        continue;
+                    }
+                    
+                    break;
                 }
 
                 string lit = _expr[start.._pos];
-                return hasDot
+                return (hasDot || hasExp)
                     ? new LiteralExpr<double>(double.Parse(lit, CultureInfo.InvariantCulture))
                     : new LiteralExpr<int>(int.Parse(lit, CultureInfo.InvariantCulture));
             }
