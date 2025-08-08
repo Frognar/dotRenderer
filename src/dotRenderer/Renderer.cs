@@ -20,7 +20,7 @@ public static class Renderer
                     string joinedPath = JoinModelPath(e.Path);
                     string value = accessor.AccessValue(joinedPath, model)
                                    ?? throw new KeyNotFoundException(
-                                       $"Missing key '{joinedPath}' in model (path: {joinedPath}");
+                                       $"Missing key '{joinedPath}' in model (path: {joinedPath})");
 
                     sb.Append(value);
                     break;
