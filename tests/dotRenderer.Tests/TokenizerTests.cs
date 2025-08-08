@@ -327,9 +327,29 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Throw_On_If_Missing_Open_Paren()
     {
-        // brak '(' po @if
         string template = "@if  Model.Flag) {X}";
 
         TokenizerAssert.Throws<InvalidOperationException>(template, "Expected '(' after @if");
+    }
+    
+    [Theory]
+    [InlineData("@if (true) {\nX}")]
+    [InlineData("@if (true) {\r\nX}")]
+    [InlineData("@if (true) {X\n}")]
+    [InlineData("@if (true) {X\r\n}")]
+    [InlineData("@if (true) {\r\nX\r\n}")]
+    public void Tokenizer_Should_Trim_Single_Newlines_Around_If_Body_Leaving_Content(string template)
+    {
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+        TokenizerAssert.TokenSequence(tokens, new IfToken("true", [ new TextToken("X") ]));
+    }
+
+    [Theory]
+    [InlineData("@if (true) {\n}")]
+    [InlineData("@if (true) {\r\n}")]
+    public void Tokenizer_Should_Trim_Single_Newlines_To_Empty_If_Body(string template)
+    {
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+        TokenizerAssert.TokenSequence(tokens, new IfToken("true", Array.Empty<object>()));
     }
 }

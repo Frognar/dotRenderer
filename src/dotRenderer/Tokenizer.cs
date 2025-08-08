@@ -173,11 +173,6 @@ public static class Tokenizer
             }
         }
 
-        if (end < start)
-        {
-            end = start;
-        }
-
         return (start, end);
     }
 
