@@ -52,7 +52,6 @@ public class TokenizerTests
             new TextToken("!"));
     }
 
-
     [Fact]
     public void Tokenizer_Should_Handle_Interpolation_At_End()
     {
@@ -294,7 +293,7 @@ public class TokenizerTests
         TokenizerAssert.TokenSequence(tokens,
             new IfToken("Model.Foo", [new TextToken("YES")]));
     }
-    
+
     [Fact]
     public void Tokenizer_Should_Tokenize_If_Condition_With_String_Containing_Closing_Paren()
     {
@@ -314,7 +313,7 @@ public class TokenizerTests
         TokenizerAssert.TokenSequence(tokens,
             new IfToken("true", [new TextToken("before \"}\" after")]));
     }
-    
+
     [Fact]
     public void Tokenizer_Should_Handle_Escaped_Quote_Inside_Condition_String()
     {
@@ -323,5 +322,14 @@ public class TokenizerTests
 
         TokenizerAssert.TokenSequence(tokens,
             new IfToken("Model.S == \"\\\")\\\"\"", [new TextToken("OK")]));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_If_Missing_Open_Paren()
+    {
+        // brak '(' po @if
+        string template = "@if  Model.Flag) {X}";
+
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Expected '(' after @if");
     }
 }
