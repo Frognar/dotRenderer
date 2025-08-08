@@ -8,7 +8,6 @@ public class DotRendererIntegrationTests
         IntegrationAssert.Renders(
             "<h1>Hi @Model.Name!</h1>",
             TestDictModel.With(("Name", "Alice")),
-            TestDictAccessor.Default,
             "<h1>Hi Alice!</h1>");
     }
 }
