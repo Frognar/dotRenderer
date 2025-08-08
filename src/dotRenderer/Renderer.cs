@@ -5,37 +5,74 @@ namespace dotRenderer;
 
 public static class Renderer
 {
+    private enum PieceKind { Text, Eval, If }
+
+    private sealed class Piece(string s, PieceKind k)
+    {
+        public string S { get; set; } = s;
+        public PieceKind K { get; } = k;
+    }
+
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {
         ArgumentNullException.ThrowIfNull(ast);
         ArgumentNullException.ThrowIfNull(accessor);
-        StringBuilder sb = new();
+        
+        List<Piece> pieces = new (ast.Children.Count);
         foreach (Node node in ast.Children)
         {
-            switch (node)
+            pieces.Add(node switch
             {
-                case TextNode t:
-                    sb.Append(t.Text);
-                    break;
-                case EvalNode e:
-                    string joinedPath = JoinModelPath(e.Path);
-                    string value = accessor.AccessValue(joinedPath, model)
-                                   ?? throw new KeyNotFoundException(
-                                       $"Missing key '{joinedPath}' in model (path: {joinedPath})");
-
-                    sb.Append(value);
-                    break;
-                case IfNode ifNode:
-                    if (EvalIfCondition(ifNode.Condition, model, accessor))
-                    {
-                        sb.Append(Render(ifNode.Body, model, accessor));
-                    }
-
-                    break;
+                TextNode t => new Piece(t.Text, PieceKind.Text),
+                EvalNode e => new Piece(RenderEval(e, model, accessor), PieceKind.Eval),
+                IfNode i => new Piece(EvalIfCondition(i.Condition, model, accessor)
+                    ? Render(i.Body, model, accessor)
+                    : string.Empty, PieceKind.If),
+                _ => new Piece(string.Empty, PieceKind.Text)
+            });
+        }
+        
+        for (int i = 0; i < pieces.Count; i++)
+        {
+            if (pieces[i].S.Length == 0 && i > 0 && i + 1 < pieces.Count)
+            {
+                if (EndsWithNewline(pieces[i - 1].S) && StartsWithNewline(pieces[i + 1].S, out int nlLen))
+                {
+                    pieces[i + 1].S = pieces[i + 1].S.Substring(nlLen);
+                }
             }
         }
 
+        for (int i = 0; i + 1 < pieces.Count; i++)
+        {
+            bool atIfBoundary = pieces[i].K == PieceKind.If || pieces[i + 1].K == PieceKind.If;
+            if (atIfBoundary && EndsWithNewline(pieces[i].S) && StartsWithNewline(pieces[i + 1].S, out int nlLen))
+            {
+                pieces[i + 1].S = pieces[i + 1].S.Substring(nlLen);
+            }
+        }
+        
+        var sb = new StringBuilder(pieces.Sum(p => p.S.Length));
+        foreach (var p in pieces) sb.Append(p.S);
         return sb.ToString();
+    }
+
+    private static string RenderEval<TModel>(EvalNode e, TModel model, IValueAccessor<TModel> accessor)
+    {
+        string joinedPath = JoinModelPath(e.Path);
+        return accessor.AccessValue(joinedPath, model)
+               ?? throw new KeyNotFoundException(
+                   $"Missing key '{joinedPath}' in model (path: {joinedPath})");
+    }
+
+    private static bool EndsWithNewline(string s)
+        => s.EndsWith("\r\n", StringComparison.Ordinal) || s.EndsWith('\n');
+
+    private static bool StartsWithNewline(string s, out int newlineLength)
+    {
+        if (s.StartsWith("\r\n", StringComparison.Ordinal)) { newlineLength = 2; return true; }
+        if (s.StartsWith('\n'))   { newlineLength = 1; return true; }
+        newlineLength = 0; return false;
     }
 
     private static string JoinModelPath(IEnumerable<string> pathSegments) => string.Join('.', pathSegments.Skip(1));

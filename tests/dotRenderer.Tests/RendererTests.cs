@@ -354,14 +354,31 @@ public class RendererTests
     }
 
     [Theory]
-    [InlineData("@if (true)\r\n{\r\n- Hello there!\n- General @Model.Name\r\n}")]
-    [InlineData("@if (true){\r\n- Hello there!\n- General @Model.Name\r\n}")]
-    [InlineData("@if (true)\r\n{- Hello there!\n- General @Model.Name\r\n}")]
-    [InlineData("@if (true)\r\n{\r\n- Hello there!\n- General @Model.Name}")]
-    [InlineData("@if (true)\n{\n- Hello there!\n- General @Model.Name\n}")]
-    [InlineData("@if (true){\n- Hello there!\n- General @Model.Name\n}")]
-    [InlineData("@if (true)\n{- Hello there!\n- General @Model.Name\n}")]
-    [InlineData("@if (true)\n{\n- Hello there!\n- General @Model.Name}")]
+    [InlineData("""
+                @if (true)
+                {
+                - Hello there!
+                - General @Model.Name
+                }
+                """)]
+    [InlineData("""
+                @if (true){
+                - Hello there!
+                - General @Model.Name
+                }
+                """)]
+    [InlineData("""
+                @if (true)
+                {- Hello there!
+                - General @Model.Name
+                }
+                """)]
+    [InlineData("""
+                @if (true)
+                {
+                - Hello there!
+                - General @Model.Name}
+                """)]
     public void Renderer_Should_Render_If_Block_With_Text_Multiline_And_Interpolation(string template)
     {
         TestDictAccessor accessor = new();
