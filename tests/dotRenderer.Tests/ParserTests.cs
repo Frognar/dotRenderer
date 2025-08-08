@@ -2,12 +2,15 @@ namespace dotRenderer.Tests;
 
 public class ParserTests
 {
-    private static IEnumerable<object> Tokenize(string template) => Tokenizer.Tokenize(template);
-
     [Fact]
     public void Parser_Should_Build_Sequence_AST()
     {
-        IEnumerable<object> tokens = Tokenize("Hello, @Model.Name!");
+        IEnumerable<object> tokens =
+        [
+            new TextToken("Hello, "),
+            new InterpolationToken(["Model", "Name"]),
+            new TextToken("!")
+        ];
 
         SequenceNode ast = Parser.Parse(tokens);
 
@@ -22,7 +25,17 @@ public class ParserTests
     [Fact]
     public void Parser_Should_Parse_If_Block_With_Text_And_Interpolation()
     {
-        IEnumerable<object> tokens = Tokenize("Hello @if (Model.IsAdmin) {ADMIN @Model.Name}!");
+        IEnumerable<object> tokens =
+        [
+            new TextToken("Hello "),
+            new IfToken(
+                "Model.IsAdmin",
+                [
+                    new TextToken("ADMIN "),
+                    new InterpolationToken(["Model", "Name"])
+                ]),
+            new TextToken("!")
+        ];
 
         SequenceNode ast = Parser.Parse(tokens);
 
@@ -42,7 +55,16 @@ public class ParserTests
     [Fact]
     public void Parser_Should_Parse_If_Block_With_Complex_Condition()
     {
-        IEnumerable<object> tokens = Tokenize("Access: @if (Model.Age > 18 && Model.IsAdmin) {granted}.");
+        IEnumerable<object> tokens =
+        [
+            new TextToken("Access: "),
+            new IfToken(
+                "Model.Age > 18 && Model.IsAdmin",
+                [
+                    new TextToken("granted"),
+                ]),
+            new TextToken(".")
+        ];
 
         SequenceNode ast = Parser.Parse(tokens);
 
@@ -65,8 +87,16 @@ public class ParserTests
     [Fact]
     public void Parser_Should_Parse_If_Block_With_Parenthesized_Complex_Condition()
     {
-        IEnumerable<object> tokens = Tokenize(
-            "Access: @if ((Model.Age > 18 || Model.IsAdmin) && Model.IsMod) {superuser}.");
+        IEnumerable<object> tokens =
+        [
+            new TextToken("Access: "),
+            new IfToken(
+                "(Model.Age > 18 || Model.IsAdmin) && Model.IsMod",
+                [
+                    new TextToken("superuser"),
+                ]),
+            new TextToken(".")
+        ];
 
         SequenceNode ast = Parser.Parse(tokens);
 
@@ -90,11 +120,24 @@ public class ParserTests
                 new TextNode(".")
             ]));
     }
- 
+
     [Fact]
     public void Parser_Should_Handle_Nested_If_Blocks()
     {
-        IEnumerable<object> tokens = Tokenizer.Tokenize("A @if (Model.x) {B @if (Model.y) {C}@Model.Z}D");
+        IEnumerable<object> tokens =
+        [
+            new TextToken("A "),
+            new IfToken(
+                "Model.x",
+                [
+                    new TextToken("B "),
+                    new IfToken(
+                        "Model.y",
+                        [new TextToken("C")]),
+                    new InterpolationToken(["Model", "Z"]),
+                ]),
+            new TextToken("D")
+        ];
 
         SequenceNode ast = Parser.Parse(tokens);
 
