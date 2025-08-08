@@ -39,7 +39,8 @@ public static class Tokenizer
 
                 pos++;
                 (int blockStart, int blockEnd, pos) = FindBracedSpan(template, pos, end);
-                IEnumerable<object> bodyTokens = Tokenize(template, blockStart, blockEnd);
+                (int adjStart, int adjEnd) = TrimSingleNewlines(template, blockStart, blockEnd);
+                IEnumerable<object> bodyTokens = Tokenize(template, adjStart, adjEnd);
                 tokens.Add(new IfToken(condition, bodyTokens));
                 continue;
             }
@@ -102,6 +103,40 @@ public static class Tokenizer
         }
 
         return tokens;
+    }
+    
+    private static (int start, int end) TrimSingleNewlines(string s, int start, int end)
+    {
+        if (start < end)
+        {
+            if (s[start] == '\r' && start + 1 < end && s[start + 1] == '\n')
+            {
+                start += 2;
+            }
+            else if (s[start] == '\n')
+            {
+                start += 1;
+            }
+        }
+
+        if (start < end)
+        {
+            if (end >= start + 2 && s[end - 2] == '\r' && s[end - 1] == '\n')
+            {
+                end -= 2;
+            }
+            else if (s[end - 1] == '\n')
+            {
+                end -= 1;
+            }
+        }
+
+        if (end < start)
+        {
+            end = start;
+        }
+
+        return (start, end);
     }
 
     private static (int start, int end, int nextPos) FindParenthesizedSpan(string template, int pos, int end)

@@ -554,6 +554,39 @@ public class RendererTests
             };
     }
 
+    [Fact]
+    public void Renderer_Should_Render_If_Block_With_Text_Multiline_And_Interpolation()
+    {
+        string template = """
+                          @if (true)
+                          {
+                          - Hello there!
+                          - General @Model.Name
+                          }
+                          """;
+
+        TestNameAccessor accessor = new();
+        ITemplate<TestName> compiled = TemplateCompiler.Compile(template, accessor);
+
+        string html = compiled.Render(new TestName("Kenobi"));
+
+        Assert.Equal("""
+                     - Hello there!
+                     - General Kenobi
+                     """, html);
+    }
+
+    private sealed record TestName(string Name);
+    private sealed class TestNameAccessor : IValueAccessor<TestName>
+    {
+        public string? AccessValue(string path, TestName model)
+            => path switch
+            {
+                "Name" => model.Name,
+                _ => null
+            };
+    }
+
     private sealed record CompareIntModel(int Value);
 
     private sealed class CompareIntAccessor : IValueAccessor<CompareIntModel>
