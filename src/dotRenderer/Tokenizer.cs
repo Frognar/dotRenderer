@@ -15,8 +15,7 @@ public static class Tokenizer
 
         while (pos < end)
         {
-            if (template.IndexOf("@if (", pos, StringComparison.Ordinal) == pos
-                && (pos == 0 || char.IsWhiteSpace(template[pos - 1])))
+            if (IsAtIf(template, pos) && (pos == 0 || char.IsWhiteSpace(template[pos - 1])))
             {
                 if (sb.Length > 0)
                 {
@@ -24,7 +23,18 @@ public static class Tokenizer
                     sb.Clear();
                 }
 
-                pos += "@if (".Length;
+                pos += "@if".Length;
+                while (pos < end && char.IsWhiteSpace(template[pos]))
+                {
+                    pos++;
+                }
+                
+                if (pos >= end || template[pos] != '(')
+                {
+                    throw new InvalidOperationException("Expected '(' after @if");
+                }
+
+                pos++;
                 (int condStart, int condEnd, pos) = FindParenthesizedSpan(template, pos, end);
                 string condition = template[condStart..condEnd].Trim();
                 while (pos < end && char.IsWhiteSpace(template[pos]))
@@ -104,6 +114,9 @@ public static class Tokenizer
 
         return tokens;
     }
+
+    private static bool IsAtIf(string template, int pos)
+        => template.AsSpan(pos).StartsWith("@if", StringComparison.Ordinal);
     
     private static (int start, int end) TrimSingleNewlines(string s, int start, int end)
     {

@@ -274,4 +274,24 @@ public class TokenizerTests
             template,
             expectedMessageFragment: "Expected '{' after @if condition");
     }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_Without_Space_Before_Paren()
+    {
+        string template = "@if(Model.Foo){YES}";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("Model.Foo", [new TextToken("YES")]));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Block_With_Multiple_Spaces_Before_Paren()
+    {
+        string template = "@if   (Model.Foo){YES}";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("Model.Foo", [new TextToken("YES")]));
+    }
 }
