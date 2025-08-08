@@ -28,7 +28,7 @@ public static class Tokenizer
                 {
                     pos++;
                 }
-                
+
                 if (pos >= end || template[pos] != '(')
                 {
                     throw new InvalidOperationException("Expected '(' after @if");
@@ -117,7 +117,7 @@ public static class Tokenizer
 
     private static bool IsAtIf(string template, int pos)
         => template.AsSpan(pos).StartsWith("@if", StringComparison.Ordinal);
-    
+
     private static (int start, int end) TrimSingleNewlines(string s, int start, int end)
     {
         if (start < end)
@@ -153,53 +153,77 @@ public static class Tokenizer
     }
 
     private static (int start, int end, int nextPos) FindParenthesizedSpan(string template, int pos, int end)
-    {
-        int parens = 1;
-        int start = pos;
-        while (pos < end && parens > 0)
-        {
-            parens = template[pos] switch
-            {
-                '(' => parens + 1,
-                ')' => parens - 1,
-                _ => parens,
-            };
-
-            pos++;
-        }
-
-        if (parens != 0)
-        {
-            throw new InvalidOperationException("Unclosed @if condition: missing ')'");
-        }
-
-        int finish = pos - 1;
-        return (start, finish, pos);
-    }
+        => FindDelimitedSpan(template, pos, end, '(', ')');
 
     private static (int start, int end, int nextPos) FindBracedSpan(string template, int pos, int end)
+        => FindDelimitedSpan(template, pos, end, '{', '}');
+
+    private static (int start, int end, int nextPos) FindDelimitedSpan(
+        string s,
+        int pos,
+        int end,
+        char open,
+        char close)
     {
-        int braces = 1;
+        int depth = 1;
         int start = pos;
-        while (pos < end && braces > 0)
+        bool inString = false;
+        bool escaped = false;
+
+        while (pos < end)
         {
-            braces = template[pos] switch
+            char c = s[pos];
+            if (inString)
             {
-                '{' => braces + 1,
-                '}' => braces -1,
-                _ => braces,
-            };
+                if (!escaped && c == '\\')
+                {
+                    escaped = true;
+                    pos++;
+                    continue;
+                }
+
+                if (!escaped && c == '"')
+                {
+                    inString = false;
+                    pos++;
+                    continue;
+                }
+
+                escaped = false;
+                pos++;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                inString = true;
+                pos++;
+                continue;
+            }
+
+            if (c == open)
+            {
+                depth++;
+            }
+            else if (c == close)
+            {
+                depth--;
+            }
 
             pos++;
+            if (depth == 0)
+            {
+                break;
+            }
         }
 
-        if (braces != 0)
+        if (depth != 0)
         {
-            throw new InvalidOperationException("Unclosed @if block: missing '}'");
+            throw new InvalidOperationException(
+                close == ')' ? "Unclosed @if condition: missing ')'" : "Unclosed @if block: missing '}'");
         }
-
-        int finish = pos - 1;
-        return (start, finish, pos);
+        
+        return (start, pos - 1, pos);
     }
 
     private static bool IsIdentifierChar(char c)

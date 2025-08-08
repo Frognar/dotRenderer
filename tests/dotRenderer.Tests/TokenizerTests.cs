@@ -294,4 +294,34 @@ public class TokenizerTests
         TokenizerAssert.TokenSequence(tokens,
             new IfToken("Model.Foo", [new TextToken("YES")]));
     }
+    
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Condition_With_String_Containing_Closing_Paren()
+    {
+        string template = "@if (Model.S == \")\") {OK}";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("Model.S == \")\"", [new TextToken("OK")]));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Body_With_String_Containing_Closing_Brace()
+    {
+        string template = "@if (true) {before \"}\" after}";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("true", [new TextToken("before \"}\" after")]));
+    }
+    
+    [Fact]
+    public void Tokenizer_Should_Handle_Escaped_Quote_Inside_Condition_String()
+    {
+        string template = "@if (Model.S == \"\\\")\\\"\") {OK}";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new IfToken("Model.S == \"\\\")\\\"\"", [new TextToken("OK")]));
+    }
 }
