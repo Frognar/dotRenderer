@@ -7,8 +7,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Render_Nested_Path_From_Model()
     {
-        UserHolder model = new(new User("Alice"));
-        UserHolderAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("User.Name", "Alice"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("Hello "),
@@ -24,8 +24,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Throw_When_Nested_Path_Missing()
     {
-        UserHolder model = new(new User("Alice"));
-        UserHolderAccessorReturnsNull accessor = new();
+        TestDictModel model = TestDictModel.With(("User", "Alice"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("Hello "),
@@ -43,8 +43,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Flag_True()
     {
-        TestModel model = new(true);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Flag", "true"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("X"),
@@ -63,8 +63,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Flag_False()
     {
-        TestModel model = new(false);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Flag", "false"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("X"),
@@ -83,8 +83,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Throw_If_Accessor_Returns_NonBoolean_String()
     {
-        TestModel model = new(true);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("OtherFlag", "yes"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -104,8 +104,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Throw_If_Accessor_Returns_Null_For_IfNode()
     {
-        TestModel model = new(false);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.Empty;
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -127,8 +127,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Literal_True()
     {
-        Dummy model = new();
-        DummyAccessor accessor = new();
+        TestDictModel model = TestDictModel.Empty;
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("A"),
@@ -147,8 +147,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Literal_False()
     {
-        Dummy model = new();
-        DummyAccessor accessor = new();
+        TestDictModel model = TestDictModel.Empty;
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new TextNode("A"),
@@ -167,8 +167,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Unary_Not_Condition_True()
     {
-        TestModel model = new(false);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Flag", "false"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -185,8 +185,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Unary_Not_Condition_False()
     {
-        TestModel model = new(true);
-        TestModelAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Flag", "true"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -203,8 +203,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Render_IfNode_With_Binary_And_Condition_True()
     {
-        DoubleFlagModel model = new(true, true);
-        DoubleFlagAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("A", "true"), ("B", "true"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -228,8 +228,8 @@ public class RendererTests
     [InlineData(false, true)]
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_And_Condition_False(bool a, bool b)
     {
-        DoubleFlagModel model = new(a, b);
-        DoubleFlagAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("A", a.ToString()), ("B", b.ToString()));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -253,8 +253,8 @@ public class RendererTests
     [InlineData(true, false)]
     public void Renderer_Generic_Should_Render_IfNode_With_Binary_Or_Condition_True(bool a, bool b)
     {
-        DoubleFlagModel model = new(a, b);
-        DoubleFlagAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("A", a.ToString()), ("B", b.ToString()));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -275,8 +275,8 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Not_Render_IfNode_With_Binary_Or_Condition_False()
     {
-        DoubleFlagModel model = new(false, false);
-        DoubleFlagAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("A", "false"), ("B", "false"));
+        TestDictAccessor accessor = new();
 
         SequenceNode ast = new([
             new IfNode(
@@ -308,8 +308,8 @@ public class RendererTests
     [InlineData(3, 5, ">=", "")]
     public void Renderer_Generic_Should_Compare_Int_Values(int left, int right, string op, string expected)
     {
-        CompareIntModel model = new(left);
-        CompareIntAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture)));
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<int>(right);
@@ -340,8 +340,8 @@ public class RendererTests
     [InlineData(3.0, 5.0, ">=", "")]
     public void Renderer_Generic_Should_Compare_Double_Values(double left, double right, string op, string expected)
     {
-        CompareDoubleModel model = new(left);
-        CompareDoubleAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture)));
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<double>(right);
@@ -370,10 +370,11 @@ public class RendererTests
     [InlineData(2, 3.0, "<=", "OK")]
     [InlineData(5, 3.0, ">=", "OK")]
     [InlineData(3, 5.0, ">=", "")]
-    public void Renderer_Generic_Should_Compare_Int_And_Double_Values(int left, double right, string op, string expected)
+    public void Renderer_Generic_Should_Compare_Int_And_Double_Values(int left, double right, string op,
+        string expected)
     {
-        CompareIntModel model = new(left);
-        CompareIntAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture)));
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<double>(right);
@@ -402,10 +403,15 @@ public class RendererTests
     [InlineData(2.0, 3, "<=", "OK")]
     [InlineData(5.0, 3, ">=", "OK")]
     [InlineData(3.0, 5, ">=", "")]
-    public void Renderer_Generic_Should_Compare_Double_And_Int_Values(double left, int right, string op, string expected)
+    public void Renderer_Generic_Should_Compare_Double_And_Int_Values(
+        double left,
+        int right,
+        string op,
+        string expected)
     {
-        CompareDoubleModel model = new(left);
-        CompareDoubleAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture)));
+
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<int>(right);
@@ -433,8 +439,8 @@ public class RendererTests
     [InlineData(false, true, "!=", "OK")]
     public void Renderer_Generic_Should_Compare_Bool_Values(bool left, bool right, string op, string expected)
     {
-        CompareBoolModel model = new(left);
-        CompareBoolAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left.ToString()));
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<bool>(right);
@@ -458,8 +464,8 @@ public class RendererTests
     [InlineData("abc", "def", "!=", "OK")]
     public void Renderer_Generic_Should_Compare_String_Values(string left, string right, string op, string expected)
     {
-        CompareStringModel model = new(left);
-        CompareStringAccessor accessor = new();
+        TestDictModel model = TestDictModel.With(("Value", left));
+        TestDictAccessor accessor = new();
 
         ExprNode leftExpr = new PropertyExpr(["Model", "Value"]);
         ExprNode rightExpr = new LiteralExpr<string>(right);
@@ -475,35 +481,42 @@ public class RendererTests
 
         Assert.Equal(expected, html);
     }
-    
+
     [Theory]
     [InlineData("abc", "3", "==")]
     [InlineData("abc", "1.5", "==")]
     [InlineData("true", "1", "==")]
     [InlineData("true", "abc", "==")]
     [InlineData("1", "true", "==")]
-    public void Renderer_Generic_Should_Throw_On_Comparison_With_Incompatible_Types(string left, string right, string op)
+    public void Renderer_Generic_Should_Throw_On_Comparison_With_Incompatible_Types(string left, string right,
+        string op)
     {
         ExprNode leftExpr =
-            int.TryParse(left, out var li) ? new LiteralExpr<int>(li) :
-                double.TryParse(left, NumberStyles.Float, CultureInfo.InvariantCulture, out var ld) ? new LiteralExpr<double>(ld) :
-                bool.TryParse(left, out var lb) ? new LiteralExpr<bool>(lb) :
-                new LiteralExpr<string>(left);
+            int.TryParse(left, out var li)
+                ? new LiteralExpr<int>(li)
+                : double.TryParse(left, NumberStyles.Float, CultureInfo.InvariantCulture, out var ld)
+                    ? new LiteralExpr<double>(ld)
+                    : bool.TryParse(left, out var lb)
+                        ? new LiteralExpr<bool>(lb)
+                        : new LiteralExpr<string>(left);
         ExprNode rightExpr =
-            int.TryParse(right, out var ri) ? new LiteralExpr<int>(ri) :
-            double.TryParse(right, NumberStyles.Float, CultureInfo.InvariantCulture, out var rd) ? new LiteralExpr<double>(rd) :
-            bool.TryParse(right, out var rb) ? new LiteralExpr<bool>(rb) :
-            new LiteralExpr<string>(right);
+            int.TryParse(right, out var ri)
+                ? new LiteralExpr<int>(ri)
+                : double.TryParse(right, NumberStyles.Float, CultureInfo.InvariantCulture, out var rd)
+                    ? new LiteralExpr<double>(rd)
+                    : bool.TryParse(right, out var rb)
+                        ? new LiteralExpr<bool>(rb)
+                        : new LiteralExpr<string>(right);
 
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, leftExpr, rightExpr),
-                new SequenceNode([ new TextNode("err") ])
+                new SequenceNode([new TextNode("err")])
             )
         ]);
 
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
-            Renderer.Render(ast, new Dummy(), new DummyAccessor())
+            Renderer.Render(ast, TestDictModel.Empty, new TestDictAccessor())
         );
 
         Assert.Contains("Cannot compare values of types", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -516,59 +529,41 @@ public class RendererTests
     [InlineData("false", "true", "<=")]
     public void Renderer_Generic_Should_Throw_On_Unsupported_Operator_For_Type(string left, string right, string op)
     {
-        ExprNode leftExpr = 
-            bool.TryParse(left, out var lb) ? new LiteralExpr<bool>(lb) :
-                new LiteralExpr<string>(left);
+        ExprNode leftExpr =
+            bool.TryParse(left, out var lb) ? new LiteralExpr<bool>(lb) : new LiteralExpr<string>(left);
 
         ExprNode rightExpr =
-            bool.TryParse(right, out var rb) ? new LiteralExpr<bool>(rb) :
-                new LiteralExpr<string>(right);
+            bool.TryParse(right, out var rb) ? new LiteralExpr<bool>(rb) : new LiteralExpr<string>(right);
 
         SequenceNode ast = new([
             new IfNode(
                 new BinaryExpr(op, leftExpr, rightExpr),
-                new SequenceNode([ new TextNode("err") ])
+                new SequenceNode([new TextNode("err")])
             )
         ]);
 
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
-            Renderer.Render(ast, new Dummy(), new DummyAccessor())
+            Renderer.Render(ast, TestDictModel.Empty, new TestDictAccessor())
         );
 
         Assert.Contains("Only == and != are supported", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed record CompareDoubleModel(double Value);
-
-    private sealed class CompareDoubleAccessor : IValueAccessor<CompareDoubleModel>
+    [Theory]
+    [InlineData("@if (true)\r\n{\r\n- Hello there!\n- General @Model.Name\r\n}")]
+    [InlineData("@if (true){\r\n- Hello there!\n- General @Model.Name\r\n}")]
+    [InlineData("@if (true)\r\n{- Hello there!\n- General @Model.Name\r\n}")]
+    [InlineData("@if (true)\r\n{\r\n- Hello there!\n- General @Model.Name}")]
+    [InlineData("@if (true)\n{\n- Hello there!\n- General @Model.Name\n}")]
+    [InlineData("@if (true){\n- Hello there!\n- General @Model.Name\n}")]
+    [InlineData("@if (true)\n{- Hello there!\n- General @Model.Name\n}")]
+    [InlineData("@if (true)\n{\n- Hello there!\n- General @Model.Name}")]
+    public void Renderer_Should_Render_If_Block_With_Text_Multiline_And_Interpolation(string template)
     {
-        public string? AccessValue(string path, CompareDoubleModel model)
-            => path switch
-            {
-                "Value" => model.Value.ToString(CultureInfo.InvariantCulture) switch
-                {
-                    { } s when !s.Contains('.', StringComparison.Ordinal) => s + ".0",
-                    { } s => s
-                },
-                _ => null
-            };
-    }
+        TestDictAccessor accessor = new();
+        ITemplate<TestDictModel> compiled = TemplateCompiler.Compile(template, accessor);
 
-    [Fact]
-    public void Renderer_Should_Render_If_Block_With_Text_Multiline_And_Interpolation()
-    {
-        string template = """
-                          @if (true)
-                          {
-                          - Hello there!
-                          - General @Model.Name
-                          }
-                          """;
-
-        TestNameAccessor accessor = new();
-        ITemplate<TestName> compiled = TemplateCompiler.Compile(template, accessor);
-
-        string html = compiled.Render(new TestName("Kenobi"));
+        string html = compiled.Render(TestDictModel.With(("Name", "Kenobi")));
 
         Assert.Equal("""
                      - Hello there!
@@ -576,98 +571,16 @@ public class RendererTests
                      """, html);
     }
 
-    private sealed record TestName(string Name);
-    private sealed class TestNameAccessor : IValueAccessor<TestName>
+    private sealed record TestDictModel(Dictionary<string, string> Dict)
     {
-        public string? AccessValue(string path, TestName model)
-            => path switch
-            {
-                "Name" => model.Name,
-                _ => null
-            };
+        public static TestDictModel Empty => new([]);
+
+        public static TestDictModel With((string Key, string Value) pair, params (string Key, string Value)[] pairs)
+            => new(pairs.Prepend(pair).ToDictionary());
     }
 
-    private sealed record CompareIntModel(int Value);
-
-    private sealed class CompareIntAccessor : IValueAccessor<CompareIntModel>
+    private sealed class TestDictAccessor : IValueAccessor<TestDictModel>
     {
-        public string? AccessValue(string path, CompareIntModel model)
-            => path switch
-            {
-                "Value" => model.Value.ToString(CultureInfo.InvariantCulture),
-                _ => null
-            };
-    }
-
-    private sealed record CompareBoolModel(bool Value);
-
-    private sealed class CompareBoolAccessor : IValueAccessor<CompareBoolModel>
-    {
-        public string? AccessValue(string path, CompareBoolModel model)
-            => path switch
-            {
-                "Value" => model.Value.ToString(CultureInfo.InvariantCulture),
-                _ => null
-            };
-    }
-
-    private sealed record CompareStringModel(string Value);
-
-    private sealed class CompareStringAccessor : IValueAccessor<CompareStringModel>
-    {
-        public string? AccessValue(string path, CompareStringModel model)
-            => path switch
-            {
-                "Value" => model.Value,
-                _ => null
-            };
-    }
-
-    private sealed record DoubleFlagModel(bool A, bool B);
-
-    private sealed class DoubleFlagAccessor : IValueAccessor<DoubleFlagModel>
-    {
-        public string? AccessValue(string path, DoubleFlagModel model)
-            => path switch
-            {
-                "A" => model.A.ToString(),
-                "B" => model.B.ToString(),
-                _ => null
-            };
-    }
-
-    private sealed record Dummy;
-
-    private sealed class DummyAccessor : IValueAccessor<Dummy>
-    {
-        public string? AccessValue(string path, Dummy model) => null;
-    }
-
-    private sealed record TestModel(bool Flag);
-
-    private sealed class TestModelAccessor : IValueAccessor<TestModel>
-    {
-        public string? AccessValue(string path, TestModel model)
-            => path switch
-            {
-                "Flag" => model.Flag.ToString(),
-                "OtherFlag" => "yes",
-                _ => null
-            };
-    }
-
-    private sealed record UserHolder(User User);
-
-    private sealed record User(string Name);
-
-    private sealed class UserHolderAccessor : IValueAccessor<UserHolder>
-    {
-        public string? AccessValue(string path, UserHolder model)
-            => path == "User.Name" && model.User is { Name: var name } ? name : null;
-    }
-
-    private sealed class UserHolderAccessorReturnsNull : IValueAccessor<UserHolder>
-    {
-        public string? AccessValue(string path, UserHolder model) => null;
+        public string? AccessValue(string path, TestDictModel model) => model.Dict.GetValueOrDefault(path);
     }
 }
