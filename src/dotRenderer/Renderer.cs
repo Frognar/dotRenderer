@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace dotRenderer;
@@ -119,17 +120,17 @@ public static class Renderer
         string value = accessor.AccessValue(joinedPath, model)
             ?? throw new KeyNotFoundException($"Missing key '{joinedPath}' in model (path: {joinedPath})");
 
-        if (bool.TryParse(value, out var boolVal))
+        if (bool.TryParse(value, out bool boolVal))
         {
             return boolVal;
         }
 
-        if (value.Contains('.', StringComparison.Ordinal) && double.TryParse(value, out var doubleVal))
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double doubleVal))
         {
             return doubleVal;
         }
 
-        if (int.TryParse(value, out var intVal))
+        if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intVal))
         {
             return intVal;
         }
