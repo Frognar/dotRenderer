@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace dotRenderer.Tests;
 
 public class DotRendererIntegrationTests
@@ -38,5 +40,35 @@ public class DotRendererIntegrationTests
 
         Assert.Equal("OK", compiled.Render(TestDictModel.With(("Eps", "1e-3"))));
         Assert.Equal("", compiled.Render(TestDictModel.With(("Eps", "0.0010001"))));
+    }
+
+    [Fact]
+    public void Compile_Should_Handle_Condition_With_Closing_Paren_In_String()
+    {
+        ITemplate<TestDictModel> compiled =
+            TemplateCompiler.Compile("@if (Model.S == \")\") {OK}", TestDictAccessor.Default);
+
+        Assert.Equal("OK", compiled.Render(TestDictModel.With(("S", ")"))));
+        Assert.Equal("", compiled.Render(TestDictModel.With(("S", "("))));
+    }
+
+    [Fact]
+    public void Compile_Should_Respect_InvariantCulture_For_Doubles_Under_plPL()
+    {
+        CultureInfo prev = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+
+            ITemplate<TestDictModel> compiled =
+                TemplateCompiler.Compile("@if (Model.Value > 1.0) {GT}", TestDictAccessor.Default);
+
+            Assert.Equal("GT", compiled.Render(TestDictModel.With(("Value", "1.5"))));
+            Assert.Equal("", compiled.Render(TestDictModel.With(("Value", "0.9"))));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = prev;
+        }
     }
 }
