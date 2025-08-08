@@ -15,91 +15,31 @@ public static class Tokenizer
 
         while (pos < end)
         {
-            if (IsAtIf(template, pos) && (pos == 0 || char.IsWhiteSpace(template[pos - 1])))
+            (IfToken token, int nextPos)? ifMatch =
+                TryParseIf(template, pos, end, precedingIsBoundary: pos == 0 || char.IsWhiteSpace(template[pos - 1]));
+
+            if (ifMatch is { } m1)
             {
-                if (sb.Length > 0)
-                {
-                    tokens.Add(new TextToken(sb.ToString()));
-                    sb.Clear();
-                }
-
-                pos += "@if".Length;
-                while (pos < end && char.IsWhiteSpace(template[pos]))
-                {
-                    pos++;
-                }
-
-                if (pos >= end || template[pos] != '(')
-                {
-                    throw new InvalidOperationException("Expected '(' after @if");
-                }
-
-                pos++;
-                (int condStart, int condEnd, pos) = FindParenthesizedSpan(template, pos, end);
-                string condition = template[condStart..condEnd].Trim();
-                while (pos < end && char.IsWhiteSpace(template[pos]))
-                {
-                    pos++;
-                }
-
-                if (pos >= end || template[pos] != '{')
-                {
-                    throw new InvalidOperationException("Expected '{' after @if condition");
-                }
-
-                pos++;
-                (int blockStart, int blockEnd, pos) = FindBracedSpan(template, pos, end);
-                (int adjStart, int adjEnd) = TrimSingleNewlines(template, blockStart, blockEnd);
-                IEnumerable<object> bodyTokens = Tokenize(template, adjStart, adjEnd);
-                tokens.Add(new IfToken(condition, bodyTokens));
+                FlushPendingText(sb, tokens);
+                tokens.Add(m1.token);
+                pos = m1.nextPos;
                 continue;
             }
 
-            if (template[pos] == '@' && pos + 1 < end && template[pos + 1] == '@')
+            int? afterEscape = TryParseEscapedAt(template, pos, end);
+            if (afterEscape is { } m2)
             {
                 sb.Append('@');
-                pos += 2;
+                pos = m2;
                 continue;
             }
 
-            if (template.IndexOf("@Model.", pos, StringComparison.Ordinal) == pos)
+            (InterpolationToken token, int nextPos)? interpMatch = TryParseInterpolation(template, pos, end);
+            if (interpMatch is { } m3)
             {
-                if (sb.Length > 0)
-                {
-                    tokens.Add(new TextToken(sb.ToString()));
-                    sb.Clear();
-                }
-
-                int pathStart = pos + "@Model.".Length;
-                int pathEnd = pathStart;
-                List<string> segments = ["Model"];
-                while (true)
-                {
-                    int segStart = pathEnd;
-                    while (pathEnd < end && IsIdentifierChar(template[pathEnd]))
-                    {
-                        pathEnd++;
-                    }
-
-                    string name = template[segStart..pathEnd];
-                    if (string.IsNullOrEmpty(name))
-                    {
-                        throw new InvalidOperationException($"No identifier after @Model. at position {pos}");
-                    }
-
-                    segments.Add(name);
-
-                    if (pathEnd < end && template[pathEnd] == '.')
-                    {
-                        pathEnd++;
-                        continue;
-                    }
-
-                    break;
-                }
-
-                tokens.Add(new InterpolationToken(segments));
-                pos = pathEnd;
+                FlushPendingText(sb, tokens);
+                tokens.Add(m3.token);
+                pos = m3.nextPos;
                 continue;
             }
 
@@ -107,16 +47,105 @@ public static class Tokenizer
             pos++;
         }
 
-        if (sb.Length > 0)
-        {
-            tokens.Add(new TextToken(sb.ToString()));
-        }
-
+        FlushPendingText(sb, tokens);
         return tokens;
     }
 
-    private static bool IsAtIf(string template, int pos)
-        => template.AsSpan(pos).StartsWith("@if", StringComparison.Ordinal);
+    private static (IfToken token, int nextPos)? TryParseIf(string s, int pos, int end, bool precedingIsBoundary)
+    {
+        if (!precedingIsBoundary || !StartsWithAtIf(s, pos, end))
+        {
+            return null;
+        }
+
+        int p = pos + 3;
+        p = SkipWhitespace(s, p, end);
+
+        if (p >= end || s[p] != '(')
+        {
+            throw new InvalidOperationException("Expected '(' after @if");
+        }
+
+        p++;
+        (int condStart, int condEnd, int afterCond) = FindParenthesizedSpan(s, p, end);
+        string condition = s[condStart..condEnd].Trim();
+
+        int p2 = SkipWhitespace(s, afterCond, end);
+        if (p2 >= end || s[p2] != '{')
+        {
+            throw new InvalidOperationException("Expected '{' after @if condition");
+        }
+
+        p2++;
+        (int bodyStart, int bodyEnd, int afterBody) = FindBracedSpan(s, p2, end);
+        (int adjStart, int adjEnd) = TrimSingleNewlines(s, bodyStart, bodyEnd);
+        IEnumerable<object> bodyTokens = Tokenize(s, adjStart, adjEnd);
+
+        return (new IfToken(condition, bodyTokens), afterBody);
+    }
+
+    private static int? TryParseEscapedAt(string s, int pos, int end)
+        => pos + 1 < end && s[pos] == '@' && s[pos + 1] == '@' ? pos + 2 : null;
+
+    private static (InterpolationToken token, int nextPos)? TryParseInterpolation(string s, int pos, int end)
+    {
+        const string prefix = "@Model.";
+        if (!s.AsSpan(pos).StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        int p = pos + prefix.Length;
+        List<string> segments = ["Model"];
+
+        while (true)
+        {
+            int segStart = p;
+            while (p < end && IsIdentifierChar(s[p]))
+            {
+                p++;
+            }
+
+            string name = s[segStart..p];
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new InvalidOperationException($"No identifier after @Model. at position {pos}");
+            }
+
+            segments.Add(name);
+            if (p < end && s[p] == '.')
+            {
+                p++;
+                continue;
+            }
+
+            break;
+        }
+
+        return (new InterpolationToken(segments), p);
+    }
+
+    private static void FlushPendingText(StringBuilder sb, List<object> tokens)
+    {
+        if (sb.Length > 0)
+        {
+            tokens.Add(new TextToken(sb.ToString()));
+            sb.Clear();
+        }
+    }
+
+    private static bool StartsWithAtIf(string s, int pos, int end)
+        => pos + 3 <= end && s.AsSpan(pos, 3).SequenceEqual("@if".AsSpan());
+
+    private static int SkipWhitespace(string s, int pos, int end)
+    {
+        while (pos < end && char.IsWhiteSpace(s[pos]))
+        {
+            pos++;
+        }
+
+        return pos;
+    }
 
     private static (int start, int end) TrimSingleNewlines(string s, int start, int end)
     {
@@ -222,7 +251,7 @@ public static class Tokenizer
             throw new InvalidOperationException(
                 close == ')' ? "Unclosed @if condition: missing ')'" : "Unclosed @if block: missing '}'");
         }
-        
+
         return (start, pos - 1, pos);
     }
 
