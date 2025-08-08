@@ -14,7 +14,6 @@ public class RendererTests
                 new TextNode("!")
             ]),
             TestDictModel.With(("User.Name", "Alice")),
-            TestDictAccessor.Default,
             "Hello Alice!");
     }
 
@@ -31,7 +30,6 @@ public class RendererTests
                 new TextNode("Y")
             ]),
             TestDictModel.With(("Flag", "true")),
-            TestDictAccessor.Default,
             "XYESY");
     }
 
@@ -48,7 +46,6 @@ public class RendererTests
                 new TextNode("Y")
             ]),
             TestDictModel.With(("Flag", "false")),
-            TestDictAccessor.Default,
             "XY");
     }
 
@@ -65,7 +62,6 @@ public class RendererTests
                 new TextNode("B")
             ]),
             TestDictModel.Empty,
-            TestDictAccessor.Default,
             "AYESB");
     }
 
@@ -82,7 +78,6 @@ public class RendererTests
                 new TextNode("B")
             ]),
             TestDictModel.Empty,
-            TestDictAccessor.Default,
             "AB");
     }
 
@@ -97,7 +92,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Flag", "false")),
-            TestDictAccessor.Default,
             "OK");
     }
 
@@ -112,7 +106,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Flag", "true")),
-            TestDictAccessor.Default,
             "");
     }
 
@@ -131,7 +124,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("A", "true"), ("B", "true")),
-            TestDictAccessor.Default,
             "YES");
     }
 
@@ -153,7 +145,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("A", a.ToString()), ("B", b.ToString())),
-            TestDictAccessor.Default,
             "");
     }
 
@@ -175,7 +166,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("A", a.ToString()), ("B", b.ToString())),
-            TestDictAccessor.Default,
             "YES");
     }
 
@@ -194,7 +184,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("A", "false"), ("B", "false")),
-            TestDictAccessor.Default,
             "");
     }
 
@@ -223,7 +212,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture))),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -252,7 +240,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture))),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -285,7 +272,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture))),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -318,7 +304,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left.ToString(CultureInfo.InvariantCulture))),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -344,7 +329,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left.ToString())),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -366,7 +350,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("Value", left)),
-            TestDictAccessor.Default,
             expected);
     }
 
@@ -395,21 +378,20 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Throw_When_Nested_Path_Missing()
     {
-        RendererAssert.Throws<KeyNotFoundException, TestDictModel>(
+        RendererAssert.Throws<KeyNotFoundException>(
             new SequenceNode([
                 new TextNode("Hello "),
                 new EvalNode(["Model", "User", "Name"]),
                 new TextNode("!")
             ]),
             TestDictModel.With(("User", "Alice")),
-            TestDictAccessor.Default,
             "User.Name");
     }
 
     [Fact]
     public void Renderer_Generic_Should_Throw_If_Accessor_Returns_NonBoolean_String()
     {
-        RendererAssert.Throws<InvalidOperationException, TestDictModel>(
+        RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
                     new PropertyExpr(["Model", "OtherFlag"]),
@@ -417,7 +399,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.With(("OtherFlag", "yes")),
-            TestDictAccessor.Default,
             "must resolve to \"true\" or \"false\"",
             "yes");
     }
@@ -425,7 +406,7 @@ public class RendererTests
     [Fact]
     public void Renderer_Generic_Should_Throw_If_Accessor_Returns_Null_For_IfNode()
     {
-        RendererAssert.Throws<InvalidOperationException, TestDictModel>(
+        RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
                     new PropertyExpr(["Model", "YetAnotherFlag"]),
@@ -433,7 +414,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.Empty,
-            TestDictAccessor.Default,
             "returned null",
             "Flag",
             "true",
@@ -469,7 +449,7 @@ public class RendererTests
                         ? new LiteralExpr<bool>(rb)
                         : new LiteralExpr<string>(right);
         
-        RendererAssert.Throws<InvalidOperationException, TestDictModel>(
+        RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
                     new BinaryExpr(op, leftExpr, rightExpr),
@@ -477,7 +457,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.Empty,
-            TestDictAccessor.Default,
             "Cannot compare values of types");
     }
 
@@ -498,7 +477,7 @@ public class RendererTests
                 ? new LiteralExpr<bool>(rb)
                 : new LiteralExpr<string>(right);
         
-        RendererAssert.Throws<InvalidOperationException, TestDictModel>(
+        RendererAssert.Throws<InvalidOperationException>(
             new SequenceNode([
                 new IfNode(
                     new BinaryExpr(op, leftExpr, rightExpr),
@@ -506,7 +485,6 @@ public class RendererTests
                 )
             ]),
             TestDictModel.Empty,
-            TestDictAccessor.Default,
             "Only == and != are supported");
     }
 }
