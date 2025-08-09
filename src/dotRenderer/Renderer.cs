@@ -14,6 +14,8 @@ public static class Renderer
 
     private readonly record struct Segment(string Text, SegmentKind Kind);
 
+    private const double Eps = 1e-9;
+
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {
         ArgumentNullException.ThrowIfNull(ast);
@@ -138,8 +140,8 @@ public static class Renderer
             double rnum = EvalNumber(right, model, accessor);
             return op switch
             {
-                "==" => Math.Abs(lnum - rnum) < 1e-9,
-                "!=" => Math.Abs(lnum - rnum) > 1e-9,
+                "==" => Math.Abs(lnum - rnum) < Eps,
+                "!=" => Math.Abs(lnum - rnum) > Eps,
                 ">" => lnum > rnum,
                 "<" => lnum < rnum,
                 ">=" => lnum >= rnum,
@@ -160,22 +162,22 @@ public static class Renderer
             (int li, int ri, ">=") => li >= ri,
             (int li, int ri, "<=") => li <= ri,
 
-            (double ld, double rd, "==") => Math.Abs(ld - rd) < 1e-9,
-            (double ld, double rd, "!=") => Math.Abs(ld - rd) > 1e-9,
+            (double ld, double rd, "==") => Math.Abs(ld - rd) < Eps,
+            (double ld, double rd, "!=") => Math.Abs(ld - rd) > Eps,
             (double ld, double rd, ">") => ld > rd,
             (double ld, double rd, "<") => ld < rd,
             (double ld, double rd, ">=") => ld >= rd,
             (double ld, double rd, "<=") => ld <= rd,
 
-            (int li, double rd, "==") => Math.Abs(li - rd) < 1e-9,
-            (int li, double rd, "!=") => Math.Abs(li - rd) > 1e-9,
+            (int li, double rd, "==") => Math.Abs(li - rd) < Eps,
+            (int li, double rd, "!=") => Math.Abs(li - rd) > Eps,
             (int li, double rd, ">") => li > rd,
             (int li, double rd, "<") => li < rd,
             (int li, double rd, ">=") => li >= rd,
             (int li, double rd, "<=") => li <= rd,
 
-            (double ld, int ri, "==") => Math.Abs(ld - ri) < 1e-9,
-            (double ld, int ri, "!=") => Math.Abs(ld - ri) > 1e-9,
+            (double ld, int ri, "==") => Math.Abs(ld - ri) < Eps,
+            (double ld, int ri, "!=") => Math.Abs(ld - ri) > Eps,
             (double ld, int ri, ">") => ld > ri,
             (double ld, int ri, "<") => ld < ri,
             (double ld, int ri, ">=") => ld >= ri,
