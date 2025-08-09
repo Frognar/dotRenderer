@@ -227,14 +227,14 @@ public static class Renderer
             return boolVal;
         }
 
-        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double doubleVal))
-        {
-            return doubleVal;
-        }
-
         if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intVal))
         {
             return intVal;
+        }
+
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double doubleVal))
+        {
+            return doubleVal;
         }
 
         return value;

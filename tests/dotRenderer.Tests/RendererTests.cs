@@ -571,4 +571,38 @@ public class RendererTests
             )
         ]), TestDictModel.Empty, "X");
     }
+
+    [Fact]
+    public void Renderer_Should_Parse_Int_From_Accessor_Before_Double_For_Comparison_Errors()
+    {
+        RendererAssert.Throws<InvalidOperationException>(new SequenceNode([
+                new IfNode(
+                    new BinaryExpr(
+                        "==",
+                        new PropertyExpr(["Model", "Value"]),
+                        new LiteralExpr<string>("x")
+                    ),
+                    new SequenceNode([new TextNode("never")])
+                )
+            ]), TestDictModel.With(("Value", "42")),
+            "Cannot compare values of types 'Int32' and 'String'");
+    }
+
+    [Fact]
+    public void Renderer_Generic_Should_Throw_When_Arithmetic_Comparison_Right_Is_String_Literal()
+    {
+        RendererAssert.Throws<InvalidOperationException>(new SequenceNode([
+                new IfNode(
+                    new BinaryExpr(
+                        ">",
+                        new BinaryExpr(
+                            "+",
+                            new PropertyExpr(["Model", "Value"]),
+                            new LiteralExpr<int>(1)),
+                        new LiteralExpr<string>("x")),
+                    new SequenceNode([new TextNode("YES")])
+                )
+            ]), TestDictModel.With(("Value", "42")),
+            "Expected numeric expression, got LiteralExpr");
+    }
 }
