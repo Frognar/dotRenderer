@@ -5,7 +5,12 @@ namespace dotRenderer;
 
 public static class Renderer
 {
-    private enum PieceKind { Text, Eval, If }
+    private enum PieceKind
+    {
+        Text,
+        Eval,
+        If
+    }
 
     private sealed class Piece(string s, PieceKind k)
     {
@@ -17,8 +22,8 @@ public static class Renderer
     {
         ArgumentNullException.ThrowIfNull(ast);
         ArgumentNullException.ThrowIfNull(accessor);
-        
-        List<Piece> pieces = new (ast.Children.Count);
+
+        List<Piece> pieces = new(ast.Children.Count);
         foreach (Node node in ast.Children)
         {
             pieces.Add(node switch
@@ -31,7 +36,7 @@ public static class Renderer
                 _ => new Piece(string.Empty, PieceKind.Text)
             });
         }
-        
+
         for (int i = 0; i < pieces.Count; i++)
         {
             if (pieces[i].S.Length == 0 && i > 0 && i + 1 < pieces.Count)
@@ -51,7 +56,7 @@ public static class Renderer
                 pieces[i + 1].S = pieces[i + 1].S.Substring(nlLen);
             }
         }
-        
+
         StringBuilder sb = new(pieces.Sum(p => p.S.Length));
         foreach (Piece p in pieces)
         {
@@ -97,9 +102,20 @@ public static class Renderer
 
     private static bool StartsWithNewline(string s, out int newlineLength)
     {
-        if (s.StartsWith("\r\n", StringComparison.Ordinal)) { newlineLength = 2; return true; }
-        if (s.StartsWith('\n'))   { newlineLength = 1; return true; }
-        newlineLength = 0; return false;
+        if (s.StartsWith("\r\n", StringComparison.Ordinal))
+        {
+            newlineLength = 2;
+            return true;
+        }
+
+        if (s.StartsWith('\n'))
+        {
+            newlineLength = 1;
+            return true;
+        }
+
+        newlineLength = 0;
+        return false;
     }
 
     private static string JoinModelPath(IEnumerable<string> pathSegments) => string.Join('.', pathSegments.Skip(1));
