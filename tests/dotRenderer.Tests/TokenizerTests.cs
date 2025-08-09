@@ -333,23 +333,23 @@ public class TokenizerTests
     }
     
     [Theory]
-    [InlineData("@if (true) {\nX}")]
-    [InlineData("@if (true) {\r\nX}")]
-    [InlineData("@if (true) {X\n}")]
-    [InlineData("@if (true) {X\r\n}")]
-    [InlineData("@if (true) {\r\nX\r\n}")]
-    public void Tokenizer_Should_Trim_Single_Newlines_Around_If_Body_Leaving_Content(string template)
+    [InlineData("@if (true) {\nX}", "\nX")]
+    [InlineData("@if (true) {\r\nX}", "\r\nX")]
+    [InlineData("@if (true) {X\n}", "X\n")]
+    [InlineData("@if (true) {X\r\n}", "X\r\n")]
+    [InlineData("@if (true) {\r\nX\r\n}", "\r\nX\r\n")]
+    public void Tokenizer_Should_Not_Trim_Single_Newlines_Around_If_Body_Leaving_Content(string template, string body)
     {
         object[] tokens = [.. Tokenizer.Tokenize(template)];
-        TokenizerAssert.TokenSequence(tokens, new IfToken("true", [ new TextToken("X") ]));
+        TokenizerAssert.TokenSequence(tokens, new IfToken("true", [ new TextToken(body) ]));
     }
 
     [Theory]
-    [InlineData("@if (true) {\n}")]
-    [InlineData("@if (true) {\r\n}")]
-    public void Tokenizer_Should_Trim_Single_Newlines_To_Empty_If_Body(string template)
+    [InlineData("@if (true) {\n}", "\n")]
+    [InlineData("@if (true) {\r\n}", "\r\n")]
+    public void Tokenizer_Should_Not_Trim_Single_Newlines_For_Empty_If_Body(string template, string body)
     {
         object[] tokens = [.. Tokenizer.Tokenize(template)];
-        TokenizerAssert.TokenSequence(tokens, new IfToken("true", Array.Empty<object>()));
+        TokenizerAssert.TokenSequence(tokens, new IfToken("true", [ new TextToken(body) ]));
     }
 }
