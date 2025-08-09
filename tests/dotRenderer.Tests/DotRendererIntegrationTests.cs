@@ -180,4 +180,24 @@ public class DotRendererIntegrationTests
                      B
                      """, compiled.Render(TestDictModel.Empty));
     }
+
+    [Fact]
+    public void Renderer_Should_Trim_CRLF_Newlines_Inside_If_Body()
+    {
+        ITemplate<TestDictModel> compiled = TemplateCompiler.Compile(
+            "@if (true) {\r\nX\r\n}", TestDictAccessor.Default);
+
+        string html = compiled.Render(TestDictModel.Empty);
+        Assert.Equal("X", html);
+    }
+
+    [Fact]
+    public void Renderer_Should_Remove_CRLF_Around_False_If_At_Boundary()
+    {
+        ITemplate<TestDictModel> compiled = TemplateCompiler.Compile(
+            "Hello\r\n@if (false) {\r\nHIDDEN\r\n}\r\nWorld", TestDictAccessor.Default);
+
+        string html = compiled.Render(TestDictModel.Empty);
+        Assert.Equal("Hello\r\nWorld", html);
+    }
 }
