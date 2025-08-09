@@ -560,4 +560,15 @@ public class RendererTests
         RendererAssert.Renders(ast, TestDictModel.With(("X", "4")), "OK");
         RendererAssert.Renders(ast, TestDictModel.With(("X", "5")), "");
     }
+
+    [Fact]
+    public void Renderer_Should_Trim_Single_Newlines_Inside_If_Body()
+    {
+        RendererAssert.Renders(new SequenceNode([
+            new IfNode(
+                new LiteralExpr<bool>(true),
+                new SequenceNode([new TextNode("\nX\n")])
+            )
+        ]), TestDictModel.Empty, "X");
+    }
 }

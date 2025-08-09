@@ -26,7 +26,7 @@ public static class Renderer
                 TextNode t => new Piece(t.Text, PieceKind.Text),
                 EvalNode e => new Piece(RenderEval(e, model, accessor), PieceKind.Eval),
                 IfNode i => new Piece(EvalIfCondition(i.Condition, model, accessor)
-                    ? Render(i.Body, model, accessor)
+                    ? TrimOneOuterNewline(Render(i.Body, model, accessor))
                     : string.Empty, PieceKind.If),
                 _ => new Piece(string.Empty, PieceKind.Text)
             });
@@ -52,9 +52,36 @@ public static class Renderer
             }
         }
         
-        var sb = new StringBuilder(pieces.Sum(p => p.S.Length));
-        foreach (var p in pieces) sb.Append(p.S);
+        StringBuilder sb = new(pieces.Sum(p => p.S.Length));
+        foreach (Piece p in pieces)
+        {
+            sb.Append(p.S);
+        }
+
         return sb.ToString();
+    }
+
+    private static string TrimOneOuterNewline(string s)
+    {
+        if (s.StartsWith("\r\n", StringComparison.Ordinal))
+        {
+            s = s[2..];
+        }
+        else if (s.Length > 0 && s[0] == '\n')
+        {
+            s = s[1..];
+        }
+
+        if (s.EndsWith("\r\n", StringComparison.Ordinal))
+        {
+            s = s[..^2];
+        }
+        else if (s.Length > 0 && s[^1] == '\n')
+        {
+            s = s[..^1];
+        }
+
+        return s;
     }
 
     private static string RenderEval<TModel>(EvalNode e, TModel model, IValueAccessor<TModel> accessor)
