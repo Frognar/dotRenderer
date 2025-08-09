@@ -8,7 +8,22 @@ public static class TemplateCompiler
         SequenceNode ast = Parser.Parse(tokens);
         return new CompiledTemplate<TModel>(ast, valueAccessor);
     }
-    
+
+    public static ITemplate<TModel> Compile<TModel>(
+        string template,
+        IValueAccessor<TModel> valueAccessor,
+        ICompilationCache cache)
+    {
+        ArgumentNullException.ThrowIfNull(cache);
+        SequenceNode ast = cache.GetOrAdd(template, static t =>
+        {
+            IEnumerable<object> tokens = Tokenizer.Tokenize(t);
+            return Parser.Parse(tokens);
+        });
+
+        return new CompiledTemplate<TModel>(ast, valueAccessor);
+    }
+
     private sealed class CompiledTemplate<TModel>(
         SequenceNode ast,
         IValueAccessor<TModel> accessor) : ITemplate<TModel>
