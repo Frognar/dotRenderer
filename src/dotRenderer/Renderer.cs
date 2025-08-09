@@ -5,62 +5,62 @@ namespace dotRenderer;
 
 public static class Renderer
 {
-    private enum PieceKind
+    private enum SegmentKind
     {
         Text,
         Eval,
-        If
+        IfBoundary
     }
 
-    private sealed class Piece(string s, PieceKind k)
-    {
-        public string S { get; set; } = s;
-        public PieceKind K { get; } = k;
-    }
+    private readonly record struct Segment(string Text, SegmentKind Kind);
 
     public static string Render<TModel>(SequenceNode ast, TModel model, IValueAccessor<TModel> accessor)
     {
         ArgumentNullException.ThrowIfNull(ast);
         ArgumentNullException.ThrowIfNull(accessor);
+        IEnumerable<Segment> segments = ast.Children.Select(n => RenderNode(n, model, accessor));
+        return CombineSegments(segments);
+    }
 
-        List<Piece> pieces = new(ast.Children.Count);
-        foreach (Node node in ast.Children)
+    private static Segment RenderNode<TModel>(Node node, TModel model, IValueAccessor<TModel> accessor) =>
+        node switch
         {
-            pieces.Add(node switch
-            {
-                TextNode t => new Piece(t.Text, PieceKind.Text),
-                EvalNode e => new Piece(RenderEval(e, model, accessor), PieceKind.Eval),
-                IfNode i => new Piece(EvalIfCondition(i.Condition, model, accessor)
-                    ? TrimOneOuterNewline(Render(i.Body, model, accessor))
-                    : string.Empty, PieceKind.If),
-                _ => new Piece(string.Empty, PieceKind.Text)
-            });
-        }
+            TextNode t => new Segment(t.Text, SegmentKind.Text),
+            EvalNode e => new Segment(RenderEval(e, model, accessor), SegmentKind.Eval),
+            IfNode i => RenderIf(i, model, accessor),
+            _ => new Segment("", SegmentKind.Text)
+        };
 
-        for (int i = 0; i < pieces.Count; i++)
+    private static Segment RenderIf<TModel>(IfNode i, TModel model, IValueAccessor<TModel> accessor)
+    {
+        bool cond = EvalIfCondition(i.Condition, model, accessor);
+        string body = cond ? TrimOneOuterNewline(Render(i.Body, model, accessor)) : "";
+        return new Segment(body, SegmentKind.IfBoundary);
+    }
+
+    private static string CombineSegments(IEnumerable<Segment> segments)
+    {
+        StringBuilder sb = new();
+        bool prevEndsWithNewLine = false;
+        bool prevWasIfBoundary = false;
+
+        foreach (Segment segment in segments)
         {
-            if (pieces[i].S.Length == 0 && i > 0 && i + 1 < pieces.Count)
+            string current = segment.Text;
+            if ((prevWasIfBoundary || segment.Kind == SegmentKind.IfBoundary) &&
+                prevEndsWithNewLine &&
+                HasLeadingNewline(current) is int leadNlLen and > 0)
             {
-                if (EndsWithNewline(pieces[i - 1].S) && StartsWithNewline(pieces[i + 1].S, out int nlLen))
-                {
-                    pieces[i + 1].S = pieces[i + 1].S.Substring(nlLen);
-                }
+                current = current[leadNlLen..];
             }
-        }
 
-        for (int i = 0; i + 1 < pieces.Count; i++)
-        {
-            bool atIfBoundary = pieces[i].K == PieceKind.If || pieces[i + 1].K == PieceKind.If;
-            if (atIfBoundary && EndsWithNewline(pieces[i].S) && StartsWithNewline(pieces[i + 1].S, out int nlLen))
+            sb.Append(current);
+            if (current.Length > 0)
             {
-                pieces[i + 1].S = pieces[i + 1].S.Substring(nlLen);
+                prevEndsWithNewLine = HasTrailingNewline(current) > 0;
             }
-        }
 
-        StringBuilder sb = new(pieces.Sum(p => p.S.Length));
-        foreach (Piece p in pieces)
-        {
-            sb.Append(p.S);
+            prevWasIfBoundary = segment.Kind == SegmentKind.IfBoundary;
         }
 
         return sb.ToString();
@@ -68,26 +68,36 @@ public static class Renderer
 
     private static string TrimOneOuterNewline(string s)
     {
-        if (s.StartsWith("\r\n", StringComparison.Ordinal))
+        int lead = HasLeadingNewline(s);
+        if (lead > 0)
         {
-            s = s[2..];
-        }
-        else if (s.Length > 0 && s[0] == '\n')
-        {
-            s = s[1..];
+            s = s[lead..];
         }
 
-        if (s.EndsWith("\r\n", StringComparison.Ordinal))
+        int trail = HasTrailingNewline(s);
+        if (trail > 0)
         {
-            s = s[..^2];
-        }
-        else if (s.Length > 0 && s[^1] == '\n')
-        {
-            s = s[..^1];
+            s = s[..^trail];
         }
 
         return s;
     }
+
+    private static int HasLeadingNewline(string s) =>
+        s.Length switch
+        {
+            >= 2 when s[0] == '\r' && s[1] == '\n' => 2,
+            >= 1 when s[0] == '\n' => 1,
+            _ => 0
+        };
+
+    private static int HasTrailingNewline(string s) =>
+        s.Length switch
+        {
+            >= 2 when s[^2] == '\r' && s[^1] == '\n' => 2,
+            >= 1 when s[^1] == '\n' => 1,
+            _ => 0
+        };
 
     private static string RenderEval<TModel>(EvalNode e, TModel model, IValueAccessor<TModel> accessor)
     {
@@ -97,32 +107,10 @@ public static class Renderer
                    $"Missing key '{joinedPath}' in model (path: {joinedPath})");
     }
 
-    private static bool EndsWithNewline(string s)
-        => s.EndsWith("\r\n", StringComparison.Ordinal) || s.EndsWith('\n');
-
-    private static bool StartsWithNewline(string s, out int newlineLength)
-    {
-        if (s.StartsWith("\r\n", StringComparison.Ordinal))
-        {
-            newlineLength = 2;
-            return true;
-        }
-
-        if (s.StartsWith('\n'))
-        {
-            newlineLength = 1;
-            return true;
-        }
-
-        newlineLength = 0;
-        return false;
-    }
-
     private static string JoinModelPath(IEnumerable<string> pathSegments) => string.Join('.', pathSegments.Skip(1));
 
-    private static bool EvalIfCondition<TModel>(ExprNode cond, TModel model, IValueAccessor<TModel> accessor)
-    {
-        return cond switch
+    private static bool EvalIfCondition<TModel>(ExprNode cond, TModel model, IValueAccessor<TModel> accessor) =>
+        cond switch
         {
             LiteralExpr<bool> lit => lit.Value,
             PropertyExpr prop => TryGetBool(prop, model, accessor),
@@ -136,7 +124,6 @@ public static class Renderer
             _ => throw new InvalidOperationException(
                 $"Unsupported expression in if condition: {cond.GetType().Name}")
         };
-    }
 
     private static bool CompareOperands<TModel>(
         ExprNode left,
@@ -151,8 +138,8 @@ public static class Renderer
             double rnum = EvalNumber(right, model, accessor);
             return op switch
             {
-                "==" => Math.Abs(lnum - rnum) < 0.000000001,
-                "!=" => Math.Abs(lnum - rnum) > 0.000000001,
+                "==" => Math.Abs(lnum - rnum) < 1e-9,
+                "!=" => Math.Abs(lnum - rnum) > 1e-9,
                 ">" => lnum > rnum,
                 "<" => lnum < rnum,
                 ">=" => lnum >= rnum,
@@ -172,51 +159,55 @@ public static class Renderer
             (int li, int ri, "<") => li < ri,
             (int li, int ri, ">=") => li >= ri,
             (int li, int ri, "<=") => li <= ri,
-            (double ld, double rd, "==") => Math.Abs(ld - rd) < 0.000000001,
-            (double ld, double rd, "!=") => Math.Abs(ld - rd) > 0.000000001,
+
+            (double ld, double rd, "==") => Math.Abs(ld - rd) < 1e-9,
+            (double ld, double rd, "!=") => Math.Abs(ld - rd) > 1e-9,
             (double ld, double rd, ">") => ld > rd,
             (double ld, double rd, "<") => ld < rd,
             (double ld, double rd, ">=") => ld >= rd,
             (double ld, double rd, "<=") => ld <= rd,
-            (int li, double rd, "==") => Math.Abs(li - rd) < 0.000000001,
-            (int li, double rd, "!=") => Math.Abs(li - rd) > 0.000000001,
+
+            (int li, double rd, "==") => Math.Abs(li - rd) < 1e-9,
+            (int li, double rd, "!=") => Math.Abs(li - rd) > 1e-9,
             (int li, double rd, ">") => li > rd,
             (int li, double rd, "<") => li < rd,
             (int li, double rd, ">=") => li >= rd,
             (int li, double rd, "<=") => li <= rd,
-            (double ld, int ri, "==") => Math.Abs(ld - ri) < 0.000000001,
-            (double ld, int ri, "!=") => Math.Abs(ld - ri) > 0.000000001,
+
+            (double ld, int ri, "==") => Math.Abs(ld - ri) < 1e-9,
+            (double ld, int ri, "!=") => Math.Abs(ld - ri) > 1e-9,
             (double ld, int ri, ">") => ld > ri,
             (double ld, int ri, "<") => ld < ri,
             (double ld, int ri, ">=") => ld >= ri,
             (double ld, int ri, "<=") => ld <= ri,
+
             (bool lb, bool rb, "==") => lb == rb,
             (bool lb, bool rb, "!=") => lb != rb,
+
             (string ls, string rs, "==") => ls == rs,
             (string ls, string rs, "!=") => ls != rs,
-            (string, string, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException(
-                "Only == and != are supported for string"),
-            (bool, bool, ">" or "<" or ">=" or "<=") => throw new InvalidOperationException(
-                "Only == and != are supported for bool"),
+            (string, string, ">" or "<" or ">=" or "<=") =>
+                throw new InvalidOperationException("Only == and != are supported for string"),
+            (bool, bool, ">" or "<" or ">=" or "<=") =>
+                throw new InvalidOperationException("Only == and != are supported for bool"),
+
             _ => throw new InvalidOperationException(
                 $"Cannot compare values of types '{l.GetType().Name}' and '{r.GetType().Name}'.")
         };
     }
 
-    private static object EvalOperand<TModel>(ExprNode expr, TModel model, IValueAccessor<TModel> accessor)
-    {
-        return expr switch
+    private static object EvalOperand<TModel>(ExprNode expr, TModel model, IValueAccessor<TModel> accessor) =>
+        expr switch
         {
             LiteralExpr<int> litInt => litInt.Value,
             LiteralExpr<double> litDouble => litDouble.Value,
             LiteralExpr<string> litStr => litStr.Value,
             LiteralExpr<bool> litBool => litBool.Value,
-            PropertyExpr prop => TryParseFromAccessor(prop, model, accessor),
+            PropertyExpr prop => ParseFromAccessor(prop, model, accessor),
             _ => throw new InvalidOperationException($"Unsupported operand type: {expr.GetType().Name}")
         };
-    }
 
-    private static object TryParseFromAccessor<TModel>(PropertyExpr prop, TModel model, IValueAccessor<TModel> accessor)
+    private static object ParseFromAccessor<TModel>(PropertyExpr prop, TModel model, IValueAccessor<TModel> accessor)
     {
         string joinedPath = JoinModelPath(prop.Path);
         string value = accessor.AccessValue(joinedPath, model)
@@ -232,9 +223,9 @@ public static class Renderer
             return intVal;
         }
 
-        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double doubleVal))
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double dblVal))
         {
-            return doubleVal;
+            return dblVal;
         }
 
         return value;
@@ -264,12 +255,13 @@ public static class Renderer
             $"If condition path '{joinedPath}' must resolve to \"true\" or \"false\", got '{str}'.");
     }
 
-    private static bool IsArithmetic(ExprNode expr) => expr switch
-    {
-        UnaryExpr { Operator: "-" } => true,
-        BinaryExpr { Operator: "+" or "-" or "*" or "/" or "%" } => true,
-        _ => false
-    };
+    private static bool IsArithmetic(ExprNode expr) =>
+        expr switch
+        {
+            UnaryExpr { Operator: "-" } => true,
+            BinaryExpr { Operator: "+" or "-" or "*" or "/" or "%" } => true,
+            _ => false
+        };
 
     private static double EvalNumber<TModel>(ExprNode expr, TModel model, IValueAccessor<TModel> accessor) =>
         expr switch
@@ -287,11 +279,13 @@ public static class Renderer
                 EvalNumber(b.Left, model, accessor) / EvalNumber(b.Right, model, accessor),
             BinaryExpr { Operator: "%" } b =>
                 EvalNumber(b.Left, model, accessor) % EvalNumber(b.Right, model, accessor),
-            PropertyExpr p => TryParseNumberFromAccessor(p, model, accessor),
+            PropertyExpr p => ParseNumberFromAccessor(p, model, accessor),
             _ => throw new InvalidOperationException($"Expected numeric expression, got {expr.GetType().Name}")
         };
 
-    private static double TryParseNumberFromAccessor<TModel>(PropertyExpr prop, TModel model,
+    private static double ParseNumberFromAccessor<TModel>(
+        PropertyExpr prop,
+        TModel model,
         IValueAccessor<TModel> accessor)
     {
         string joinedPath = JoinModelPath(prop.Path);
