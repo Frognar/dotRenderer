@@ -7,367 +7,369 @@ public static class ExpressionParser
     public static ExprNode Parse(string expr)
     {
         ArgumentNullException.ThrowIfNull(expr);
-        Parser parser = new(expr);
-        ExprNode node = parser.ParseExpression();
-        parser.SkipWhitespace();
-        return !parser.End
-            ? throw new InvalidOperationException($"Unexpected token at end: '{parser.Remaining}'")
-            : node;
+        ReadOnlySpan<char> s = expr.AsSpan();
+
+        (ExprNode node, int pos) = ParseExpression(s, 0);
+        pos = SkipWhitespace(s, pos);
+
+        return pos == s.Length
+            ? node
+            : throw new InvalidOperationException($"Unexpected token at end: '{expr[pos..]}'");
     }
 
-    private sealed class Parser(string expr)
+    private static (ExprNode, int) ParseExpression(ReadOnlySpan<char> s, int pos) => ParseOr(s, pos);
+
+    private static (ExprNode, int) ParseOr(ReadOnlySpan<char> s, int pos)
     {
-        private readonly string _expr = expr;
-        private int _pos;
-
-        public bool End => _pos >= _expr.Length;
-        public string Remaining => _expr[_pos..];
-
-        public void SkipWhitespace()
+        (ExprNode left, int p) = ParseAnd(s, pos);
+        p = SkipWhitespace(s, p);
+        while (TryMatch(s, p, "||", out int p2))
         {
-            while (!End && char.IsWhiteSpace(_expr[_pos]))
-            {
-                _pos++;
-            }
+            (ExprNode right, int p3) = ParseAnd(s, SkipWhitespace(s, p2));
+            left = new BinaryExpr("||", left, right);
+            p = SkipWhitespace(s, p3);
         }
 
-        public ExprNode ParseExpression() => ParseOr();
-
-        private ExprNode ParseOr()
-        {
-            ExprNode left = ParseAnd();
-            SkipWhitespace();
-            while (Match("||"))
-            {
-                SkipWhitespace();
-                ExprNode right = ParseAnd();
-                left = new BinaryExpr("||", left, right);
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseAnd()
-        {
-            ExprNode left = ParseEquality();
-            SkipWhitespace();
-            while (Match("&&"))
-            {
-                SkipWhitespace();
-                ExprNode right = ParseEquality();
-                left = new BinaryExpr("&&", left, right);
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseEquality()
-        {
-            ExprNode left = ParseRelational();
-            SkipWhitespace();
-            while (true)
-            {
-                if (Match("=="))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseRelational();
-                    left = new BinaryExpr("==", left, right);
-                }
-                else if (Match("!="))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseRelational();
-                    left = new BinaryExpr("!=", left, right);
-                }
-                else
-                {
-                    break;
-                }
-
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseRelational()
-        {
-            ExprNode left = ParseAdditive();
-            SkipWhitespace();
-            while (true)
-            {
-                if (Match(">="))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseAdditive();
-                    left = new BinaryExpr(">=", left, right);
-                }
-                else if (Match("<="))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseAdditive();
-                    left = new BinaryExpr("<=", left, right);
-                }
-                else if (Match(">"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseAdditive();
-                    left = new BinaryExpr(">", left, right);
-                }
-                else if (Match("<"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseAdditive();
-                    left = new BinaryExpr("<", left, right);
-                }
-                else
-                {
-                    break;
-                }
-
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseAdditive()
-        {
-            ExprNode left = ParseMultiplicative();
-            SkipWhitespace();
-            while (true)
-            {
-                if (Match("+"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseMultiplicative();
-                    left = new BinaryExpr("+", left, right);
-                }
-                else if (Match("-"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseMultiplicative();
-                    left = new BinaryExpr("-", left, right);
-                }
-                else
-                {
-                    break;
-                }
-
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseMultiplicative()
-        {
-            ExprNode left = ParseUnary();
-            SkipWhitespace();
-            while (true)
-            {
-                if (Match("*"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseUnary();
-                    left = new BinaryExpr("*", left, right);
-                }
-                else if (Match("/"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseUnary();
-                    left = new BinaryExpr("/", left, right);
-                }
-                else if (Match("%"))
-                {
-                    SkipWhitespace();
-                    ExprNode right = ParseUnary();
-                    left = new BinaryExpr("%", left, right);
-                }
-                else
-                {
-                    break;
-                }
-
-                SkipWhitespace();
-            }
-
-            return left;
-        }
-
-        private ExprNode ParseUnary()
-        {
-            SkipWhitespace();
-            if (Match("!"))
-            {
-                SkipWhitespace();
-                ExprNode operand = ParseUnary();
-                return new UnaryExpr("!", operand);
-            }
-
-            if (Match("-"))
-            {
-                SkipWhitespace();
-                ExprNode operand = ParseUnary();
-                return new UnaryExpr("-", operand);
-            }
-
-            return ParsePrimary();
-        }
-
-        private ExprNode ParsePrimary()
-        {
-            SkipWhitespace();
-            if (Peek() == '(')
-            {
-                _pos++;
-                ExprNode node = ParseExpression();
-                SkipWhitespace();
-                if (Peek() != ')')
-                {
-                    throw new InvalidOperationException("Unclosed parenthesis");
-                }
-
-                _pos++;
-                return node;
-            }
-
-            if (Match("true"))
-            {
-                return new LiteralExpr<bool>(true);
-            }
-
-            if (Match("false"))
-            {
-                return new LiteralExpr<bool>(false);
-            }
-
-            if (Peek() == '"')
-            {
-                _pos++;
-                int start = _pos;
-                while (!End && Peek() != '"')
-                {
-                    _pos++;
-                }
-
-                if (End)
-                {
-                    throw new InvalidOperationException("Unclosed string literal");
-                }
-
-                string lit = _expr[start.._pos];
-                _pos++;
-                return new LiteralExpr<string>(lit);
-            }
-
-            if (char.IsDigit(Peek()))
-            {
-                int start = _pos;
-                bool hasDot = false;
-                bool hasExp = false;
-
-                while (!End)
-                {
-                    char c = Peek();
-                    if (char.IsDigit(c))
-                    {
-                        _pos++;
-                        continue;
-                    }
-                    
-                    if (c == '.')
-                    {
-                        if (hasDot)
-                        {
-                            throw new InvalidOperationException("Multiple dots in number");
-                        }
-
-                        hasDot = true;
-                        _pos++;
-                        continue;
-                    }
-
-                    if ((c == 'e' || c == 'E') && !hasExp)
-                    {
-                        hasExp = true;
-                        _pos++;
-
-                        if (!End && (Peek() == '+' || Peek() == '-'))
-                        {
-                            _pos++;
-                        }
-                        
-                        if (End || !char.IsDigit(Peek()))
-                        {
-                            throw new InvalidOperationException("Invalid scientific notation");
-                        }
-
-                        while (!End && char.IsDigit(Peek()))
-                        {
-                            _pos++;
-                        }
-                        
-                        continue;
-                    }
-                    
-                    break;
-                }
-
-                string lit = _expr[start.._pos];
-                return (hasDot || hasExp)
-                    ? new LiteralExpr<double>(double.Parse(lit, CultureInfo.InvariantCulture))
-                    : new LiteralExpr<int>(int.Parse(lit, CultureInfo.InvariantCulture));
-            }
-
-            if (Match("Model."))
-            {
-                List<string> segments = ["Model"];
-                while (true)
-                {
-                    int start = _pos;
-                    while (!End && (char.IsLetterOrDigit(Peek()) || Peek() == '_'))
-                    {
-                        _pos++;
-                    }
-
-                    if (start == _pos)
-                    {
-                        throw new InvalidOperationException("Expected property segment after '.'");
-                    }
-
-                    segments.Add(_expr[start.._pos]);
-
-                    if (Match("."))
-                    {
-                        continue;
-                    }
-
-                    break;
-                }
-
-                return new PropertyExpr(segments);
-            }
-
-            throw new InvalidOperationException($"Unknown token near: '{Remaining}'");
-        }
-
-        private bool Match(string s)
-        {
-            SkipWhitespace();
-            if (_expr.AsSpan(_pos).StartsWith(s.AsSpan(), StringComparison.Ordinal))
-            {
-                _pos += s.Length;
-                return true;
-            }
-
-            return false;
-        }
-
-        private char Peek() => !End ? _expr[_pos] : '\0';
+        return (left, p);
     }
+
+    private static (ExprNode, int) ParseAnd(ReadOnlySpan<char> s, int pos)
+    {
+        (ExprNode left, int p) = ParseEquality(s, pos);
+        p = SkipWhitespace(s, p);
+        while (TryMatch(s, p, "&&", out int p2))
+        {
+            (ExprNode right, int p3) = ParseEquality(s, SkipWhitespace(s, p2));
+            left = new BinaryExpr("&&", left, right);
+            p = SkipWhitespace(s, p3);
+        }
+
+        return (left, p);
+    }
+
+    private static (ExprNode, int) ParseEquality(ReadOnlySpan<char> s, int pos)
+    {
+        (ExprNode left, int p) = ParseRelational(s, pos);
+        p = SkipWhitespace(s, p);
+        while (true)
+        {
+            if (TryMatch(s, p, "==", out int pEq))
+            {
+                (ExprNode right, int pNext) = ParseRelational(s, SkipWhitespace(s, pEq));
+                left = new BinaryExpr("==", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "!=", out int pNe))
+            {
+                (ExprNode right, int pNext) = ParseRelational(s, SkipWhitespace(s, pNe));
+                left = new BinaryExpr("!=", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            break;
+        }
+
+        return (left, p);
+    }
+
+    private static (ExprNode, int) ParseRelational(ReadOnlySpan<char> s, int pos)
+    {
+        (ExprNode left, int p) = ParseAdditive(s, pos);
+        p = SkipWhitespace(s, p);
+        while (true)
+        {
+            if (TryMatch(s, p, ">=", out int pGe))
+            {
+                (ExprNode right, int pNext) = ParseAdditive(s, SkipWhitespace(s, pGe));
+                left = new BinaryExpr(">=", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "<=", out int pLe))
+            {
+                (ExprNode right, int pNext) = ParseAdditive(s, SkipWhitespace(s, pLe));
+                left = new BinaryExpr("<=", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, ">", out int pGt))
+            {
+                (ExprNode right, int pNext) = ParseAdditive(s, SkipWhitespace(s, pGt));
+                left = new BinaryExpr(">", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "<", out int pLt))
+            {
+                (ExprNode right, int pNext) = ParseAdditive(s, SkipWhitespace(s, pLt));
+                left = new BinaryExpr("<", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            break;
+        }
+
+        return (left, p);
+    }
+
+    private static (ExprNode, int) ParseAdditive(ReadOnlySpan<char> s, int pos)
+    {
+        (ExprNode left, int p) = ParseMultiplicative(s, pos);
+        p = SkipWhitespace(s, p);
+        while (true)
+        {
+            if (TryMatch(s, p, "+", out int pPlus))
+            {
+                (ExprNode right, int pNext) = ParseMultiplicative(s, SkipWhitespace(s, pPlus));
+                left = new BinaryExpr("+", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "-", out int pMinus))
+            {
+                (ExprNode right, int pNext) = ParseMultiplicative(s, SkipWhitespace(s, pMinus));
+                left = new BinaryExpr("-", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            break;
+        }
+
+        return (left, p);
+    }
+
+    private static (ExprNode, int) ParseMultiplicative(ReadOnlySpan<char> s, int pos)
+    {
+        (ExprNode left, int p) = ParseUnary(s, pos);
+        p = SkipWhitespace(s, p);
+        while (true)
+        {
+            if (TryMatch(s, p, "*", out int pMul))
+            {
+                (ExprNode right, int pNext) = ParseUnary(s, SkipWhitespace(s, pMul));
+                left = new BinaryExpr("*", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "/", out int pDiv))
+            {
+                (ExprNode right, int pNext) = ParseUnary(s, SkipWhitespace(s, pDiv));
+                left = new BinaryExpr("/", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            if (TryMatch(s, p, "%", out int pMod))
+            {
+                (ExprNode right, int pNext) = ParseUnary(s, SkipWhitespace(s, pMod));
+                left = new BinaryExpr("%", left, right);
+                p = SkipWhitespace(s, pNext);
+                continue;
+            }
+
+            break;
+        }
+
+        return (left, p);
+    }
+
+    private static (ExprNode, int) ParseUnary(ReadOnlySpan<char> s, int pos)
+    {
+        int p = SkipWhitespace(s, pos);
+        if (TryMatch(s, p, "!", out int pNot))
+        {
+            (ExprNode operand, int pNext) = ParseUnary(s, pNot);
+            return (new UnaryExpr("!", operand), pNext);
+        }
+
+        if (TryMatch(s, p, "-", out int pNeg))
+        {
+            (ExprNode operand, int pNext) = ParseUnary(s, pNeg);
+            return (new UnaryExpr("-", operand), pNext);
+        }
+
+        return ParsePrimary(s, p);
+    }
+
+    private static (ExprNode, int) ParsePrimary(ReadOnlySpan<char> s, int pos)
+    {
+        int p = SkipWhitespace(s, pos);
+        if (Peek(s, p) == '(')
+        {
+            p++;
+            (ExprNode node, int pInner) = ParseExpression(s, p);
+            pInner = SkipWhitespace(s, pInner);
+            if (Peek(s, pInner) != ')')
+            {
+                throw new InvalidOperationException("Unclosed parenthesis");
+            }
+
+            return (node, pInner + 1);
+        }
+
+        if (TryMatch(s, p, "true", out int pTrue))
+        {
+            return (new LiteralExpr<bool>(true), pTrue);
+        }
+
+        if (TryMatch(s, p, "false", out int pFalse))
+        {
+            return (new LiteralExpr<bool>(false), pFalse);
+        }
+
+        if (Peek(s, p) == '"')
+        {
+            int start = p + 1;
+            int i = start;
+            while (i < s.Length && s[i] != '"')
+            {
+                i++;
+            }
+
+            if (i >= s.Length)
+            {
+                throw new InvalidOperationException("Unclosed string literal");
+            }
+
+            string lit = new string(s[start..i]);
+            return (new LiteralExpr<string>(lit), i + 1);
+        }
+
+        if (char.IsDigit(Peek(s, p)))
+        {
+            int i = p;
+            bool hasDot = false;
+            bool hasExp = false;
+
+            while (i < s.Length)
+            {
+                char c = s[i];
+                if (char.IsDigit(c))
+                {
+                    i++;
+                    continue;
+                }
+
+                if (c == '.')
+                {
+                    if (hasDot)
+                    {
+                        throw new InvalidOperationException("Multiple dots in number");
+                    }
+
+                    hasDot = true;
+                    i++;
+                    continue;
+                }
+
+                if ((c == 'e' || c == 'E') && !hasExp)
+                {
+                    hasExp = true;
+                    i++;
+                    if (i < s.Length && (s[i] == '+' || s[i] == '-'))
+                    {
+                        i++;
+                    }
+
+                    if (i >= s.Length || !char.IsDigit(Peek(s, i)))
+                    {
+                        throw new InvalidOperationException("Invalid scientific notation");
+                    }
+
+                    while (i < s.Length && char.IsDigit(s[i]))
+                    {
+                        i++;
+                    }
+
+                    continue;
+                }
+
+                break;
+            }
+
+            ReadOnlySpan<char> litSpan = s[p..i];
+            if (hasDot || hasExp)
+            {
+                return (new LiteralExpr<double>(double.Parse(litSpan, CultureInfo.InvariantCulture)), i);
+            }
+
+            return (new LiteralExpr<int>(int.Parse(litSpan, CultureInfo.InvariantCulture)), i);
+        }
+
+        if (StartsWith(s, p, "Model."))
+        {
+            int i = p + "Model.".Length;
+            List<string> segments = new() { "Model" };
+
+            while (true)
+            {
+                int segStart = i;
+                while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '_'))
+                {
+                    i++;
+                }
+
+                if (segStart == i)
+                {
+                    throw new InvalidOperationException("Expected property segment after '.'");
+                }
+
+                segments.Add(new string(s[segStart..i]));
+
+                if (i < s.Length && s[i] == '.')
+                {
+                    i++;
+                    continue;
+                }
+
+                break;
+            }
+
+            return (new PropertyExpr(segments), i);
+        }
+
+        string remaining = new string(s[p..]);
+        throw new InvalidOperationException($"Unknown token near: '{remaining}'");
+    }
+
+    private static int SkipWhitespace(ReadOnlySpan<char> s, int pos)
+    {
+        int i = pos;
+        while (i < s.Length && char.IsWhiteSpace(s[i]))
+        {
+            i++;
+        }
+
+        return i;
+    }
+
+    private static bool TryMatch(ReadOnlySpan<char> s, int pos, string token, out int nextPos)
+    {
+        int p = SkipWhitespace(s, pos);
+        if (StartsWith(s, p, token))
+        {
+            nextPos = p + token.Length;
+            return true;
+        }
+
+        nextPos = pos;
+        return false;
+    }
+
+    private static bool StartsWith(ReadOnlySpan<char> s, int pos, string token)
+        => s[pos..].StartsWith(token.AsSpan(), StringComparison.Ordinal);
+
+    private static char Peek(ReadOnlySpan<char> s, int pos) => pos < s.Length ? s[pos] : '\0';
 }
 
 public abstract record ExprNode;
