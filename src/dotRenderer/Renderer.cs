@@ -30,6 +30,7 @@ public static class Renderer
             TextNode t => new Segment(t.Text, SegmentKind.Text),
             EvalNode e => new Segment(RenderEval(e, model, accessor), SegmentKind.Eval),
             IfNode i => RenderIf(i, model, accessor),
+            OutExprNode oe => new Segment(RenderOutExpr(oe, model, accessor), SegmentKind.Eval),
             _ => new Segment("", SegmentKind.Text)
         };
 
@@ -38,6 +39,12 @@ public static class Renderer
         bool cond = EvalIfCondition(i.Condition, model, accessor);
         string body = cond ? TrimOneOuterNewline(Render(i.Body, model, accessor)) : "";
         return new Segment(body, SegmentKind.IfBoundary);
+    }
+
+    private static string RenderOutExpr<TModel>(OutExprNode node, TModel model, IValueAccessor<TModel> accessor)
+    {
+        object value = EvalAny(node.Expression, model, accessor);
+        return ToInvariantString(value);
     }
 
     private static string CombineSegments(IEnumerable<Segment> segments)
@@ -306,4 +313,34 @@ public static class Renderer
 
         throw new InvalidOperationException($"Value at '{joinedPath}' is not numeric: '{value}'");
     }
+
+    private static object EvalAny<TModel>(ExprNode expr, TModel model, IValueAccessor<TModel> accessor) =>
+        expr switch
+        {
+            LiteralExpr<int> li => li.Value,
+            LiteralExpr<double> ld => ld.Value,
+            LiteralExpr<string> ls => ls.Value,
+            LiteralExpr<bool> lb => lb.Value,
+
+            PropertyExpr p => ParseFromAccessor(p, model, accessor),
+
+            UnaryExpr { Operator: "-" } u => -EvalNumber(u.Operand, model, accessor),
+            UnaryExpr { Operator: "!" } u => !EvalIfCondition(u.Operand, model, accessor),
+            BinaryExpr { Operator: "+" or "-" or "*" or "/" or "%" } b => EvalNumber(b, model, accessor),
+            BinaryExpr { Operator: "&&" or "||" } b => EvalIfCondition(b, model, accessor),
+            BinaryExpr { Operator: "==" or "!=" or ">" or "<" or ">=" or "<=" } b
+                => CompareOperands(b.Left, b.Right, model, accessor, b.Operator),
+
+            _ => throw new InvalidOperationException($"Unsupported expression in output: {expr.GetType().Name}")
+        };
+
+    private static string ToInvariantString(object value) =>
+        value switch
+        {
+            int i => i.ToString(CultureInfo.InvariantCulture),
+            double d => d.ToString(CultureInfo.InvariantCulture),
+            bool b => b.ToString(),
+            string s => s,
+            _ => value.ToString() ?? string.Empty
+        };
 }

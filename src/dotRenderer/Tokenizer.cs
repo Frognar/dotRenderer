@@ -26,6 +26,15 @@ public static class Tokenizer
                 continue;
             }
 
+            (OutExprToken token, int nextPos)? outExprMatch = TryParseOutputExpr(template, pos, end);
+            if (outExprMatch is { } mOut)
+            {
+                FlushPendingText(sb, tokens);
+                tokens.Add(mOut.token);
+                pos = mOut.nextPos;
+                continue;
+            }
+
             int? afterEscape = TryParseEscapedAt(template, pos, end);
             if (afterEscape is { } m2)
             {
@@ -81,6 +90,20 @@ public static class Tokenizer
         IEnumerable<object> bodyTokens = Tokenize(s, bodyStart, bodyEnd);
 
         return (new IfToken(condition, bodyTokens), afterBody);
+    }
+
+    private static (OutExprToken token, int nextPos)? TryParseOutputExpr(string s, int pos, int end)
+    {
+        if (pos + 1 >= end || s[pos] != '@' || s[pos + 1] != '(')
+        {
+            return null;
+        }
+
+        int p = pos + 2;
+        (int exprStart, int exprEnd, int after) = FindParenthesizedSpan(s, p, end);
+        string expr = s[exprStart..exprEnd].Trim();
+        return (new OutExprToken(expr), after);
+
     }
 
     private static int? TryParseEscapedAt(string s, int pos, int end)
@@ -229,3 +252,4 @@ public sealed record TextToken(string Text);
 public sealed record InterpolationToken(IEnumerable<string> Path);
 
 public sealed record IfToken(string Condition, IEnumerable<object> Body);
+public sealed record OutExprToken(string Expression);

@@ -200,4 +200,13 @@ public class DotRendererIntegrationTests
         string html = compiled.Render(TestDictModel.Empty);
         Assert.Equal("Hello\r\nWorld", html);
     }
+    
+    [Fact]
+    public void Compile_Should_Render_OutputExpression()
+    {
+        ITemplate<TestDictModel> compiled =
+            TemplateCompiler.Compile("4 + 2 = @(4 + 2)", TestDictAccessor.Default);
+
+        Assert.Equal("4 + 2 = 6", compiled.Render(TestDictModel.Empty));
+    }
 }

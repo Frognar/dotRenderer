@@ -21,6 +21,10 @@ public static class Parser
                     ExprNode cond = ExpressionParser.Parse(i.Condition);
                     children.Add(new IfNode(cond, body));
                     break;
+                case OutExprToken o:
+                    ExprNode outExpr = ExpressionParser.Parse(o.Expression);
+                    children.Add(new OutExprNode(outExpr));
+                    break;
                 default:
                     throw new InvalidOperationException($"Unknown token of type {token.GetType().Name}");
             }
@@ -37,4 +41,7 @@ public sealed record SequenceNode(IReadOnlyList<Node> Children) : Node;
 public sealed record TextNode(string Text) : Node;
 
 public sealed record EvalNode(IEnumerable<string> Path) : Node;
+
 public sealed record IfNode(ExprNode Condition, SequenceNode Body) : Node;
+
+public sealed record OutExprNode(ExprNode Expression) : Node;
