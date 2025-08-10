@@ -352,4 +352,34 @@ public class TokenizerTests
         object[] tokens = [.. Tokenizer.Tokenize(template)];
         TokenizerAssert.TokenSequence(tokens, new IfToken("true", [ new TextToken(body) ]));
     }
+    
+    [Fact]
+    public void Tokenizer_Should_Tokenize_OutputExpression_Simple_Arithmetic()
+    {
+        string template = "X @(1 + 2*3) Y";
+
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("X "),
+            new OutExprToken("1 + 2*3"),
+            new TextToken(" Y"));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_OutputExpression_Next_To_Interpolation_And_If()
+    {
+        string template = "@Model.A = @(2+2) @if (true) {OK}";
+
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new InterpolationToken(["Model", "A"]),
+            new TextToken(" = "),
+            new OutExprToken("2+2"),
+            new TextToken(" "),
+            new IfToken("true", [ new TextToken("OK") ])
+        );
+    }
+
 }

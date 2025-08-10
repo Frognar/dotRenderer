@@ -25,6 +25,11 @@ internal static class TokenizerAssert
                     TokenSequence([.. actualIf.Body], [.. ifTok.Body]);
                     break;
 
+                case OutExprToken outTok:
+                    OutExprToken actualOut = Assert.IsType<OutExprToken>(act);
+                    Assert.Equal(outTok.Expression, actualOut.Expression);
+                    break;
+
                 default:
                     throw new InvalidOperationException($"Unsupported expected type: {exp.GetType()}");
             }
