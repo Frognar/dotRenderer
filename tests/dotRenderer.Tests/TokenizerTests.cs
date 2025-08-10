@@ -77,7 +77,7 @@ public class TokenizerTests
     [Fact]
     public void Tokenizer_Should_Handle_Mixed_Escaped_At_And_Interpolation()
     {
-        string template = "@@ @Model.Price @@@";
+        string template = "@@ @Model.Price @@@@";
 
         object[] tokens = [.. Tokenizer.Tokenize(template)];
 
@@ -368,5 +368,40 @@ public class TokenizerTests
             new TextToken("Hello Wor"),
             new IfToken("true", [ new TextToken("l") ]),
             new TextToken("d"));
+    }
+    
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Unknown_Directive()
+    {
+        string template = "@foo";
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Unknown directive '@foo'");
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Unknown_Directive_Embedded()
+    {
+        string template = "ab@ifx(true){y}cd";
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Unknown directive '@ifx'");
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Model_Without_Dot()
+    {
+        string template = "@Model Name";
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Expected '.' after '@Model'");
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Unexpected_At_Before_Digit()
+    {
+        string template = "Value: @5";
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Unexpected '@' before '5'");
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Throw_On_Dangling_At()
+    {
+        string template = "Hello @";
+        TokenizerAssert.Throws<InvalidOperationException>(template, "Unexpected end after '@'");
     }
 }

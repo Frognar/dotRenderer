@@ -50,6 +50,11 @@ public static class Tokenizer
                 continue;
             }
 
+            if (template[pos] == '@')
+            {
+                ThrowForUnknownAt(template, pos, end);
+            }
+
             sb.Append(template[pos]);
             pos++;
         }
@@ -61,6 +66,12 @@ public static class Tokenizer
     private static (IfToken token, int nextPos)? TryParseIf(string s, int pos, int end)
     {
         if (!StartsWithAtIf(s, pos, end))
+        {
+            return null;
+        }
+
+        int afterIf = pos + 3;
+        if (afterIf < end && !char.IsWhiteSpace(s[afterIf]) && s[afterIf] != '(')
         {
             return null;
         }
@@ -243,6 +254,33 @@ public static class Tokenizer
 
     private static bool IsIdentifierChar(char c)
         => char.IsLetterOrDigit(c) || c == '_';
+    
+    private static void ThrowForUnknownAt(string s, int pos, int end)
+    {
+        int next = pos + 1;
+        if (next >= end)
+            throw new InvalidOperationException("Unexpected end after '@'");
+
+        char c = s[next];
+
+        if (s.AsSpan(pos).StartsWith("@Model".AsSpan(), StringComparison.Ordinal) &&
+            !s.AsSpan(pos).StartsWith("@Model.".AsSpan(), StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Expected '.' after '@Model'");
+        }
+
+        if (IsIdentifierStart(c))
+        {
+            int i = next;
+            while (i < end && IsIdentifierChar(s[i])) i++;
+            string ident = s[next..i];
+            throw new InvalidOperationException($"Unknown directive '@{ident}' (expected '@Model.', '@if', '@(')");
+        }
+
+        throw new InvalidOperationException($"Unexpected '@' before '{c}'");
+    }
+
+    private static bool IsIdentifierStart(char c) => char.IsLetter(c) || c == '_';
 }
 
 public sealed record TextToken(string Text);

@@ -218,4 +218,11 @@ public class DotRendererIntegrationTests
 
         Assert.Equal("Hello World", compiled.Render(TestDictModel.Empty));
     }
+    
+    [Fact]
+    public void Compile_Should_Fail_On_Unknown_Directive()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            TemplateCompiler.Compile("Hello @foo", TestDictAccessor.Default));
+    }
 }
