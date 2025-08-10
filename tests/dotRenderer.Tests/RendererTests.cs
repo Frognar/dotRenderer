@@ -605,4 +605,17 @@ public class RendererTests
             ]), TestDictModel.With(("Value", "42")),
             "Expected numeric expression, got LiteralExpr");
     }
+
+    [Fact]
+    public void Renderer_Should_Render_OutputExpression_From_Model_And_Arithmetic()
+    {
+        SequenceNode ast = new([
+            new OutExprNode(
+                new BinaryExpr("+",
+                    new PropertyExpr(["Model", "Value"]),
+                    new LiteralExpr<int>(2)))
+        ]);
+
+        RendererAssert.Renders(ast, TestDictModel.With(("Value", "5")), "7");
+    }
 }
