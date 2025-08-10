@@ -176,18 +176,6 @@ public class TokenizerTests
     }
 
     [Fact]
-    public void Tokenizer_Should_Treat_Inline_If_As_Text()
-    {
-        string template = "X@if (Model.Foo) {YES}";
-
-        object[] tokens = [..Tokenizer.Tokenize(template)];
-
-        TokenizerAssert.TokenSequence(tokens,
-            new TextToken("X@if (Model.Foo) {YES}")
-        );
-    }
-
-    [Fact]
     public void Tokenizer_Should_Tokenize_If_After_Whitespace()
     {
         string template = "X @if (Model.Foo) {YES}";
@@ -209,18 +197,6 @@ public class TokenizerTests
 
         TokenizerAssert.TokenSequence(tokens,
             new IfToken("Model.Foo", [new TextToken("YES")])
-        );
-    }
-
-    [Fact]
-    public void Tokenizer_Should_Treat_If_Embedded_In_Word_As_Text()
-    {
-        string template = "foo@if (Model.Foo) {YES}bar";
-
-        object[] tokens = [..Tokenizer.Tokenize(template)];
-
-        TokenizerAssert.TokenSequence(tokens,
-            new TextToken("foo@if (Model.Foo) {YES}bar")
         );
     }
 
@@ -382,4 +358,15 @@ public class TokenizerTests
         );
     }
 
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Embedded_In_Word()
+    {
+        string template = "Hello Wor@if (true) {l}d";
+        object[] tokens = [.. Tokenizer.Tokenize(template)];
+
+        TokenizerAssert.TokenSequence(tokens,
+            new TextToken("Hello Wor"),
+            new IfToken("true", [ new TextToken("l") ]),
+            new TextToken("d"));
+    }
 }

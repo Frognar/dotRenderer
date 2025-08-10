@@ -154,7 +154,7 @@ public class DotRendererIntegrationTests
                      Hello @world!
                      User: Eve
 
-                     
+
                      Footer.
                      """, compiled.Render(TestDictModel.With(
             ("User.Name", "Eve"),
@@ -200,7 +200,7 @@ public class DotRendererIntegrationTests
         string html = compiled.Render(TestDictModel.Empty);
         Assert.Equal("Hello\r\nWorld", html);
     }
-    
+
     [Fact]
     public void Compile_Should_Render_OutputExpression()
     {
@@ -208,5 +208,14 @@ public class DotRendererIntegrationTests
             TemplateCompiler.Compile("4 + 2 = @(4 + 2)", TestDictAccessor.Default);
 
         Assert.Equal("4 + 2 = 6", compiled.Render(TestDictModel.Empty));
+    }
+
+    [Fact]
+    public void Tokenizer_Should_Tokenize_If_Embedded_In_Word()
+    {
+        ITemplate<TestDictModel> compiled =
+            TemplateCompiler.Compile("Hello Wor@if (true) {l}d", TestDictAccessor.Default);
+
+        Assert.Equal("Hello World", compiled.Render(TestDictModel.Empty));
     }
 }

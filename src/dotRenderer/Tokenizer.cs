@@ -15,9 +15,7 @@ public static class Tokenizer
 
         while (pos < end)
         {
-            (IfToken token, int nextPos)? ifMatch =
-                TryParseIf(template, pos, end, precedingIsBoundary: pos == 0 || char.IsWhiteSpace(template[pos - 1]));
-
+            (IfToken token, int nextPos)? ifMatch = TryParseIf(template, pos, end);
             if (ifMatch is { } m1)
             {
                 FlushPendingText(sb, tokens);
@@ -60,9 +58,9 @@ public static class Tokenizer
         return tokens;
     }
 
-    private static (IfToken token, int nextPos)? TryParseIf(string s, int pos, int end, bool precedingIsBoundary)
+    private static (IfToken token, int nextPos)? TryParseIf(string s, int pos, int end)
     {
-        if (!precedingIsBoundary || !StartsWithAtIf(s, pos, end))
+        if (!StartsWithAtIf(s, pos, end))
         {
             return null;
         }
