@@ -167,4 +167,30 @@ public class ParserTests
 
         ParserAssert.Throws<InvalidOperationException>(tokens, "Unknown token of type Int32");
     }
+    
+    [Fact]
+    public void Parser_Should_Parse_OutputExpression_Node()
+    {
+        IEnumerable<object> tokens =
+        [
+            new TextToken("Ans: "),
+            new OutExprToken("1 + 2 * 3"),
+            new TextToken(".")
+        ];
+
+        SequenceNode ast = Parser.Parse(tokens);
+
+        ParserAssert.AstEquals(ast,
+            new SequenceNode([
+                new TextNode("Ans: "),
+                new OutExprNode(
+                    new BinaryExpr("+",
+                        new LiteralExpr<int>(1),
+                        new BinaryExpr("*",
+                            new LiteralExpr<int>(2),
+                            new LiteralExpr<int>(3)))),
+                new TextNode(".")
+            ]));
+    }
+
 }

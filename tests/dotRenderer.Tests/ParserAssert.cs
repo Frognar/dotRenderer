@@ -21,6 +21,11 @@ internal static class ParserAssert
                 AssertExprEquals(actIf.Condition, ifNode.Condition);
                 AstEquals(actIf.Body, ifNode.Body);
                 break;
+            
+            case OutExprNode outNode:
+                OutExprNode actOut = Assert.IsType<OutExprNode>(actual);
+                AssertExprEquals(actOut.Expression, outNode.Expression);
+                break;
 
             case SequenceNode seq:
                 SequenceNode actSeq = Assert.IsType<SequenceNode>(actual);
