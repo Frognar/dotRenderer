@@ -18,7 +18,7 @@ public static class TemplateEngine
             return Result<string>.Err(parse.Error!);
         }
 
-        Result<string> render = Renderer.Render(parse.Value);
+        Result<string> render = Renderer.Render(parse.Value, globals);
         return render;
     }
 }

@@ -23,3 +23,5 @@ public interface IError
 public readonly record struct Range(int Offset, int Length);
 
 public sealed record LexError(string Code, Range Range, string Message) : IError;
+
+public sealed record EvalError(string Code, Range Range, string Message) : IError;
