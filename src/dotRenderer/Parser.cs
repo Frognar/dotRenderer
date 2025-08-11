@@ -12,9 +12,16 @@ public static class Parser
 
         foreach (Token t in tokens)
         {
-            if (t.Kind == TokenKind.Text)
+            INode? node = t.Kind switch
             {
-                nodesBuilder.Add(new TextNode(t.Text, t.Range));
+                TokenKind.Text => new TextNode(t.Text, t.Range),
+                TokenKind.AtIdent => new InterpolateIdentNode(t.Text, t.Range),
+                _ => null,
+            };
+
+            if (node is not null)
+            {
+                nodesBuilder.Add(node);
             }
         }
 
