@@ -24,9 +24,23 @@ public sealed record Template(ImmutableArray<INode> Children);
 
 public interface IExpr;
 
+public enum BinaryOp
+{
+    Add
+}
+
 public static class Expr
 {
     public static RawExpr FromRaw(string text) => new(text);
+    public static NumberExpr FromNumber(double value) => new(value);
+    public static IdentExpr FromIdent(string name) => new(name);
+    public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
 }
 
 public sealed record RawExpr(string Text) : IExpr;
+
+public sealed record NumberExpr(double Value) : IExpr;
+
+public sealed record IdentExpr(string Name) : IExpr;
+
+public sealed record BinaryExpr(BinaryOp Op, IExpr Left, IExpr Right) : IExpr;

@@ -14,4 +14,46 @@ public static class Evaluator
             ? Result<Value>.Err(new EvalError("MissingIdent", range, $"Identifier '{name}' was not found."))
             : Result<Value>.Ok(value);
     }
+
+    [Pure]
+    public static Result<Value> EvaluateExpr(IExpr expr, IValueAccessor accessor, TextSpan range)
+    {
+        if (expr is NumberExpr n)
+        {
+            return Result<Value>.Ok(Value.FromNumber(n.Value));
+        }
+
+        if (expr is IdentExpr id)
+        {
+            return EvaluateIdent(accessor, id.Name, range);
+        }
+
+        if (expr is not BinaryExpr { Op: BinaryOp.Add } b)
+        {
+            return Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."));
+        }
+
+        Result<Value> l = EvaluateExpr(b.Left, accessor, range);
+        if (!l.IsOk)
+        {
+            return l;
+        }
+
+        Result<Value> r = EvaluateExpr(b.Right, accessor, range);
+        if (!r.IsOk)
+        {
+            return r;
+        }
+
+        Value lv = l.Value;
+        Value rv = r.Value;
+
+        if (lv.Kind == ValueKind.Number && rv.Kind == ValueKind.Number)
+        {
+            return Result<Value>.Ok(Value.FromNumber(lv.Number + rv.Number));
+        }
+
+        return Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers."));
+
+    }
 }

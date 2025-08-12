@@ -49,6 +49,32 @@ public static class Renderer
 
                 continue;
             }
+
+            if (node is InterpolateExprNode exprNode)
+            {
+                IValueAccessor accessor = globals ?? MapAccessor.Empty;
+
+                Result<Value> got = Evaluator.EvaluateExpr(exprNode.Expr, accessor, exprNode.Range);
+                if (!got.IsOk)
+                {
+                    return Result<string>.Err(got.Error!);
+                }
+
+                Value value = got.Value;
+
+                switch (value.Kind)
+                {
+                    case ValueKind.Text:
+                    case ValueKind.Number:
+                    case ValueKind.Boolean:
+                        sb.Append(value.ToInvariantString());
+                        break;
+                    default:
+                        return Result<string>.Err(new EvalError("TypeMismatch", exprNode.Range, "Expression did not evaluate to a scalar value."));
+                }
+
+                continue;
+            }
         }
         
         return Result<string>.Ok(sb.ToString());
