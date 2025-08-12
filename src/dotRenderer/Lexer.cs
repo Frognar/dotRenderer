@@ -73,6 +73,46 @@ public static class Lexer
                     textStart = i;
                     continue;
                 }
+
+                if (j + 1 < length && template[j] == 'i' && template[j + 1] == 'f')
+                {
+                    int k = j + 2;
+                    while (k < length && char.IsWhiteSpace(template[k]))
+                    {
+                        k++;
+                    }
+
+                    if (k < length && template[k] == '(')
+                    {
+                        k++;
+                        int depth = 1;
+                        int exprStart = k;
+
+                        while (k < length && depth > 0)
+                        {
+                            char c = template[k];
+                            if (c == '(') depth++;
+                            else if (c == ')') depth--;
+                            k++;
+                        }
+
+                        if (depth == 0)
+                        {
+                            int closeExclusive = k;
+                            int closeInclusive = closeExclusive - 1;
+                            string expr = template[exprStart..closeInclusive];
+                            tokens.Add(Token.FromAtIf(expr, TextSpan.At(i, closeExclusive - i)));
+
+                            i = closeExclusive;
+                            textStart = i;
+                            continue;
+                        }
+                    }
+
+                    i++;
+                    textStart = i;
+                    continue;
+                }
                 
                 if (j < length && IsIdentStart(template[j]))
                 {
@@ -92,6 +132,34 @@ public static class Lexer
                 }
 
                 i++;
+                continue;
+            }
+
+            if (ch == '{')
+            {
+                if (i > textStart)
+                {
+                    string text = template[textStart..i];
+                    tokens.Add(Token.FromText(text, TextSpan.At(textStart, text.Length)));
+                }
+
+                tokens.Add(Token.FromLBrace(TextSpan.At(i, 1)));
+                i++;
+                textStart = i;
+                continue;
+            }
+
+            if (ch == '}')
+            {
+                if (i > textStart)
+                {
+                    string text = template[textStart..i];
+                    tokens.Add(Token.FromText(text, TextSpan.At(textStart, text.Length)));
+                }
+
+                tokens.Add(Token.FromRBrace(TextSpan.At(i, 1)));
+                i++;
+                textStart = i;
                 continue;
             }
 
