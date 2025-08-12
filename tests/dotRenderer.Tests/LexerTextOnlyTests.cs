@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using DotRenderer;
-using Range = DotRenderer.Range;
 
 namespace dotRenderer.Tests;
 
@@ -10,7 +9,7 @@ public class LexerTextOnlyTests
     public void Should_Tokenize_Plain_Text_As_Single_Text_Token()
     {
         LexerAssert.Lex("Hello, world!", [
-            Token.FromText("Hello, world!", new Range(0, 13)),
+            Token.FromText("Hello, world!", new TextSpan(0, 13)),
         ]);
     }
 }

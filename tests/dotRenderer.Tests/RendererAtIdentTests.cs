@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using DotRenderer;
-using Range = DotRenderer.Range;
 
 namespace dotRenderer.Tests;
 
@@ -15,9 +14,9 @@ public class RendererAtIdentTests
         const string right = "!";
         ImmutableArray<INode> children =
         [
-            new TextNode(left, new Range(0, left.Length)),
-            new InterpolateIdentNode(ident, new Range(left.Length, 1 + ident.Length)),
-            new TextNode(right, new Range(left.Length + 1 + ident.Length, right.Length))
+            new TextNode(left, new TextSpan(0, left.Length)),
+            new InterpolateIdentNode(ident, new TextSpan(left.Length, 1 + ident.Length)),
+            new TextNode(right, new TextSpan(left.Length + 1 + ident.Length, right.Length))
         ];
 
         Template template = new(children);

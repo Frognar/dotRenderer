@@ -5,7 +5,7 @@ namespace DotRenderer;
 public static class Evaluator
 {
     [Pure]
-    public static Result<Value> EvaluateIdent(IValueAccessor accessor, string name, Range range)
+    public static Result<Value> EvaluateIdent(IValueAccessor accessor, string name, TextSpan range)
     {
         ArgumentNullException.ThrowIfNull(accessor);
 

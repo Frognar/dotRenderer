@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using DotRenderer;
-using Range = DotRenderer.Range;
 
 namespace dotRenderer.Tests;
 
@@ -15,9 +14,9 @@ public class ParserAtIdentTests
         const string right = "!";
         ImmutableArray<Token> tokens =
         [
-            new(TokenKind.Text, left, new Range(0, left.Length)),
-            new(TokenKind.AtIdent, name, new Range(left.Length, 1 + name.Length)),
-            new(TokenKind.Text, right, new Range(left.Length + 1 + name.Length, right.Length))
+            new(TokenKind.Text, left, new TextSpan(0, left.Length)),
+            new(TokenKind.AtIdent, name, new TextSpan(left.Length, 1 + name.Length)),
+            new(TokenKind.Text, right, new TextSpan(left.Length + 1 + name.Length, right.Length))
         ];
 
         // act
@@ -35,8 +34,8 @@ public class ParserAtIdentTests
         Assert.IsType<InterpolateIdentNode>(template.Children[1]);
         InterpolateIdentNode n1 = (InterpolateIdentNode)template.Children[1];
         Assert.Equal(name, n1.Name);
-        Assert.Equal(new Token(TokenKind.AtIdent, name, new Range(left.Length, 1 + name.Length)).Range.Offset, n1.Range.Offset);
-        Assert.Equal(new Token(TokenKind.AtIdent, name, new Range(left.Length, 1 + name.Length)).Range.Length, n1.Range.Length);
+        Assert.Equal(new Token(TokenKind.AtIdent, name, new TextSpan(left.Length, 1 + name.Length)).Range.Offset, n1.Range.Offset);
+        Assert.Equal(new Token(TokenKind.AtIdent, name, new TextSpan(left.Length, 1 + name.Length)).Range.Length, n1.Range.Length);
 
         Assert.IsType<TextNode>(template.Children[2]);
         TextNode n2 = (TextNode)template.Children[2];

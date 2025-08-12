@@ -15,13 +15,13 @@ public readonly record struct Result<T>
 
 public interface IError
 {
-    Range Range { get; }
+    TextSpan Range { get; }
     string Code { get; }
     string Message { get; }
 }
 
-public readonly record struct Range(int Offset, int Length);
+public readonly record struct TextSpan(int Offset, int Length);
 
-public sealed record LexError(string Code, Range Range, string Message) : IError;
+public sealed record LexError(string Code, TextSpan Range, string Message) : IError;
 
-public sealed record EvalError(string Code, Range Range, string Message) : IError;
+public sealed record EvalError(string Code, TextSpan Range, string Message) : IError;

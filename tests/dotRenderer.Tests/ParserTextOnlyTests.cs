@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using DotRenderer;
-using Range = DotRenderer.Range;
 
 namespace dotRenderer.Tests;
 
@@ -11,7 +10,7 @@ public class ParserTextOnlyTests
     {
         // arrange
         const string input = "Hello, World!"; 
-        ImmutableArray<Token> tokens = [new(TokenKind.Text, input, new Range(0, input.Length))];
+        ImmutableArray<Token> tokens = [new(TokenKind.Text, input, new TextSpan(0, input.Length))];
 
         // act
         Result<Template> parse = Parser.Parse(tokens);

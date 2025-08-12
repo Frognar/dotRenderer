@@ -24,14 +24,14 @@ public static class Lexer
                 if (i > textStart)
                 {
                     string text = template[textStart..i];
-                    Token tToken = new(TokenKind.Text, text, new Range(textStart, text.Length));
+                    Token tToken = new(TokenKind.Text, text, new TextSpan(textStart, text.Length));
                     tokens.Add(tToken);
                 }
 
                 int j = i + 1;
                 if (j < length && template[j] == '@')
                 {
-                    tokens.Add(new Token(TokenKind.Text, "@", new Range(i, 2)));
+                    tokens.Add(new Token(TokenKind.Text, "@", new TextSpan(i, 2)));
                     i = j + 1;
                     textStart = i;
                     continue;
@@ -46,7 +46,7 @@ public static class Lexer
                     }
 
                     string name = template[j..k];
-                    Token tIdent = new(TokenKind.AtIdent, name, new Range(i, 1 + (k - j)));
+                    Token tIdent = new(TokenKind.AtIdent, name, new TextSpan(i, 1 + (k - j)));
                     tokens.Add(tIdent);
 
                     i = k;
@@ -64,7 +64,7 @@ public static class Lexer
         if (i > textStart)
         {
             string tail = template[textStart..i];
-            Token tToken = new(TokenKind.Text, tail, new Range(textStart, tail.Length));
+            Token tToken = new(TokenKind.Text, tail, new TextSpan(textStart, tail.Length));
             tokens.Add(tToken);
         }
 
