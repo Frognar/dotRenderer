@@ -29,6 +29,14 @@ public static class Lexer
                 }
 
                 int j = i + 1;
+                if (j < length && template[j] == '@')
+                {
+                    tokens.Add(new Token(TokenKind.Text, "@", new Range(i, 2)));
+                    i = j + 1;
+                    textStart = i;
+                    continue;
+                }
+                
                 if (j < length && IsIdentStart(template[j]))
                 {
                     int k = j + 1;
