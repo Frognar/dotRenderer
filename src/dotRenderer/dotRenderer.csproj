@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
-        <NoWarn>CA1000,CS1591,CA1716</NoWarn>
+        <NoWarn>CA1000,CS1591,CA1716,CA1040</NoWarn>
         <RootNamespace>DotRenderer</RootNamespace>
     </PropertyGroup>
 

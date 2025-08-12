@@ -16,6 +16,7 @@ public static class Parser
             {
                 TokenKind.Text => Node.FromText(t.Text, t.Range),
                 TokenKind.AtIdent => Node.FromInterpolateIdent(t.Text, t.Range),
+                TokenKind.AtExpr => Node.FromInterpolateExpr(Expr.FromRaw(t.Text), t.Range),
                 _ => null,
             };
 
