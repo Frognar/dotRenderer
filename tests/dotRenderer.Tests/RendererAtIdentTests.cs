@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using DotRenderer;
 
 namespace dotRenderer.Tests;
@@ -6,30 +5,16 @@ namespace dotRenderer.Tests;
 public class RendererAtIdentTests
 {
     [Fact]
-    public void should_render_interpolated_identifier_using_accessor()
+    public void Should_Render_Interpolated_Identifier_Using_Accessor()
     {
-        // arrange
-        const string left = "Hello ";
-        const string ident = "name";
-        const string right = "!";
-        ImmutableArray<INode> children =
-        [
-            Node.FromText(left, TextSpan.At(0, left.Length)),
-            Node.FromInterpolateIdent(ident, TextSpan.At(left.Length, 1 + ident.Length)),
-            Node.FromText(right, TextSpan.At(left.Length + 1 + ident.Length, right.Length))
-        ];
-
-        Template template = new(children);
-        MapAccessor accessor = new(new Dictionary<string, Value>
-        {
-            ["name"] = Value.FromString("Alice")
-        });
-
-        // act
-        Result<string> result = Renderer.Render(template, accessor);
-
-        // assert
-        Assert.True(result.IsOk);
-        Assert.Equal("Hello Alice!", result.Value);
+        RendererAssert.Render(
+            new Template([
+                Node.FromText("Hello ", TextSpan.At(0, "Hello ".Length)),
+                Node.FromInterpolateIdent("name", TextSpan.At("Hello ".Length, 1 + "name".Length)),
+                Node.FromText("!", TextSpan.At("Hello ".Length + 1 + "name".Length, "!".Length))
+            ]),
+            MapAccessor.With(("name", Value.FromString("Alice"))),
+            "Hello Alice!"
+        );
     }
 }

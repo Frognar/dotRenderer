@@ -8,4 +8,9 @@ public sealed class MapAccessor(IReadOnlyDictionary<string, Value> map) : IValue
         _map.TryGetValue(name, out Value value)
             ? (true, value)
             : (false, default);
+
+    public static MapAccessor Empty { get; } = new(new Dictionary<string, Value>(0));
+
+    public static MapAccessor With((string name, Value value) value, params (string name, Value value)[] values)
+        => new(values.Prepend(value).ToDictionary());
 }
