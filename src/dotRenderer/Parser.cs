@@ -14,8 +14,8 @@ public static class Parser
         {
             INode? node = t.Kind switch
             {
-                TokenKind.Text => new TextNode(t.Text, t.Range),
-                TokenKind.AtIdent => new InterpolateIdentNode(t.Text, t.Range),
+                TokenKind.Text => Node.FromText(t.Text, t.Range),
+                TokenKind.AtIdent => Node.FromInterpolateIdent(t.Text, t.Range),
                 _ => null,
             };
 

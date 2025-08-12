@@ -9,7 +9,7 @@ public class RendererTextOnlyTests
     {
         // arrange
         const string input = "Hello, renderer!";
-        Template template = new([new TextNode(input, TextSpan.At(0, input.Length))]);
+        Template template = new([Node.FromText(input, TextSpan.At(0, input.Length))]);
 
         // act
         Result<string> result = Renderer.Render(template);
