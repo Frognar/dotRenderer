@@ -29,6 +29,43 @@ public static class Lexer
                 }
 
                 int j = i + 1;
+                if (j < length && template[j] == '(')
+                {
+                    int k = j + 1;
+                    int depth = 1;
+                    while (k < length && depth > 0)
+                    {
+                        char c = template[k];
+                        if (c == '(')
+                        {
+                            depth++;
+                        }
+                        else if (c == ')')
+                        {
+                            depth--;
+                        }
+
+                        k++;
+                    }
+
+                    if (depth == 0)
+                    {
+                        int closeIndexExclusive = k;
+                        int closeIndexInclusive = closeIndexExclusive - 1;
+                        string expr = template[(j + 1)..closeIndexInclusive];
+                        Token tExpr = Token.FromAtExpr(expr, TextSpan.At(i, closeIndexExclusive - i));
+                        tokens.Add(tExpr);
+
+                        i = closeIndexExclusive;
+                        textStart = i;
+                        continue;
+                    }
+
+                    i++;
+                    textStart = i;
+                    continue;
+                }
+
                 if (j < length && template[j] == '@')
                 {
                     tokens.Add(Token.FromText("@", TextSpan.At(i, 2)));
