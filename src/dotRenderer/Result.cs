@@ -28,3 +28,4 @@ public readonly record struct TextSpan(int Offset, int Length)
 public sealed record LexError(string Code, TextSpan Range, string Message) : IError;
 
 public sealed record EvalError(string Code, TextSpan Range, string Message) : IError;
+public sealed record ParseError(string Code, TextSpan Range, string Message) : IError;
