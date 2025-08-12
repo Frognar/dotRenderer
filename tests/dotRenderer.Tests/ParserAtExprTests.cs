@@ -15,7 +15,7 @@ public class ParserAtExprTests
             ],
             new Template([
                 Node.FromText("Hello ", TextSpan.At(0, 6)),
-                Node.FromInterpolateExpr(Expr.FromRaw("1+2"), TextSpan.At(6, 6)),
+                Node.FromInterpolateExpr(Expr.FromBinaryAdd(Expr.FromNumber(1), Expr.FromNumber(2)), TextSpan.At(6, 6)),
                 Node.FromText("!", TextSpan.At(12, 1))
             ]));
     }

@@ -12,17 +12,24 @@ public static class Parser
 
         foreach (Token t in tokens)
         {
-            INode? node = t.Kind switch
+            switch (t.Kind)
             {
-                TokenKind.Text => Node.FromText(t.Text, t.Range),
-                TokenKind.AtIdent => Node.FromInterpolateIdent(t.Text, t.Range),
-                TokenKind.AtExpr => Node.FromInterpolateExpr(Expr.FromRaw(t.Text), t.Range),
-                _ => null,
-            };
+                case TokenKind.Text:
+                    nodesBuilder.Add(Node.FromText(t.Text, t.Range));
+                    break;
+                case TokenKind.AtIdent:
+                    nodesBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
+                    break;
+                case TokenKind.AtExpr:
+                    Result<IExpr> parsed = ExprParser.Parse(t.Text);
+                    if (!parsed.IsOk)
+                    {
+                        IError err = parsed.Error!;
+                        return Result<Template>.Err(new ParseError(err.Code, t.Range, err.Message));
+                    }
 
-            if (node is not null)
-            {
-                nodesBuilder.Add(node);
+                    nodesBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
+                    break;
             }
         }
 
