@@ -10,7 +10,7 @@ public class ParserTextOnlyTests
     {
         // arrange
         const string input = "Hello, World!"; 
-        ImmutableArray<Token> tokens = [new(TokenKind.Text, input, new TextSpan(0, input.Length))];
+        ImmutableArray<Token> tokens = [Token.FromText(input, TextSpan.At(0, input.Length))];
 
         // act
         Result<Template> parse = Parser.Parse(tokens);

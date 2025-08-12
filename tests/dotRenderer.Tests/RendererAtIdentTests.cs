@@ -14,9 +14,9 @@ public class RendererAtIdentTests
         const string right = "!";
         ImmutableArray<INode> children =
         [
-            new TextNode(left, new TextSpan(0, left.Length)),
-            new InterpolateIdentNode(ident, new TextSpan(left.Length, 1 + ident.Length)),
-            new TextNode(right, new TextSpan(left.Length + 1 + ident.Length, right.Length))
+            new TextNode(left, TextSpan.At(0, left.Length)),
+            new InterpolateIdentNode(ident, TextSpan.At(left.Length, 1 + ident.Length)),
+            new TextNode(right, TextSpan.At(left.Length + 1 + ident.Length, right.Length))
         ];
 
         Template template = new(children);
