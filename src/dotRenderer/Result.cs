@@ -20,7 +20,10 @@ public interface IError
     string Message { get; }
 }
 
-public readonly record struct TextSpan(int Offset, int Length);
+public readonly record struct TextSpan(int Offset, int Length)
+{
+    public static TextSpan At(int offset, int length) => new(offset, length);
+}
 
 public sealed record LexError(string Code, TextSpan Range, string Message) : IError;
 
