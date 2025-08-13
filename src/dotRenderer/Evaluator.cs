@@ -23,23 +23,28 @@ public static class Evaluator
             return Result<Value>.Ok(Value.FromNumber(n.Value));
         }
 
+        if (expr is BooleanExpr b)
+        {
+            return Result<Value>.Ok(Value.FromBool(b.Value));
+        }
+
         if (expr is IdentExpr id)
         {
             return EvaluateIdent(accessor, id.Name, range);
         }
 
-        if (expr is not BinaryExpr { Op: BinaryOp.Add } b)
+        if (expr is not BinaryExpr { Op: BinaryOp.Add } bin)
         {
             return Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."));
         }
 
-        Result<Value> l = EvaluateExpr(b.Left, accessor, range);
+        Result<Value> l = EvaluateExpr(bin.Left, accessor, range);
         if (!l.IsOk)
         {
             return l;
         }
 
-        Result<Value> r = EvaluateExpr(b.Right, accessor, range);
+        Result<Value> r = EvaluateExpr(bin.Right, accessor, range);
         if (!r.IsOk)
         {
             return r;
