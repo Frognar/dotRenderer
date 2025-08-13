@@ -15,6 +15,14 @@ public readonly record struct Result<T>
 
 public static class Result
 {
+    public static Result<TResult> Bind<T, TResult>(this Result<T> source, Func<T, Result<TResult>> bind)
+    {
+        ArgumentNullException.ThrowIfNull(bind);
+        return !source.IsOk
+            ? Result<TResult>.Err(source.Error!)
+            : bind(source.Value);
+    }
+    
     public static Result<TResult> Bind2<T, T2, TResult>(
         this Result<T> source,
         Func<Result<T2>> otherFactory,

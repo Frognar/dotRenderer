@@ -9,6 +9,10 @@ public static class Renderer
     public static Result<string> Render(Template template) => Render(template, null);
 
     [Pure]
+    public static Func<Template, Result<string>> RenderWithAccessor(IValueAccessor? accessor) =>
+        template => Render(template, accessor);
+
+    [Pure]
     public static Result<string> Render(Template template, IValueAccessor? globals)
     {
         template ??= new Template([]);
