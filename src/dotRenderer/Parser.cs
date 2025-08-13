@@ -128,7 +128,83 @@ public static class Parser
         }
 
         i++; // consume '}'
-        IfNode node = Node.FromIf(cond.Value, thenBuilder.ToImmutable(), atIf.Range);
+
+        // Optional: Else branch
+        ImmutableArray<INode>.Builder elseBuilder = ImmutableArray.CreateBuilder<INode>();
+        if (i < n && tokens[i].Kind == TokenKind.Else)
+        {
+            i++; // consume 'else'
+            if (i >= n || tokens[i].Kind != TokenKind.LBrace)
+            {
+                return Result<(int, INode)>.Err(new ParseError("ElseMissingLBrace", atIf.Range, "Expected '{' after else."));
+            }
+
+            i++; // consume '{'
+            while (i < n && tokens[i].Kind != TokenKind.RBrace)
+            {
+                Token t = tokens[i];
+                switch (t.Kind)
+                {
+                    case TokenKind.Text:
+                        elseBuilder.Add(Node.FromText(t.Text, t.Range));
+                        i++;
+                        break;
+
+                    case TokenKind.AtIdent:
+                        elseBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
+                        i++;
+                        break;
+
+                    case TokenKind.AtExpr:
+                    {
+                        Result<IExpr> parsed = ExprParser.Parse(t.Text);
+                        if (!parsed.IsOk)
+                        {
+                            IError err = parsed.Error!;
+                            return Result<(int, INode)>.Err(new ParseError(err.Code, t.Range, err.Message));
+                        }
+
+                        elseBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
+                        i++;
+                        break;
+                    }
+
+                    case TokenKind.AtIf:
+                    {
+                        Result<(int i2, INode node)> inner = ParseIf(tokens, i);
+                        if (!inner.IsOk)
+                        {
+                            return inner;
+                        }
+                        i = inner.Value.i2;
+                        elseBuilder.Add(inner.Value.node);
+                        break;
+                    }
+
+                    case TokenKind.LBrace:
+                        return Result<(int, INode)>.Err(new ParseError("UnexpectedLBrace", t.Range, "Unexpected '{' inside else block."));
+
+                    case TokenKind.RBrace:
+                        break;
+
+                    default:
+                        i++;
+                        break;
+                }
+            }
+
+            if (i >= n || tokens[i].Kind != TokenKind.RBrace)
+            {
+                return Result<(int, INode)>.Err(new ParseError("ElseMissingRBrace", atIf.Range, "Expected '}' to close else block."));
+            }
+
+            i++; // consume '}'
+        }
+
+        IfNode node = elseBuilder.Count > 0
+            ? Node.FromIf(cond.Value, thenBuilder.ToImmutable(), elseBuilder.ToImmutable(), atIf.Range)
+            : Node.FromIf(cond.Value, thenBuilder.ToImmutable(), atIf.Range);
+
         return Result<(int, INode)>.Ok((i, node));
     }
 }

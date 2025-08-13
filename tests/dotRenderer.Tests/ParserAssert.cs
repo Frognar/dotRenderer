@@ -37,6 +37,13 @@ internal static class ParserAssert
                 {
                     AssertEqual(e, a);
                 }
+                
+                Assert.Equal(ifNode.Else.Length, actIf.Else.Length);
+                foreach ((INode a, INode e)  in actIf.Else.Zip(ifNode.Else))
+                {
+                    AssertEqual(e, a);
+                }
+
                 break;
         }
     }
