@@ -13,6 +13,27 @@ public readonly record struct Result<T>
     public static Result<T> Err(IError error) => new(false, default!, error);
 }
 
+public static class Result
+{
+    public static Result<TResult> Bind2<T, T2, TResult>(
+        this Result<T> source,
+        Func<Result<T2>> otherFactory,
+        Func<T, T2, Result<TResult>> bind)
+    {
+        ArgumentNullException.ThrowIfNull(otherFactory);
+        ArgumentNullException.ThrowIfNull(bind);
+        if (!source.IsOk)
+        {
+            return Result<TResult>.Err(source.Error!);
+        }
+        
+        Result<T2> other = otherFactory();
+        return !other.IsOk
+            ? Result<TResult>.Err(other.Error!)
+            : bind(source.Value, other.Value);
+    }
+}
+
 public interface IError
 {
     TextSpan Range { get; }

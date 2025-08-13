@@ -30,26 +30,15 @@ public static class Evaluator
 
     private static Result<Value> EvaluateBinaryExpr(BinaryExpr expr, IValueAccessor accessor, TextSpan range)
     {
-        Result<Value> l = EvaluateExpr(expr.Left, accessor, range);
-        if (!l.IsOk)
-        {
-            return l;
-        }
-
-        Result<Value> r = EvaluateExpr(expr.Right, accessor, range);
-        if (!r.IsOk)
-        {
-            return r;
-        }
-
-        Value lv = l.Value;
-        Value rv = r.Value;
-
-        if (lv.Kind == ValueKind.Number && rv.Kind == ValueKind.Number)
-        {
-            return Result<Value>.Ok(Value.FromNumber(lv.Number + rv.Number));
-        }
-
-        return Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers."));
+        return EvaluateExpr(expr.Left, accessor, range)
+            .Bind2(
+                () => EvaluateExpr(expr.Right, accessor, range),
+                (l, r) => (l, r) switch
+                {
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn) =>
+                        Result<Value>.Ok(Value.FromNumber(ln.Number + rn.Number)),
+                    _ =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers."))
+                });
     }
 }
