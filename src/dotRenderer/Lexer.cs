@@ -91,8 +91,15 @@ public static class Lexer
                         while (k < length && depth > 0)
                         {
                             char c = template[k];
-                            if (c == '(') depth++;
-                            else if (c == ')') depth--;
+                            if (c == '(')
+                            {
+                                depth++;
+                            }
+                            else if (c == ')')
+                            {
+                                depth--;
+                            }
+
                             k++;
                         }
 
@@ -113,7 +120,7 @@ public static class Lexer
                     textStart = i;
                     continue;
                 }
-                
+
                 if (j < length && IsIdentStart(template[j]))
                 {
                     int k = j + 1;
@@ -132,6 +139,20 @@ public static class Lexer
                 }
 
                 i++;
+                continue;
+            }
+
+            if (ch == 'e' && i + 4 <= length && IsElseKeyword(template, i))
+            {
+                if (i > textStart)
+                {
+                    string text = template[textStart..i];
+                    tokens.Add(Token.FromText(text, TextSpan.At(textStart, text.Length)));
+                }
+
+                tokens.Add(Token.FromElse(TextSpan.At(i, 4)));
+                i += 4;
+                textStart = i;
                 continue;
             }
 
@@ -179,4 +200,34 @@ public static class Lexer
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';
 
     private static bool IsIdentPart(char c) => char.IsLetterOrDigit(c) || c == '_';
+
+    private static bool IsElseKeyword(string s, int i)
+    {
+        if (i + 4 > s.Length)
+        {
+            return false;
+        }
+
+        return s.AsSpan(i, 4).SequenceEqual("else".AsSpan()) &&
+               IsWordBoundaryBefore(s, i) &&
+               IsWordBoundaryAfter(s, i + 4) &&
+               NextNonWsIsLBrace(s, i + 4);
+    }
+
+    private static bool IsWordBoundaryBefore(string s, int idx)
+        => idx == 0 || !IsIdentPart(s[idx - 1]);
+
+    private static bool IsWordBoundaryAfter(string s, int idxAfterWord)
+        => idxAfterWord >= s.Length || !IsIdentPart(s[idxAfterWord]);
+
+    private static bool NextNonWsIsLBrace(string s, int start)
+    {
+        int i = start;
+        while (i < s.Length && char.IsWhiteSpace(s[i]))
+        {
+            i++;
+        }
+
+        return i < s.Length && s[i] == '{';
+    }
 }
