@@ -23,4 +23,25 @@ public class RendererIfTests
             "XokY"
         );
     }
+
+    [Fact]
+    public void Should_Render_Else_Block_When_Condition_Is_False()
+    {
+        Template template = new([
+            Node.FromText("A", TextSpan.At(0, 1)),
+            Node.FromIf(
+                Expr.FromBoolean(false),
+                [
+                    Node.FromText("T", TextSpan.At(0, 1))
+                ],
+                [
+                    Node.FromText("E", TextSpan.At(0, 1))
+                ],
+                TextSpan.At(1, 14)
+            ),
+            Node.FromText("B", TextSpan.At(0, 1))
+        ]);
+
+        RendererAssert.Render(template, MapAccessor.Empty, "AEB");
+    }
 }

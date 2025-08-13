@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics.Contracts;
+﻿using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace DotRenderer;
@@ -106,6 +105,16 @@ public static class Renderer
                     }
 
                     sb.Append(thenRendered.Value);
+                }
+                else if (ifNode.Else.Length > 0)
+                {
+                    Result<string> elseRendered = Render(new Template(ifNode.Else), accessorForIf);
+                    if (!elseRendered.IsOk)
+                    {
+                        return elseRendered;
+                    }
+
+                    sb.Append(elseRendered.Value);
                 }
 
                 continue;

@@ -13,8 +13,15 @@ public static class Node
     public static InterpolateIdentNode FromInterpolateIdent(string name, TextSpan range) => new(name, range);
     public static InterpolateExprNode FromInterpolateExpr(IExpr expr, TextSpan range) => new(expr, range);
 
+    public static IfNode FromIf(
+        IExpr condition,
+        ImmutableArray<INode> thenNodes,
+        ImmutableArray<INode> elseNodes,
+        TextSpan range) =>
+        new(condition, thenNodes, elseNodes, range);
+
     public static IfNode FromIf(IExpr condition, ImmutableArray<INode> thenNodes, TextSpan range) =>
-        new(condition, thenNodes, range);
+        new(condition, thenNodes, [], range);
 }
 
 public sealed record TextNode(string Text, TextSpan Range) : INode;
@@ -23,7 +30,8 @@ public sealed record InterpolateIdentNode(string Name, TextSpan Range) : INode;
 
 public sealed record InterpolateExprNode(IExpr Expr, TextSpan Range) : INode;
 
-public sealed record IfNode(IExpr Condition, ImmutableArray<INode> Then, TextSpan Range) : INode;
+public sealed record IfNode(IExpr Condition, ImmutableArray<INode> Then, ImmutableArray<INode> Else, TextSpan Range)
+    : INode;
 
 public sealed record Template(ImmutableArray<INode> Children);
 
