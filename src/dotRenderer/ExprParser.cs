@@ -70,6 +70,18 @@ public static class ExprParser
 
         char c = text[i];
 
+        if (i + 4 <= n && text.Substring(i, 4) == "true" && (i + 4 == n || !IsIdentPart(text[i + 4])))
+        {
+            i += 4;
+            return Result<IExpr>.Ok(Expr.FromBoolean(true));
+        }
+
+        if (i + 5 <= n && text.Substring(i, 5) == "false" && (i + 5 == n || !IsIdentPart(text[i + 5])))
+        {
+            i += 5;
+            return Result<IExpr>.Ok(Expr.FromBoolean(false));
+        }
+
         if (char.IsDigit(c))
         {
             int start = i;

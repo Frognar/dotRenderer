@@ -14,9 +14,30 @@ internal static class ParserAssert
         Assert.True(result.IsOk);
         Template template = result.Value;
         Assert.Equal(expected.Children.Length, template.Children.Length);
-        for (int i = 0; i < expected.Children.Length; i++)
+        foreach ((INode a, INode e) in template.Children.Zip(expected.Children))
         {
-            Assert.Equal(expected.Children[i], template.Children[i]);
+            AssertEqual(e, a);
+        }
+    }
+
+    private static void AssertEqual(INode expected, INode actual)
+    {
+        switch (expected)
+        {
+            case TextNode:
+            case InterpolateIdentNode:
+            case InterpolateExprNode:
+                Assert.Equal(expected, actual);
+                break;
+            case IfNode ifNode:
+                IfNode actIf = Assert.IsType<IfNode>(actual);;
+                Assert.Equal(ifNode.Condition, actIf.Condition);
+                Assert.Equal(ifNode.Range, actIf.Range);
+                foreach ((INode a, INode e) in actIf.Then.Zip(ifNode.Then))
+                {
+                    AssertEqual(e, a);
+                }
+                break;
         }
     }
 }
