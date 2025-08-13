@@ -18,33 +18,25 @@ public static class Evaluator
     [Pure]
     public static Result<Value> EvaluateExpr(IExpr expr, IValueAccessor accessor, TextSpan range)
     {
-        if (expr is NumberExpr n)
+        return expr switch
         {
-            return Result<Value>.Ok(Value.FromNumber(n.Value));
-        }
+            NumberExpr n => Result<Value>.Ok(Value.FromNumber(n.Value)),
+            BooleanExpr b => Result<Value>.Ok(Value.FromBool(b.Value)),
+            IdentExpr id => EvaluateIdent(accessor, id.Name, range),
+            BinaryExpr bin => EvaluateBinaryExpr(bin, accessor, range),
+            _ => Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."))
+        };
+    }
 
-        if (expr is BooleanExpr b)
-        {
-            return Result<Value>.Ok(Value.FromBool(b.Value));
-        }
-
-        if (expr is IdentExpr id)
-        {
-            return EvaluateIdent(accessor, id.Name, range);
-        }
-
-        if (expr is not BinaryExpr { Op: BinaryOp.Add } bin)
-        {
-            return Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."));
-        }
-
-        Result<Value> l = EvaluateExpr(bin.Left, accessor, range);
+    private static Result<Value> EvaluateBinaryExpr(BinaryExpr expr, IValueAccessor accessor, TextSpan range)
+    {
+        Result<Value> l = EvaluateExpr(expr.Left, accessor, range);
         if (!l.IsOk)
         {
             return l;
         }
 
-        Result<Value> r = EvaluateExpr(bin.Right, accessor, range);
+        Result<Value> r = EvaluateExpr(expr.Right, accessor, range);
         if (!r.IsOk)
         {
             return r;
@@ -59,6 +51,5 @@ public static class Evaluator
         }
 
         return Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers."));
-
     }
 }
