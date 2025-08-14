@@ -45,6 +45,19 @@ internal static class ParserAssert
                 }
 
                 break;
+
+            case ForNode forExp:
+                ForNode forAct = Assert.IsType<ForNode>(actual);
+                Assert.Equal(forExp.Item, forAct.Item);
+                Assert.Equal(forExp.Seq, forAct.Seq);
+                Assert.Equal(forExp.Range, forAct.Range);
+                Assert.Equal(forExp.Body.Length, forAct.Body.Length);
+                foreach ((INode a, INode e) in forAct.Body.Zip(forExp.Body))
+                {
+                    AssertEqual(e, a);
+                }
+
+                break;
         }
     }
 }
