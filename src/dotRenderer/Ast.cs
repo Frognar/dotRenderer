@@ -54,6 +54,7 @@ public static class Expr
     public static BooleanExpr FromBoolean(bool value) => new(value);
     public static IdentExpr FromIdent(string name) => new(name);
     public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
+    public static MemberExpr FromMember(IExpr target, string name) => new(target, name);
 }
 
 public sealed record RawExpr(string Text) : IExpr;
@@ -65,3 +66,5 @@ public sealed record BooleanExpr(bool Value) : IExpr;
 public sealed record IdentExpr(string Name) : IExpr;
 
 public sealed record BinaryExpr(BinaryOp Op, IExpr Left, IExpr Right) : IExpr;
+
+public sealed record MemberExpr(IExpr Target, string Name) : IExpr;

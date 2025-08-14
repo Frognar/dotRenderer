@@ -25,6 +25,33 @@ public class TemplateEngineForTests
     }
 
     [Fact]
+    public void Should_Render_For_Loop_With_DotAccess()
+    {
+        // arrange
+        const string template = "X@for(u in users){@(u.name)}Y";
+
+        MapAccessor globals = MapAccessor.With(
+            ("users", Value.FromSequence(
+                Value.FromMap(new Dictionary<string, Value>
+                {
+                    ["name"] = Value.FromString("a")
+                }),
+                Value.FromMap(new Dictionary<string, Value>
+                {
+                    ["name"] = Value.FromString("b")
+                })
+            ))
+        );
+
+        // act
+        Result<string> result = TemplateEngine.Render(template, globals);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal("XabY", result.Value);
+    }
+
+    [Fact]
     public void Should_Fail_For_When_Expression_Is_Not_A_Sequence()
     {
         // arrange

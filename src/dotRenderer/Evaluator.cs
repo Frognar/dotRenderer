@@ -24,8 +24,19 @@ public static class Evaluator
             BooleanExpr b => Result<Value>.Ok(Value.FromBool(b.Value)),
             IdentExpr id => EvaluateIdent(accessor, id.Name, range),
             BinaryExpr bin => EvaluateBinaryExpr(bin, accessor, range),
+            MemberExpr m => EvaluateMember(m, accessor, range),
             _ => Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."))
         };
+    }
+
+    private static Result<Value> EvaluateMember(MemberExpr expr, IValueAccessor accessor, TextSpan range)
+    {
+        return EvaluateExpr(expr.Target, accessor, range)
+            .Bind(t => t.Kind != ValueKind.Map
+                ? Result<Value>.Err(new EvalError("TypeMismatch", range, "Member access requires a map/object value."))
+                : t.Map.TryGetValue(expr.Name, out Value value)
+                    ? Result<Value>.Ok(value)
+                    : Result<Value>.Err(new EvalError("MissingMember", range, $"Member '{expr.Name}' was not found.")));
     }
 
     private static Result<Value> EvaluateBinaryExpr(BinaryExpr expr, IValueAccessor accessor, TextSpan range)

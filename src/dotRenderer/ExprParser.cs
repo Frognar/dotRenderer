@@ -14,7 +14,7 @@ public static class ExprParser
 
         SkipWs(text, ref i, n);
 
-        Result<IExpr> first = ParsePrimary(text, ref i, n);
+        Result<IExpr> first = ParsePrimaryWithMemberChain(text, ref i, n);
         if (!first.IsOk)
         {
             return first;
@@ -33,7 +33,7 @@ public static class ExprParser
             i++;
             SkipWs(text, ref i, n);
 
-            Result<IExpr> rightRes = ParsePrimary(text, ref i, n);
+            Result<IExpr> rightRes = ParsePrimaryWithMemberChain(text, ref i, n);
             if (!rightRes.IsOk)
             {
                 return rightRes;
@@ -59,6 +59,46 @@ public static class ExprParser
         {
             i++;
         }
+    }
+
+    private static Result<IExpr> ParsePrimaryWithMemberChain(string text, ref int i, int n)
+    {
+        Result<IExpr> atom = ParsePrimary(text, ref i, n);
+        if (!atom.IsOk)
+        {
+            return atom;
+        }
+
+        IExpr current = atom.Value;
+        while (true)
+        {
+            int save = i;
+            SkipWs(text, ref i, n);
+            if (i < n && text[i] == '.')
+            {
+                i++;
+                if (i >= n || !IsIdentStart(text[i]))
+                {
+                    return Result<IExpr>.Err(new ParseError("MemberName", TextSpan.At(i, 0), "Expected member name after '.'."));
+                }
+
+                int start = i;
+                i++;
+                while (i < n && IsIdentPart(text[i]))
+                {
+                    i++;
+                }
+
+                string name = text[start..i];
+                current = Expr.FromMember(current, name);
+                continue;
+            }
+
+            i = save;
+            break;
+        }
+
+        return Result<IExpr>.Ok(current);
     }
 
     private static Result<IExpr> ParsePrimary(string text, ref int i, int n)

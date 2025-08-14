@@ -19,30 +19,44 @@ public readonly record struct Value
     public double Number { get; }
     public bool Boolean { get; }
     public ImmutableArray<Value> Sequence { get; }
+    public ImmutableDictionary<string, Value> Map { get; }
 
-    private Value(ValueKind kind, string text, double number, bool boolean, ImmutableArray<Value> sequence)
+    private Value(
+        ValueKind kind,
+        string text,
+        double number,
+        bool boolean,
+        ImmutableArray<Value> sequence,
+        ImmutableDictionary<string, Value> map)
     {
         Kind = kind;
         Text = text;
         Number = number;
         Boolean = boolean;
         Sequence = sequence;
+        Map = map;
     }
 
     public static Value FromString(string value) =>
-        new(ValueKind.Text, value, 0d, false, []);
+        new(ValueKind.Text, value, 0d, false, [], ImmutableDictionary<string, Value>.Empty);
 
     public static Value FromBool(bool value) =>
-        new(ValueKind.Boolean, "", 0d, value, []);
+        new(ValueKind.Boolean, "", 0d, value, [], ImmutableDictionary<string, Value>.Empty);
 
     public static Value FromNumber(double value) =>
-        new(ValueKind.Number, "", value, false, []);
+        new(ValueKind.Number, "", value, false, [], ImmutableDictionary<string, Value>.Empty);
 
     public static Value FromSequence(ImmutableArray<Value> items) =>
-        new(ValueKind.Sequence, "", 0d, false, items);
+        new(ValueKind.Sequence, "", 0d, false, items, ImmutableDictionary<string, Value>.Empty);
 
     public static Value FromSequence(params Value[] items) =>
-        new(ValueKind.Sequence, "", 0d, false, [..items]);
+        new(ValueKind.Sequence, "", 0d, false, [..items], ImmutableDictionary<string, Value>.Empty);
+
+    public static Value FromMap(ImmutableDictionary<string, Value> map) =>
+        new(ValueKind.Map, "", 0d, false, [], map);
+
+    public static Value FromMap(IReadOnlyDictionary<string, Value> map) =>
+        new(ValueKind.Map, "", 0d, false, [], map.ToImmutableDictionary());
 
 
     public (bool ok, string value) AsString() =>
@@ -64,6 +78,11 @@ public readonly record struct Value
         Kind == ValueKind.Sequence
             ? (true, Sequence)
             : (false, []);
+
+    public (bool ok, ImmutableDictionary<string, Value> value) AsMap() =>
+        Kind == ValueKind.Map
+            ? (true, Map)
+            : (false, ImmutableDictionary<string, Value>.Empty);
 
     public string ToInvariantString() =>
         Kind switch
