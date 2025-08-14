@@ -44,7 +44,8 @@ public interface IExpr;
 
 public enum BinaryOp
 {
-    Add
+    Add,
+    Eq
 }
 
 public static class Expr
@@ -54,6 +55,7 @@ public static class Expr
     public static BooleanExpr FromBoolean(bool value) => new(value);
     public static IdentExpr FromIdent(string name) => new(name);
     public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
+    public static BinaryExpr FromBinaryEq(IExpr left, IExpr right) => new(BinaryOp.Eq, left, right);
     public static MemberExpr FromMember(IExpr target, string name) => new(target, name);
 }
 

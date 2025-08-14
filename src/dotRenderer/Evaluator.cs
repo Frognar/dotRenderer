@@ -44,12 +44,22 @@ public static class Evaluator
         return EvaluateExpr(expr.Left, accessor, range)
             .Bind2(
                 () => EvaluateExpr(expr.Right, accessor, range),
-                (l, r) => (l, r) switch
+                (l, r) => (l, r, expr.Op) switch
                 {
-                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn) =>
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Add) =>
                         Result<Value>.Ok(Value.FromNumber(ln.Number + rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Eq) =>
+                        Result<Value>.Ok(Value.FromBool(Math.Abs(ln.Number - rn.Number) < 0.000001)),
+                    ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.Eq) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Boolean == rn.Boolean)),
+                    ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.Eq) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Text.Equals(rn.Text, StringComparison.Ordinal))),
+                    (_, _, BinaryOp.Add) =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers.")),
+                    (_, _, BinaryOp.Eq) =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '==' expects operands of the same scalar type.")),
                     _ =>
-                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers."))
+                        Result<Value>.Err(new EvalError("UnsupportedOp", range, "Binary operator not supported."))
                 });
     }
 }

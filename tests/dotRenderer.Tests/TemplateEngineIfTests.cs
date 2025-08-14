@@ -16,4 +16,18 @@ public class TemplateEngineIfTests
         Assert.True(result.IsOk);
         Assert.Equal(expected, result.Value);
     }
+
+    [Fact]
+    public void Should_Render_Then_When_Equality_Is_True()
+    {
+        // arrange
+        const string template = "A@if(1==1){T}else{E}B";
+
+        // act
+        Result<string> result = TemplateEngine.Render(template);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal("ATB", result.Value);
+    }
 }
