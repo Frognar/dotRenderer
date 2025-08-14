@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.Contracts;
+﻿using System.Collections.Immutable;
+using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace DotRenderer;
@@ -119,6 +120,40 @@ public static class Renderer
                     }
 
                     sb.Append(elseRendered.Value);
+                }
+
+                continue;
+            }
+
+            if (node is ForNode forNode)
+            {
+                IValueAccessor accessorForFor = globals ?? MapAccessor.Empty;
+
+                Result<Value> seqRes = Evaluator.EvaluateExpr(forNode.Seq, accessorForFor, forNode.Range);
+                if (!seqRes.IsOk)
+                {
+                    return Result<string>.Err(seqRes.Error!);
+                }
+
+                Value seqVal = seqRes.Value;
+                if (seqVal.Kind != ValueKind.Sequence)
+                {
+                    return Result<string>.Err(new EvalError("TypeMismatch", forNode.Range,
+                        "Expression of @for must evaluate to a sequence."));
+                }
+
+                ImmutableArray<Value> items = seqVal.Sequence;
+                foreach (Value item in items)
+                {
+                    ChainAccessor scoped = new(accessorForFor, forNode.Item, item);
+
+                    Result<string> bodyRendered = Render(new Template(forNode.Body), scoped);
+                    if (!bodyRendered.IsOk)
+                    {
+                        return bodyRendered;
+                    }
+
+                    sb.Append(bodyRendered.Value);
                 }
 
                 continue;
