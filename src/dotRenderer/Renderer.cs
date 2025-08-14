@@ -139,7 +139,7 @@ public static class Renderer
                 if (seqVal.Kind != ValueKind.Sequence)
                 {
                     return Result<string>.Err(new EvalError("TypeMismatch", forNode.Range,
-                        "Expression of @for must evaluate to a sequence."));
+                        $"Expression of @for must evaluate to a sequence, but got {seqVal.Kind}."));
                 }
 
                 ImmutableArray<Value> items = seqVal.Sequence;
