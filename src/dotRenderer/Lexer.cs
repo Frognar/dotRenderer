@@ -121,6 +121,51 @@ public static class Lexer
                     continue;
                 }
 
+                if (j + 2 < length && template[j] == 'f' && template[j + 1] == 'o' && template[j + 2] == 'r')
+                {
+                    int k = j + 3;
+                    while (k < length && char.IsWhiteSpace(template[k])) k++;
+
+                    if (k < length && template[k] == '(')
+                    {
+                        k++;
+                        int depth = 1;
+                        int headerStart = k;
+
+                        while (k < length && depth > 0)
+                        {
+                            char c = template[k];
+                            if (c == '(')
+                            {
+                                depth++;
+                            }
+                            else if (c == ')')
+                            {
+                                depth--;
+                            }
+
+                            k++;
+                        }
+
+                        if (depth == 0)
+                        {
+                            int closeExclusive = k;
+                            int closeInclusive = closeExclusive - 1;
+                            string header = template[headerStart..closeInclusive];
+                            tokens.Add(Token.FromAtFor(header, TextSpan.At(i, closeExclusive - i)));
+
+                            i = closeExclusive;
+                            textStart = i;
+                            continue;
+                        }
+                    }
+
+                    // malformed "@for" — consume '@'
+                    i++;
+                    textStart = i;
+                    continue;
+                }
+
                 if (j < length && IsIdentStart(template[j]))
                 {
                     int k = j + 1;
