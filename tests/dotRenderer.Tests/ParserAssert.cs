@@ -31,16 +31,17 @@ internal static class ParserAssert
                 break;
 
             case IfNode ifNode:
-                IfNode actIf = Assert.IsType<IfNode>(actual);;
+                IfNode actIf = Assert.IsType<IfNode>(actual);
+                ;
                 Assert.Equal(ifNode.Condition, actIf.Condition);
                 Assert.Equal(ifNode.Range, actIf.Range);
                 foreach ((INode a, INode e) in actIf.Then.Zip(ifNode.Then))
                 {
                     AssertEqual(e, a);
                 }
-                
+
                 Assert.Equal(ifNode.Else.Length, actIf.Else.Length);
-                foreach ((INode a, INode e)  in actIf.Else.Zip(ifNode.Else))
+                foreach ((INode a, INode e) in actIf.Else.Zip(ifNode.Else))
                 {
                     AssertEqual(e, a);
                 }
@@ -55,6 +56,12 @@ internal static class ParserAssert
                 Assert.Equal(forExp.Range, forAct.Range);
                 Assert.Equal(forExp.Body.Length, forAct.Body.Length);
                 foreach ((INode a, INode e) in forAct.Body.Zip(forExp.Body))
+                {
+                    AssertEqual(e, a);
+                }
+
+                Assert.Equal(forExp.Else.Length, forAct.Else.Length);
+                foreach ((INode a, INode e) in forAct.Else.Zip(forExp.Else))
                 {
                     AssertEqual(e, a);
                 }

@@ -90,4 +90,39 @@ public class TemplateEngineForTests
         Assert.True(result.IsOk);
         Assert.Equal("X0:a;1:b;Y", result.Value);
     }
+
+    [Fact]
+    public void Should_Render_Else_For_Empty_Sequence()
+    {
+        // arrange
+        const string template = "X@for(item in items){@item}else{E}Y";
+        MapAccessor globals = MapAccessor.With(("items", Value.FromSequence()));
+        
+        // act
+        Result<string> result = TemplateEngine.Render(template, globals);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal("XEY", result.Value);
+    }
+
+    [Fact]
+    public void Should_Render_Body_For_NonEmpty_Sequence()
+    {
+        // arrange
+        const string template = "X@for(item in items){@item}else{E}Y";
+        MapAccessor globals = MapAccessor.With(
+            ("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b")
+            ))
+        );
+
+        // act
+        Result<string> result = TemplateEngine.Render(template, globals);
+        
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal("XabY", result.Value);
+    }
 }

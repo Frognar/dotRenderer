@@ -143,24 +143,40 @@ public static class Renderer
                 }
 
                 ImmutableArray<Value> items = seqVal.Sequence;
-                int index = 0;
-                foreach (Value item in items)
+
+                if (items.Length == 0)
                 {
-                    IValueAccessor scoped = new ChainAccessor(accessorForFor, forNode.Item, item);
-
-                    if (forNode.Index is not null)
+                    if (forNode.Else.Length > 0)
                     {
-                        scoped = new ChainAccessor(scoped, forNode.Index, Value.FromNumber(index));
-                    }
+                        Result<string> elseRendered = Render(new Template(forNode.Else), accessorForFor);
+                        if (!elseRendered.IsOk)
+                        {
+                            return elseRendered;
+                        }
 
-                    Result<string> bodyRendered = Render(new Template(forNode.Body), scoped);
-                    if (!bodyRendered.IsOk)
+                        sb.Append(elseRendered.Value);
+                    }
+                }
+                else
+                {
+                    int index = 0;
+                    foreach (Value item in items)
                     {
-                        return bodyRendered;
-                    }
+                        IValueAccessor scoped = new ChainAccessor(accessorForFor, forNode.Item, item);
+                        if (forNode.Index is not null)
+                        {
+                            scoped = new ChainAccessor(scoped, forNode.Index, Value.FromNumber(index));
+                        }
 
-                    sb.Append(bodyRendered.Value);
-                    index++;
+                        Result<string> bodyRendered = Render(new Template(forNode.Body), scoped);
+                        if (!bodyRendered.IsOk)
+                        {
+                            return bodyRendered;
+                        }
+
+                        sb.Append(bodyRendered.Value);
+                        index++;
+                    }
                 }
 
                 continue;
