@@ -49,7 +49,14 @@ public enum BinaryOp
     Lt,
     Le,
     Gt,
-    Ge
+    Ge,
+    And,
+    Or
+}
+
+public enum UnaryOp
+{
+    Not
 }
 
 public static class Expr
@@ -64,7 +71,10 @@ public static class Expr
     public static BinaryExpr FromBinaryLe(IExpr left, IExpr right) => new(BinaryOp.Le, left, right);
     public static BinaryExpr FromBinaryGt(IExpr left, IExpr right) => new(BinaryOp.Gt, left, right);
     public static BinaryExpr FromBinaryGe(IExpr left, IExpr right) => new(BinaryOp.Ge, left, right);
+    public static BinaryExpr FromBinaryAnd(IExpr left, IExpr right) => new(BinaryOp.And, left, right);
+    public static BinaryExpr FromBinaryOr(IExpr left, IExpr right) => new(BinaryOp.Or, left, right);
     public static MemberExpr FromMember(IExpr target, string name) => new(target, name);
+    public static UnaryExpr FromUnaryNot(IExpr operand) => new(UnaryOp.Not, operand);
 }
 
 public sealed record RawExpr(string Text) : IExpr;
@@ -76,5 +86,7 @@ public sealed record BooleanExpr(bool Value) : IExpr;
 public sealed record IdentExpr(string Name) : IExpr;
 
 public sealed record BinaryExpr(BinaryOp Op, IExpr Left, IExpr Right) : IExpr;
+
+public sealed record UnaryExpr(UnaryOp Op, IExpr Operand) : IExpr;
 
 public sealed record MemberExpr(IExpr Target, string Name) : IExpr;

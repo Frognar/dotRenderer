@@ -14,33 +14,10 @@ public static class ExprParser
 
         SkipWs(text, ref i, n);
 
-        Result<IExpr> first = ParseEquality(text, ref i, n);
-        if (!first.IsOk)
+        Result<IExpr> expr = ParseOr(text, ref i, n);
+        if (!expr.IsOk)
         {
-            return first;
-        }
-
-        IExpr left = first.Value;
-
-        while (true)
-        {
-            SkipWs(text, ref i, n);
-            if (i >= n || text[i] != '+')
-            {
-                break;
-            }
-
-            i++;
-            SkipWs(text, ref i, n);
-
-            Result<IExpr> rightRes = ParseEquality(text, ref i, n);
-            if (!rightRes.IsOk)
-            {
-                return rightRes;
-            }
-
-            IExpr right = rightRes.Value;
-            left = Expr.FromBinaryAdd(left, right);
+            return expr;
         }
 
         SkipWs(text, ref i, n);
@@ -48,6 +25,80 @@ public static class ExprParser
         {
             return Result<IExpr>.Err(new ParseError("ExprTrailing", TextSpan.At(i, n - i),
                 "Unexpected trailing input in expression."));
+        }
+
+        return expr;
+    }
+
+    private static Result<IExpr> ParseOr(string text, ref int i, int n)
+    {
+        Result<IExpr> leftRes = ParseAnd(text, ref i, n);
+        if (!leftRes.IsOk)
+        {
+            return leftRes;
+        }
+
+        IExpr left = leftRes.Value;
+
+        while (true)
+        {
+            int save = i;
+            SkipWs(text, ref i, n);
+            if (i + 1 < n && text[i] == '|' && text[i + 1] == '|')
+            {
+                i += 2;
+                SkipWs(text, ref i, n);
+
+                Result<IExpr> rightRes = ParseAnd(text, ref i, n);
+                if (!rightRes.IsOk)
+                {
+                    return rightRes;
+                }
+
+                IExpr right = rightRes.Value;
+                left = Expr.FromBinaryOr(left, right);
+                continue;
+            }
+
+            i = save;
+            break;
+        }
+
+        return Result<IExpr>.Ok(left);
+    }
+
+    private static Result<IExpr> ParseAnd(string text, ref int i, int n)
+    {
+        Result<IExpr> leftRes = ParseEquality(text, ref i, n);
+        if (!leftRes.IsOk)
+        {
+            return leftRes;
+        }
+
+        IExpr left = leftRes.Value;
+
+        while (true)
+        {
+            int save = i;
+            SkipWs(text, ref i, n);
+            if (i + 1 < n && text[i] == '&' && text[i + 1] == '&')
+            {
+                i += 2;
+                SkipWs(text, ref i, n);
+
+                Result<IExpr> rightRes = ParseEquality(text, ref i, n);
+                if (!rightRes.IsOk)
+                {
+                    return rightRes;
+                }
+
+                IExpr right = rightRes.Value;
+                left = Expr.FromBinaryAnd(left, right);
+                continue;
+            }
+
+            i = save;
+            break;
         }
 
         return Result<IExpr>.Ok(left);
@@ -89,7 +140,7 @@ public static class ExprParser
 
         return Result<IExpr>.Ok(left);
     }
-    
+
     private static Result<IExpr> ParseRelational(string text, ref int i, int n)
     {
         Result<IExpr> leftRes = ParseAdditive(text, ref i, n);
@@ -120,6 +171,7 @@ public static class ExprParser
                     left = Expr.FromBinaryLe(left, rightLe.Value);
                     continue;
                 }
+
                 if (i + 1 < n && text[i] == '>' && text[i + 1] == '=')
                 {
                     i += 2;
@@ -133,6 +185,7 @@ public static class ExprParser
                     left = Expr.FromBinaryGe(left, rightGe.Value);
                     continue;
                 }
+
                 if (text[i] == '<')
                 {
                     i++;
@@ -146,6 +199,7 @@ public static class ExprParser
                     left = Expr.FromBinaryLt(left, rightLt.Value);
                     continue;
                 }
+
                 if (text[i] == '>')
                 {
                     i++;
@@ -170,7 +224,7 @@ public static class ExprParser
 
     private static Result<IExpr> ParseAdditive(string text, ref int i, int n)
     {
-        Result<IExpr> first = ParsePrimaryWithMemberChain(text, ref i, n);
+        Result<IExpr> first = ParseUnary(text, ref i, n);
         if (!first.IsOk)
         {
             return first;
@@ -187,7 +241,7 @@ public static class ExprParser
                 i++;
                 SkipWs(text, ref i, n);
 
-                Result<IExpr> rightRes = ParsePrimaryWithMemberChain(text, ref i, n);
+                Result<IExpr> rightRes = ParseUnary(text, ref i, n);
                 if (!rightRes.IsOk)
                 {
                     return rightRes;
@@ -203,6 +257,24 @@ public static class ExprParser
         }
 
         return Result<IExpr>.Ok(left);
+    }
+
+    private static Result<IExpr> ParseUnary(string text, ref int i, int n)
+    {
+        int save = i;
+        SkipWs(text, ref i, n);
+        if (i < n && text[i] == '!')
+        {
+            i++;
+            Result<IExpr> inner = ParseUnary(text, ref i, n);
+            if (!inner.IsOk)
+            {
+                return inner;
+            }
+            return Result<IExpr>.Ok(Expr.FromUnaryNot(inner.Value));
+        }
+        i = save;
+        return ParsePrimaryWithMemberChain(text, ref i, n);
     }
 
     private static void SkipWs(string text, ref int i, int n)

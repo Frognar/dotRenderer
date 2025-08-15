@@ -25,8 +25,23 @@ public static class Evaluator
             IdentExpr id => EvaluateIdent(accessor, id.Name, range),
             BinaryExpr bin => EvaluateBinaryExpr(bin, accessor, range),
             MemberExpr m => EvaluateMember(m, accessor, range),
+            UnaryExpr u => EvaluateUnaryExpr(u, accessor, range),
             _ => Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."))
         };
+    }
+
+    private static Result<Value> EvaluateUnaryExpr(UnaryExpr expr, IValueAccessor accessor, TextSpan range)
+    {
+        return EvaluateExpr(expr.Operand, accessor, range)
+            .Bind(t => (t, expr.Op) switch
+            {
+                ({ Kind: ValueKind.Boolean } b, UnaryOp.Not) =>
+                    Result<Value>.Ok(Value.FromBool(!b.Boolean)),
+                ({ Kind: not ValueKind.Boolean }, UnaryOp.Not) =>
+                    Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '!' expects boolean.")),
+                _ =>
+                    Result<Value>.Err(new EvalError("UnsupportedOp", range, "Unary operator not supported."))
+            });
     }
 
     private static Result<Value> EvaluateMember(MemberExpr expr, IValueAccessor accessor, TextSpan range)
@@ -62,10 +77,19 @@ public static class Evaluator
                         Result<Value>.Ok(Value.FromBool(ln.Boolean == rn.Boolean)),
                     ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(ln.Text.Equals(rn.Text, StringComparison.Ordinal))),
+                    ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.And) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Boolean && rn.Boolean)),
+                    ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.Or) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Boolean || rn.Boolean)),
+                    (_, _, BinaryOp.And) =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, $"Operator '&&' expects booleans.")),
+                    (_, _, BinaryOp.Or) =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, $"Operator '||' expects booleans.")),
                     (_, _, BinaryOp.Add) =>
                         Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers.")),
                     (_, _, BinaryOp.Eq) =>
-                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '==' expects operands of the same scalar type.")),
+                        Result<Value>.Err(new EvalError("TypeMismatch", range,
+                            "Operator '==' expects operands of the same scalar type.")),
                     _ =>
                         Result<Value>.Err(new EvalError("UnsupportedOp", range, "Binary operator not supported."))
                 });
