@@ -55,7 +55,7 @@ public static class ExprParser
 
     private static Result<IExpr> ParseEquality(string text, ref int i, int n)
     {
-        Result<IExpr> leftRes = ParseAdditive(text, ref i, n);
+        Result<IExpr> leftRes = ParseRelational(text, ref i, n);
         if (!leftRes.IsOk)
         {
             return leftRes;
@@ -72,7 +72,7 @@ public static class ExprParser
                 i += 2;
                 SkipWs(text, ref i, n);
 
-                Result<IExpr> rightRes = ParseAdditive(text, ref i, n);
+                Result<IExpr> rightRes = ParseRelational(text, ref i, n);
                 if (!rightRes.IsOk)
                 {
                     return rightRes;
@@ -81,6 +81,84 @@ public static class ExprParser
                 IExpr right = rightRes.Value;
                 left = Expr.FromBinaryEq(left, right);
                 continue;
+            }
+
+            i = save;
+            break;
+        }
+
+        return Result<IExpr>.Ok(left);
+    }
+    
+    private static Result<IExpr> ParseRelational(string text, ref int i, int n)
+    {
+        Result<IExpr> leftRes = ParseAdditive(text, ref i, n);
+        if (!leftRes.IsOk)
+        {
+            return leftRes;
+        }
+
+        IExpr left = leftRes.Value;
+
+        while (true)
+        {
+            int save = i;
+            SkipWs(text, ref i, n);
+
+            if (i < n)
+            {
+                if (i + 1 < n && text[i] == '<' && text[i + 1] == '=')
+                {
+                    i += 2;
+                    SkipWs(text, ref i, n);
+                    Result<IExpr> rightLe = ParseAdditive(text, ref i, n);
+                    if (!rightLe.IsOk)
+                    {
+                        return rightLe;
+                    }
+
+                    left = Expr.FromBinaryLe(left, rightLe.Value);
+                    continue;
+                }
+                if (i + 1 < n && text[i] == '>' && text[i + 1] == '=')
+                {
+                    i += 2;
+                    SkipWs(text, ref i, n);
+                    Result<IExpr> rightGe = ParseAdditive(text, ref i, n);
+                    if (!rightGe.IsOk)
+                    {
+                        return rightGe;
+                    }
+
+                    left = Expr.FromBinaryGe(left, rightGe.Value);
+                    continue;
+                }
+                if (text[i] == '<')
+                {
+                    i++;
+                    SkipWs(text, ref i, n);
+                    Result<IExpr> rightLt = ParseAdditive(text, ref i, n);
+                    if (!rightLt.IsOk)
+                    {
+                        return rightLt;
+                    }
+
+                    left = Expr.FromBinaryLt(left, rightLt.Value);
+                    continue;
+                }
+                if (text[i] == '>')
+                {
+                    i++;
+                    SkipWs(text, ref i, n);
+                    Result<IExpr> rightGt = ParseAdditive(text, ref i, n);
+                    if (!rightGt.IsOk)
+                    {
+                        return rightGt;
+                    }
+
+                    left = Expr.FromBinaryGt(left, rightGt.Value);
+                    continue;
+                }
             }
 
             i = save;

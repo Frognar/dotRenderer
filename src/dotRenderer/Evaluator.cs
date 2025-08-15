@@ -50,6 +50,14 @@ public static class Evaluator
                         Result<Value>.Ok(Value.FromNumber(ln.Number + rn.Number)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(Math.Abs(ln.Number - rn.Number) < 0.000001)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Lt) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Number < rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Le) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Number <= rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Gt) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Number > rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Ge) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Number >= rn.Number)),
                     ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(ln.Boolean == rn.Boolean)),
                     ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.Eq) =>

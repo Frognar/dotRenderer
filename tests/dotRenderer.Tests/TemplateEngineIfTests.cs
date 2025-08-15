@@ -30,4 +30,23 @@ public class TemplateEngineIfTests
         Assert.True(result.IsOk);
         Assert.Equal("ATB", result.Value);
     }
+
+    [Theory]
+    [InlineData("A@if(2>1){T}else{E}B", "ATB")]
+    [InlineData("A@if(1>2){T}else{E}B", "AEB")]
+    [InlineData("A@if(2>=1){T}else{E}B", "ATB")]
+    [InlineData("A@if(1>=2){T}else{E}B", "AEB")]
+    [InlineData("A@if(1<2){T}else{E}B", "ATB")]
+    [InlineData("A@if(2<1){T}else{E}B", "AEB")]
+    [InlineData("A@if(1<=2){T}else{E}B", "ATB")]
+    [InlineData("A@if(2<=1){T}else{E}B", "AEB")]
+    public void Should_Render_Correct_Block_For_Comparison_Operators(string template, string expected)
+    {
+        // act
+        Result<string> result = TemplateEngine.Render(template);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal(expected, result.Value);
+    }
 }

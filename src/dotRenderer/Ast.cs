@@ -45,7 +45,11 @@ public interface IExpr;
 public enum BinaryOp
 {
     Add,
-    Eq
+    Eq,
+    Lt,
+    Le,
+    Gt,
+    Ge
 }
 
 public static class Expr
@@ -56,6 +60,10 @@ public static class Expr
     public static IdentExpr FromIdent(string name) => new(name);
     public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
     public static BinaryExpr FromBinaryEq(IExpr left, IExpr right) => new(BinaryOp.Eq, left, right);
+    public static BinaryExpr FromBinaryLt(IExpr left, IExpr right) => new(BinaryOp.Lt, left, right);
+    public static BinaryExpr FromBinaryLe(IExpr left, IExpr right) => new(BinaryOp.Le, left, right);
+    public static BinaryExpr FromBinaryGt(IExpr left, IExpr right) => new(BinaryOp.Gt, left, right);
+    public static BinaryExpr FromBinaryGe(IExpr left, IExpr right) => new(BinaryOp.Ge, left, right);
     public static MemberExpr FromMember(IExpr target, string name) => new(target, name);
 }
 
