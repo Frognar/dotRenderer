@@ -143,9 +143,15 @@ public static class Renderer
                 }
 
                 ImmutableArray<Value> items = seqVal.Sequence;
+                int index = 0;
                 foreach (Value item in items)
                 {
-                    ChainAccessor scoped = new(accessorForFor, forNode.Item, item);
+                    IValueAccessor scoped = new ChainAccessor(accessorForFor, forNode.Item, item);
+
+                    if (forNode.Index is not null)
+                    {
+                        scoped = new ChainAccessor(scoped, forNode.Index, Value.FromNumber(index));
+                    }
 
                     Result<string> bodyRendered = Render(new Template(forNode.Body), scoped);
                     if (!bodyRendered.IsOk)
@@ -154,6 +160,7 @@ public static class Renderer
                     }
 
                     sb.Append(bodyRendered.Value);
+                    index++;
                 }
 
                 continue;

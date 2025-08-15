@@ -70,4 +70,24 @@ public class TemplateEngineForTests
         Assert.Equal(TextSpan.At(1, 17), error.Range); // "@for(item in num)"
         Assert.Equal("Expression of @for must evaluate to a sequence, but got Number.", error.Message);
     }
+
+    [Fact]
+    public void Should_Render_For_Loop_With_Index_In_TemplateEngine()
+    {
+        // arrange
+        const string template = "X@for(item, i in items){@i:@item;}Y";
+        MapAccessor globals = MapAccessor.With(
+            ("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b")
+            ))
+        );
+
+        // act
+        Result<string> result = TemplateEngine.Render(template, globals);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal("X0:a;1:b;Y", result.Value);
+    }
 }
