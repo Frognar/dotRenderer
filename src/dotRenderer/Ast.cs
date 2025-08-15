@@ -69,6 +69,7 @@ public static class Expr
     public static RawExpr FromRaw(string text) => new(text);
     public static NumberExpr FromNumber(double value) => new(value);
     public static BooleanExpr FromBoolean(bool value) => new(value);
+    public static StringExpr FromString(string value) => new(value);
     public static IdentExpr FromIdent(string name) => new(name);
     public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
     public static BinaryExpr FromBinarySub(IExpr left, IExpr right) => new(BinaryOp.Sub, left, right);
@@ -92,6 +93,7 @@ public sealed record RawExpr(string Text) : IExpr;
 public sealed record NumberExpr(double Value) : IExpr;
 
 public sealed record BooleanExpr(bool Value) : IExpr;
+public sealed record StringExpr(string Value) : IExpr;
 
 public sealed record IdentExpr(string Name) : IExpr;
 

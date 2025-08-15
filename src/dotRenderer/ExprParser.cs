@@ -1,5 +1,6 @@
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Text;
 
 namespace DotRenderer;
 
@@ -417,6 +418,16 @@ public static class ExprParser
             i++;
             return Result<IExpr>.Ok(inner.Value);
         }
+        
+        if (c == '"')
+        {
+            Result<string> s = ParseStringLiteral(text, ref i, n);
+            if (!s.IsOk)
+            {
+                return Result<IExpr>.Err(s.Error!);
+            }
+            return Result<IExpr>.Ok(Expr.FromString(s.Value));
+        }
 
         if (i + 4 <= n && text.Substring(i, 4) == "true" && (i + 4 == n || !IsIdentPart(text[i + 4])))
         {
@@ -472,6 +483,58 @@ public static class ExprParser
         }
 
         return Result<IExpr>.Err(new ParseError("UnexpectedChar", TextSpan.At(i, 1), $"Unexpected character '{c}'."));
+    }private static Result<string> ParseStringLiteral(string text, ref int i, int n)
+    {
+        int start = i;
+        if (i >= n || text[i] != '"')
+        {
+            return Result<string>.Err(new ParseError("StringStart", TextSpan.At(i, 0), "Expected '\"'."));
+        }
+
+        i++;
+        StringBuilder sb = new();
+        bool escape = false;
+
+        while (i < n)
+        {
+            char c = text[i];
+            if (escape)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append('\"'); break;
+                    case '\\': sb.Append('\\'); break;
+                    case 'n': sb.Append('\n'); break;
+                    case 'r': sb.Append('\r'); break;
+                    case 't': sb.Append('\t'); break;
+                    default:
+                        return Result<string>.Err(new ParseError("StringEscape", TextSpan.At(i - 1, 2),
+                            "Unsupported escape sequence."));
+                }
+                escape = false;
+                i++;
+                continue;
+            }
+
+            if (c == '\\')
+            {
+                escape = true;
+                i++;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                i++;
+                return Result<string>.Ok(sb.ToString());
+            }
+
+            sb.Append(c);
+            i++;
+        }
+
+        return Result<string>.Err(new ParseError("StringUnterminated", TextSpan.At(start, n - start),
+            "Unterminated string literal."));
     }
 
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';

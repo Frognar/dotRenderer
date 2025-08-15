@@ -22,6 +22,7 @@ public static class Evaluator
         {
             NumberExpr n => Result<Value>.Ok(Value.FromNumber(n.Value)),
             BooleanExpr b => Result<Value>.Ok(Value.FromBool(b.Value)),
+            StringExpr s => Result<Value>.Ok(Value.FromString(s.Value)),
             IdentExpr id => EvaluateIdent(accessor, id.Name, range),
             BinaryExpr bin => EvaluateBinaryExpr(bin, accessor, range),
             MemberExpr m => EvaluateMember(m, accessor, range),
@@ -63,6 +64,8 @@ public static class Evaluator
                 () => EvaluateExpr(expr.Right, accessor, range),
                 (l, r) => (l, r, expr.Op) switch
                 {
+                    ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.Add) =>
+                        Result<Value>.Ok(Value.FromString(ln.Text + rn.Text)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Add) =>
                         Result<Value>.Ok(Value.FromNumber(ln.Number + rn.Number)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Sub) =>
