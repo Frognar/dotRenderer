@@ -85,4 +85,19 @@ public class TemplateEngineIfTests
         Assert.Equal(TextSpan.At(1, 26), error.Range); // spans "@if(false && 1 + true > 0)"
         Assert.Equal("Operator '+' expects numbers.", error.Message);
     }
+
+    [Theory]
+    [InlineData("A@if((false || true) && true){T}else{E}B", "ATB")]
+    [InlineData("A@if((true || true) && true){T}else{E}B", "ATB")]
+    [InlineData("A@if((true || false) && true){T}else{E}B", "ATB")]
+    [InlineData("A@if((false || false) && true){T}else{E}B", "AEB")]
+    public void Should_Render_Then_When_Grouped_Condition_Is_True(string template, string expected)
+    {
+        // act
+        Result<string> result = TemplateEngine.Render(template);
+
+        // assert
+        Assert.True(result.IsOk);
+        Assert.Equal(expected, result.Value);
+    }
 }

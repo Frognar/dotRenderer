@@ -271,8 +271,10 @@ public static class ExprParser
             {
                 return inner;
             }
+
             return Result<IExpr>.Ok(Expr.FromUnaryNot(inner.Value));
         }
+
         i = save;
         return ParsePrimaryWithMemberChain(text, ref i, n);
     }
@@ -335,6 +337,28 @@ public static class ExprParser
 
         char c = text[i];
 
+        if (c == '(')
+        {
+            i++;
+            SkipWs(text, ref i, n);
+
+            Result<IExpr> inner = ParseOr(text, ref i, n);
+            if (!inner.IsOk)
+            {
+                return inner;
+            }
+
+            SkipWs(text, ref i, n);
+            if (i >= n || text[i] != ')')
+            {
+                return Result<IExpr>.Err(new ParseError("MissingRParen", TextSpan.At(i, i < n ? 1 : 0),
+                    "Expected ')' to close parenthesized expression."));
+            }
+
+            i++;
+            return Result<IExpr>.Ok(inner.Value);
+        }
+
         if (i + 4 <= n && text.Substring(i, 4) == "true" && (i + 4 == n || !IsIdentPart(text[i + 4])))
         {
             i += 4;
@@ -368,8 +392,8 @@ public static class ExprParser
             string slice = text[start..i];
             if (!double.TryParse(slice, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
             {
-                return Result<IExpr>.Err(new ParseError("NumberFormat", TextSpan.At(start, i - start),
-                    "Invalid number literal."));
+                return Result<IExpr>.Err(
+                    new ParseError("NumberFormat", TextSpan.At(start, i - start), "Invalid number literal."));
             }
 
             return Result<IExpr>.Ok(Expr.FromNumber(value));
