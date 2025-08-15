@@ -224,6 +224,46 @@ public static class ExprParser
 
     private static Result<IExpr> ParseAdditive(string text, ref int i, int n)
     {
+        Result<IExpr> first = ParseMultiplicative(text, ref i, n);
+        if (!first.IsOk)
+        {
+            return first;
+        }
+
+        IExpr left = first.Value;
+
+        while (true)
+        {
+            int save = i;
+            SkipWs(text, ref i, n);
+            if (i < n && (text[i] == '+' || text[i] == '-'))
+            {
+                char op = text[i];
+                i++;
+                SkipWs(text, ref i, n);
+
+                Result<IExpr> rightRes = ParseMultiplicative(text, ref i, n);
+                if (!rightRes.IsOk)
+                {
+                    return rightRes;
+                }
+
+                IExpr right = rightRes.Value;
+                left = op == '+'
+                    ? Expr.FromBinaryAdd(left, right)
+                    : Expr.FromBinarySub(left, right);
+                continue;
+            }
+
+            i = save;
+            break;
+        }
+
+        return Result<IExpr>.Ok(left);
+    }
+
+    private static Result<IExpr> ParseMultiplicative(string text, ref int i, int n)
+    {
         Result<IExpr> first = ParseUnary(text, ref i, n);
         if (!first.IsOk)
         {
@@ -236,8 +276,9 @@ public static class ExprParser
         {
             int save = i;
             SkipWs(text, ref i, n);
-            if (i < n && text[i] == '+')
+            if (i < n && (text[i] == '*' || text[i] == '/' || text[i] == '%'))
             {
+                char op = text[i];
                 i++;
                 SkipWs(text, ref i, n);
 
@@ -248,7 +289,12 @@ public static class ExprParser
                 }
 
                 IExpr right = rightRes.Value;
-                left = Expr.FromBinaryAdd(left, right);
+                left = op switch
+                {
+                    '*' => Expr.FromBinaryMul(left, right),
+                    '/' => Expr.FromBinaryDiv(left, right),
+                    _ => Expr.FromBinaryMod(left, right)
+                };
                 continue;
             }
 
@@ -276,6 +322,19 @@ public static class ExprParser
         }
 
         i = save;
+        SkipWs(text, ref i, n);
+        if (i < n && text[i] == '-')
+        {
+            i++;
+            Result<IExpr> innerNeg = ParseUnary(text, ref i, n);
+            if (!innerNeg.IsOk)
+            {
+                return innerNeg;
+            }
+            return Result<IExpr>.Ok(Expr.FromUnaryNeg(innerNeg.Value));
+        }
+        i = save;
+
         return ParsePrimaryWithMemberChain(text, ref i, n);
     }
 

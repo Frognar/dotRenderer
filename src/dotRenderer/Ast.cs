@@ -45,6 +45,10 @@ public interface IExpr;
 public enum BinaryOp
 {
     Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
     Eq,
     Lt,
     Le,
@@ -56,7 +60,8 @@ public enum BinaryOp
 
 public enum UnaryOp
 {
-    Not
+    Not,
+    Neg
 }
 
 public static class Expr
@@ -66,6 +71,10 @@ public static class Expr
     public static BooleanExpr FromBoolean(bool value) => new(value);
     public static IdentExpr FromIdent(string name) => new(name);
     public static BinaryExpr FromBinaryAdd(IExpr left, IExpr right) => new(BinaryOp.Add, left, right);
+    public static BinaryExpr FromBinarySub(IExpr left, IExpr right) => new(BinaryOp.Sub, left, right);
+    public static BinaryExpr FromBinaryMul(IExpr left, IExpr right) => new(BinaryOp.Mul, left, right);
+    public static BinaryExpr FromBinaryDiv(IExpr left, IExpr right) => new(BinaryOp.Div, left, right);
+    public static BinaryExpr FromBinaryMod(IExpr left, IExpr right) => new(BinaryOp.Mod, left, right);
     public static BinaryExpr FromBinaryEq(IExpr left, IExpr right) => new(BinaryOp.Eq, left, right);
     public static BinaryExpr FromBinaryLt(IExpr left, IExpr right) => new(BinaryOp.Lt, left, right);
     public static BinaryExpr FromBinaryLe(IExpr left, IExpr right) => new(BinaryOp.Le, left, right);
@@ -75,6 +84,7 @@ public static class Expr
     public static BinaryExpr FromBinaryOr(IExpr left, IExpr right) => new(BinaryOp.Or, left, right);
     public static MemberExpr FromMember(IExpr target, string name) => new(target, name);
     public static UnaryExpr FromUnaryNot(IExpr operand) => new(UnaryOp.Not, operand);
+    public static UnaryExpr FromUnaryNeg(IExpr operand) => new(UnaryOp.Neg, operand);
 }
 
 public sealed record RawExpr(string Text) : IExpr;

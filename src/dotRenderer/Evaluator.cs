@@ -39,6 +39,8 @@ public static class Evaluator
                     Result<Value>.Ok(Value.FromBool(!b.Boolean)),
                 ({ Kind: not ValueKind.Boolean }, UnaryOp.Not) =>
                     Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '!' expects boolean.")),
+                ({ Kind: ValueKind.Number } n, UnaryOp.Neg) =>
+                    Result<Value>.Ok(Value.FromNumber(-n.Number)),
                 _ =>
                     Result<Value>.Err(new EvalError("UnsupportedOp", range, "Unary operator not supported."))
             });
@@ -63,6 +65,16 @@ public static class Evaluator
                 {
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Add) =>
                         Result<Value>.Ok(Value.FromNumber(ln.Number + rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Sub) =>
+                        Result<Value>.Ok(Value.FromNumber(ln.Number - rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Mul) =>
+                        Result<Value>.Ok(Value.FromNumber(ln.Number * rn.Number)),
+                    ({ Kind: ValueKind.Number }, { Kind: ValueKind.Number, Number: 0 }, BinaryOp.Div) =>
+                        Result<Value>.Err(new EvalError("DivisionByZero", range, "Division by zero.")),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Div) =>
+                        Result<Value>.Ok(Value.FromNumber(ln.Number / rn.Number)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Mod) =>
+                        Result<Value>.Ok(Value.FromNumber(ln.Number % rn.Number)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(Math.Abs(ln.Number - rn.Number) < 0.000001)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Lt) =>
