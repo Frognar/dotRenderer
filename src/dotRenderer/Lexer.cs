@@ -18,7 +18,6 @@ public static class Lexer
         while (i < length)
         {
             char ch = template[i];
-
             if (ch == '@')
             {
                 if (i > textStart)
@@ -31,32 +30,12 @@ public static class Lexer
                 int j = i + 1;
                 if (j < length && template[j] == '(')
                 {
-                    int k = j + 1;
-                    int depth = 1;
-                    while (k < length && depth > 0)
+                    if (TryScanParen(template, j, out int closeExclusive))
                     {
-                        char c = template[k];
-                        if (c == '(')
-                        {
-                            depth++;
-                        }
-                        else if (c == ')')
-                        {
-                            depth--;
-                        }
-
-                        k++;
-                    }
-
-                    if (depth == 0)
-                    {
-                        int closeIndexExclusive = k;
-                        int closeIndexInclusive = closeIndexExclusive - 1;
-                        string expr = template[(j + 1)..closeIndexInclusive];
-                        Token tExpr = Token.FromAtExpr(expr, TextSpan.At(i, closeIndexExclusive - i));
-                        tokens.Add(tExpr);
-
-                        i = closeIndexExclusive;
+                        int closeInclusive = closeExclusive - 1;
+                        string expr = template[(j + 1)..closeInclusive];
+                        tokens.Add(Token.FromAtExpr(expr, TextSpan.At(i, closeExclusive - i)));
+                        i = closeExclusive;
                         textStart = i;
                         continue;
                     }
@@ -160,7 +139,6 @@ public static class Lexer
                         }
                     }
 
-                    // malformed "@for" — consume '@'
                     i++;
                     textStart = i;
                     continue;
@@ -240,6 +218,66 @@ public static class Lexer
         }
 
         return Result<ImmutableArray<Token>>.Ok([..tokens]);
+    }
+
+    private static bool TryScanParen(string s, int openIndex, out int closeExclusive)
+    {
+        int n = s.Length;
+        int i = openIndex + 1;
+        int depth = 1;
+        bool inString = false;
+        bool escape = false;
+
+        while (i < n)
+        {
+            char c = s[i];
+
+            if (inString)
+            {
+                if (escape)
+                {
+                    escape = false;
+                }
+                else
+                {
+                    if (c == '\\') { escape = true; i++; continue; }
+                    if (c == '"') { inString = false; i++; continue; }
+                }
+                i++;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                inString = true;
+                i++;
+                continue;
+            }
+
+            if (c == '(')
+            {
+                depth++;
+                i++;
+                continue;
+            }
+
+            if (c == ')')
+            {
+                depth--;
+                i++;
+                if (depth == 0)
+                {
+                    closeExclusive = i;
+                    return true;
+                }
+                continue;
+            }
+
+            i++;
+        }
+
+        closeExclusive = -1;
+        return false;
     }
 
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';
