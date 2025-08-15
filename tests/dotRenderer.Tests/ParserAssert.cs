@@ -29,6 +29,7 @@ internal static class ParserAssert
             case InterpolateExprNode:
                 Assert.Equal(expected, actual);
                 break;
+
             case IfNode ifNode:
                 IfNode actIf = Assert.IsType<IfNode>(actual);;
                 Assert.Equal(ifNode.Condition, actIf.Condition);
@@ -49,6 +50,7 @@ internal static class ParserAssert
             case ForNode forExp:
                 ForNode forAct = Assert.IsType<ForNode>(actual);
                 Assert.Equal(forExp.Item, forAct.Item);
+                Assert.Equal(forExp.Index, forAct.Index);
                 Assert.Equal(forExp.Seq, forAct.Seq);
                 Assert.Equal(forExp.Range, forAct.Range);
                 Assert.Equal(forExp.Body.Length, forAct.Body.Length);

@@ -24,7 +24,10 @@ public static class Node
         new(condition, thenNodes, [], range);
 
     public static ForNode FromFor(string item, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
-        new(item, seq, body, range);
+        new(item, null, seq, body, range);
+
+    public static ForNode FromFor(string item, string index, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
+        new(item, index, seq, body, range);
 }
 
 public sealed record TextNode(string Text, TextSpan Range) : INode;
@@ -36,7 +39,7 @@ public sealed record InterpolateExprNode(IExpr Expr, TextSpan Range) : INode;
 public sealed record IfNode(IExpr Condition, ImmutableArray<INode> Then, ImmutableArray<INode> Else, TextSpan Range)
     : INode;
 
-public sealed record ForNode(string Item, IExpr Seq, ImmutableArray<INode> Body, TextSpan Range) : INode;
+public sealed record ForNode(string Item, string? Index, IExpr Seq, ImmutableArray<INode> Body, TextSpan Range) : INode;
 
 public sealed record Template(ImmutableArray<INode> Children);
 

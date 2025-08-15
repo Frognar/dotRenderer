@@ -103,7 +103,10 @@ public static class Lexer
                 if (j + 2 < length && template[j] == 'f' && template[j + 1] == 'o' && template[j + 2] == 'r')
                 {
                     int k = j + 3;
-                    while (k < length && char.IsWhiteSpace(template[k])) k++;
+                    while (k < length && char.IsWhiteSpace(template[k]))
+                    {
+                        k++;
+                    }
 
                     if (k < length && template[k] == '(')
                     {

@@ -220,7 +220,7 @@ public static class Parser
     {
         int n = tokens.Length;
         Token atFor = tokens[i];
-        Result<(string item, IExpr seq)> header = ParseForHeader(atFor.Text, atFor.Range);
+        Result<(string item, string? index, IExpr seq)> header = ParseForHeader(atFor.Text, atFor.Range);
         if (!header.IsOk)
         {
             return Result<(int, INode)>.Err(header.Error!);
@@ -300,15 +300,18 @@ public static class Parser
         }
 
         i++;
-        ForNode node = Node.FromFor(header.Value.item, header.Value.seq, bodyBuilder.ToImmutable(), atFor.Range);
+        (string item, string? index, IExpr seq) h = header.Value;
+        ForNode node = h.index is null
+            ? Node.FromFor(h.item, h.seq, bodyBuilder.ToImmutable(), atFor.Range)
+            : Node.FromFor(h.item, h.index, h.seq, bodyBuilder.ToImmutable(), atFor.Range);
+
         return Result<(int, INode)>.Ok((i, node));
     }
 
-    private static Result<(string item, IExpr seq)> ParseForHeader(string header, TextSpan range)
+    private static Result<(string item, string? index, IExpr seq)> ParseForHeader(string header, TextSpan range)
     {
         int i = 0;
         int n = header.Length;
-
         while (i < n && char.IsWhiteSpace(header[i]))
         {
             i++;
@@ -316,7 +319,7 @@ public static class Parser
 
         if (i >= n || !(char.IsLetter(header[i]) || header[i] == '_'))
         {
-            return Result<(string, IExpr)>.Err(new ParseError("ForItemIdent", range, "Expected loop variable identifier."));
+            return Result<(string, string?, IExpr)>.Err(new ParseError("ForItemIdent", range, "Expected loop variable identifier."));
         }
 
         int startIdent = i;
@@ -333,12 +336,41 @@ public static class Parser
             i++;
         }
 
+        string? index = null;
+        if (i < n && header[i] == ',')
+        {
+            i++;
+            while (i < n && char.IsWhiteSpace(header[i]))
+            {
+                i++;
+            }
+
+            if (i >= n || !(char.IsLetter(header[i]) || header[i] == '_'))
+            {
+                return Result<(string, string?, IExpr)>.Err(new ParseError("ForIndexIdent", range, "Expected index identifier after ','."));
+            }
+
+            int startIndex = i;
+            i++;
+            while (i < n && (char.IsLetterOrDigit(header[i]) || header[i] == '_'))
+            {
+                i++;
+            }
+
+            index = header[startIndex..i];
+
+            while (i < n && char.IsWhiteSpace(header[i]))
+            {
+                i++;
+            }
+        }
+
         if (!(i + 2 <= n && header.AsSpan(i, 2).SequenceEqual("in".AsSpan())))
         {
-            return Result<(string, IExpr)>.Err(new ParseError("ForMissingIn", range, "Expected 'in' in @for header."));
+            return Result<(string, string?, IExpr)>.Err(new ParseError("ForMissingIn", range, "Expected 'in' in @for header."));
         }
-        i += 2;
 
+        i += 2;
         while (i < n && char.IsWhiteSpace(header[i]))
         {
             i++;
@@ -346,7 +378,7 @@ public static class Parser
 
         if (i >= n)
         {
-            return Result<(string, IExpr)>.Err(new ParseError("ForMissingExpr", range, "Expected expression after 'in'."));
+            return Result<(string, string?, IExpr)>.Err(new ParseError("ForMissingExpr", range, "Expected expression after 'in'."));
         }
 
         string exprText = header[i..].Trim();
@@ -354,9 +386,9 @@ public static class Parser
         if (!expr.IsOk)
         {
             IError err = expr.Error!;
-            return Result<(string, IExpr)>.Err(new ParseError(err.Code, range, err.Message));
+            return Result<(string, string?, IExpr)>.Err(new ParseError(err.Code, range, err.Message));
         }
 
-        return Result<(string, IExpr)>.Ok((item, expr.Value));
+        return Result<(string, string?, IExpr)>.Ok((item, index, expr.Value));
     }
 }
