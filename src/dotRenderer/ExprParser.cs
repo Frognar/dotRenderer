@@ -358,13 +358,22 @@ public static class ExprParser
         IExpr current = atom.Value;
         while (true)
         {
-            int save = i;
+            int dotIndex = i;
             SkipWs(text, ref i, n);
             if (i < n && text[i] == '.')
             {
                 i++;
                 if (i >= n || !IsIdentStart(text[i]))
                 {
+                    if (current is NumberExpr)
+                    {
+                        int numberStart = FindNumberStart(text, dotIndex);
+                        return Result<IExpr>.Err(new ParseError(
+                            "NumberFormat",
+                            TextSpan.At(numberStart, dotIndex + 1 - numberStart),
+                            "Invalid number literal."));
+                    }
+
                     return Result<IExpr>.Err(new ParseError("MemberName", TextSpan.At(i, 0),
                         "Expected member name after '.'."));
                 }
@@ -381,7 +390,7 @@ public static class ExprParser
                 continue;
             }
 
-            i = save;
+            i = dotIndex;
             break;
         }
 
@@ -483,7 +492,9 @@ public static class ExprParser
         }
 
         return Result<IExpr>.Err(new ParseError("UnexpectedChar", TextSpan.At(i, 1), $"Unexpected character '{c}'."));
-    }private static Result<string> ParseStringLiteral(string text, ref int i, int n)
+    }
+    
+    private static Result<string> ParseStringLiteral(string text, ref int i, int n)
     {
         int start = i;
         if (i >= n || text[i] != '"')
@@ -494,7 +505,6 @@ public static class ExprParser
         i++;
         StringBuilder sb = new();
         bool escape = false;
-
         while (i < n)
         {
             char c = text[i];
@@ -539,4 +549,14 @@ public static class ExprParser
 
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';
     private static bool IsIdentPart(char c) => char.IsLetterOrDigit(c) || c == '_';
+    private static int FindNumberStart(string text, int dotIndex)
+    {
+        int k = dotIndex - 1;
+        while (k >= 0 && (char.IsDigit(text[k]) || text[k] == '.'))
+        {
+            k--;
+        }
+
+        return k + 1;
+    }
 }

@@ -35,4 +35,25 @@ public class LexerIfTests
             Token.FromText("B", TextSpan.At(20, 1)),
         ]);
     }
+
+    [Fact]
+    public void Should_Not_Tokenize_Else_When_Part_Of_A_Bigger_Word()
+    {
+        LexerAssert.Lex("xelse{y}",
+        [
+            Token.FromText("xelse", TextSpan.At(0, 5)),
+            Token.FromLBrace(TextSpan.At(5, 1)),
+            Token.FromText("y", TextSpan.At(6, 1)),
+            Token.FromRBrace(TextSpan.At(7, 1))
+        ]);
+    }
+
+    [Fact]
+    public void Should_Not_Tokenize_Else_Without_Following_LBrace()
+    {
+        LexerAssert.Lex("A else B",
+        [
+            Token.FromText("A else B", TextSpan.At(0, 8))
+        ]);
+    }
 }

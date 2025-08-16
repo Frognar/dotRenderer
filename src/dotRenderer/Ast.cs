@@ -25,23 +25,26 @@ public static class Node
 
     public static ForNode FromFor(string item, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
         new(item, null, seq, body, [], range);
-        public static ForNode FromFor(string item, string index, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
-            new(item, index, seq, body, [], range);
-        public static ForNode FromFor(
-            string item,
-            IExpr seq,
-            ImmutableArray<INode> body,
-            ImmutableArray<INode> @else,
-            TextSpan range) =>
-            new(item, null, seq, body, @else, range);
-        public static ForNode FromFor(
-            string item,
-            string index,
-            IExpr seq,
-            ImmutableArray<INode> body,
-            ImmutableArray<INode> @else,
-            TextSpan range) =>
-            new(item, index, seq, body, @else, range);
+
+    public static ForNode FromFor(string item, string index, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
+        new(item, index, seq, body, [], range);
+
+    public static ForNode FromFor(
+        string item,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        ImmutableArray<INode> @else,
+        TextSpan range) =>
+        new(item, null, seq, body, @else, range);
+
+    public static ForNode FromFor(
+        string item,
+        string index,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        ImmutableArray<INode> @else,
+        TextSpan range) =>
+        new(item, index, seq, body, @else, range);
 }
 
 public sealed record TextNode(string Text, TextSpan Range) : INode;
@@ -89,7 +92,6 @@ public enum UnaryOp
 
 public static class Expr
 {
-    public static RawExpr FromRaw(string text) => new(text);
     public static NumberExpr FromNumber(double value) => new(value);
     public static BooleanExpr FromBoolean(bool value) => new(value);
     public static StringExpr FromString(string value) => new(value);
@@ -111,11 +113,10 @@ public static class Expr
     public static UnaryExpr FromUnaryNeg(IExpr operand) => new(UnaryOp.Neg, operand);
 }
 
-public sealed record RawExpr(string Text) : IExpr;
-
 public sealed record NumberExpr(double Value) : IExpr;
 
 public sealed record BooleanExpr(bool Value) : IExpr;
+
 public sealed record StringExpr(string Value) : IExpr;
 
 public sealed record IdentExpr(string Name) : IExpr;
