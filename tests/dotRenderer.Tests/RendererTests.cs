@@ -193,112 +193,71 @@ public class RendererTests
             ), "XabY");
 
     [Fact]
-    public void Should_Error_When_Interpolated_Ident_Not_Found()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_When_Interpolated_Ident_Not_Found() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
             ]),
-            null);
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("MissingIdent", e.Code);
-        Assert.Equal(TextSpan.At(0, 5), e.Range);
-    }
+            MapAccessor.Empty,
+            "MissingIdent",
+            TextSpan.At(0, 5));
 
     [Fact]
-    public void Should_Error_When_Interpolated_Ident_Is_Not_Scalar()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_When_Interpolated_Ident_Is_Not_Scalar() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
             ]),
-            MapAccessor.With(("name", Value.FromMap(new Dictionary<string, Value>()))));
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("TypeMismatch", e.Code);
-        Assert.Equal(TextSpan.At(0, 5), e.Range);
-        Assert.Equal("Identifier 'name' is not a scalar value.", e.Message);
-    }
+            MapAccessor.With(("name", Value.FromMap(new Dictionary<string, Value>()))),
+            "TypeMismatch",
+            TextSpan.At(0, 5),
+            "Identifier 'name' is not a scalar value.");
 
     [Fact]
-    public void Should_Error_When_Interpolated_Expr_Evaluates_To_NonScalar()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_When_Interpolated_Expr_Evaluates_To_NonScalar() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromInterpolateExpr(
                     Expr.FromIdent("u"), TextSpan.At(0, 3))
             ]),
-            MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))));
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("TypeMismatch", e.Code);
-        Assert.Equal(TextSpan.At(0, 3), e.Range);
-        Assert.Equal("Expression did not evaluate to a scalar value.", e.Message);
-    }
+            MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
+            "TypeMismatch",
+            TextSpan.At(0, 3),
+            "Expression did not evaluate to a scalar value.");
 
     [Fact]
-    public void Should_Error_If_Condition_Is_Not_Boolean()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_If_Condition_Is_Not_Boolean() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromIf(
                     Expr.FromNumber(1),
                     [Node.FromText("T", TextSpan.At(0, 1))], TextSpan.At(5, 4))
             ]),
-            MapAccessor.Empty);
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("TypeMismatch", e.Code);
-        Assert.Equal(TextSpan.At(5, 4), e.Range);
-        Assert.Equal("Condition of @if must be boolean.", e.Message);
-    }
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(5, 4),
+            "Condition of @if must be boolean.");
 
     [Fact]
-    public void Should_Error_When_Member_Is_Missing()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_When_Member_Is_Missing() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromInterpolateExpr(
                     Expr.FromMember(Expr.FromIdent("u"), "x"), TextSpan.At(0, 5))
-            ]), MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))));
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("MissingMember", e.Code);
-        Assert.Equal(TextSpan.At(0, 5), e.Range);
-    }
+            ]),
+            MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
+            "MissingMember",
+            TextSpan.At(0, 5));
 
     [Fact]
-    public void Should_Error_When_Unary_Not_On_Number()
-    {
-        // act
-        Result<string> res = Renderer.Render(
+    public void Should_Error_When_Unary_Not_On_Number() =>
+        RendererAssert.FailsToRender(
             new Template([
                 Node.FromInterpolateExpr(
                     Expr.FromUnaryNot(Expr.FromNumber(1)), TextSpan.At(0, 2))
             ]),
-            MapAccessor.Empty);
-
-        // assert
-        Assert.False(res.IsOk);
-        IError e = res.Error!;
-        Assert.Equal("TypeMismatch", e.Code);
-        Assert.Equal(TextSpan.At(0, 2), e.Range);
-        Assert.Equal("Operator '!' expects boolean.", e.Message);
-    }
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 2),
+            "Operator '!' expects boolean.");
 }
