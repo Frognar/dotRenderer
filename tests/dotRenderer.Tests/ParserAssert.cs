@@ -32,7 +32,6 @@ internal static class ParserAssert
 
             case IfNode ifNode:
                 IfNode actIf = Assert.IsType<IfNode>(actual);
-                ;
                 Assert.Equal(ifNode.Condition, actIf.Condition);
                 Assert.Equal(ifNode.Range, actIf.Range);
                 foreach ((INode a, INode e) in actIf.Then.Zip(ifNode.Then))
@@ -68,5 +67,19 @@ internal static class ParserAssert
 
                 break;
         }
+    }
+    
+    public static void FailsToParse(
+        ImmutableArray<Token> tokens,
+        string expectedErrorCode,
+        TextSpan expectedSpan,
+        string expectedErrorMessage = "")
+    {
+        Result<Template> result = Parser.Parse(tokens);
+        Assert.False(result.IsOk);
+        IError e = result.Error!;
+        Assert.Equal(expectedErrorCode, e.Code);
+        Assert.Equal(expectedSpan, e.Range);
+        Assert.Contains(expectedErrorMessage, e.Message, StringComparison.Ordinal);
     }
 }
