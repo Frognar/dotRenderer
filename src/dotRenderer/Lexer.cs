@@ -201,7 +201,7 @@ public static class Lexer
     {
         int n = s.Length;
         int j = i + 1;
-        if (j + 2 < n && s[j] == 'f' && s[j + 1] == 'o' && s[j + 2] == 'r')
+        if (j + 2 < n && s.AsSpan(j, 3).SequenceEqual("for".AsSpan()))
         {
             int k = SkipWs(s, j + 3, n);
             if (k < n && s[k] == '(')
