@@ -30,7 +30,7 @@ public static class Result
             ? Result<TResult>.Err(source.Error!)
             : bind(source.Value);
     }
-    
+
     public static Result<TResult> Bind2<T, T2, TResult>(
         this Result<T> source,
         Func<Result<T2>> otherFactory,
@@ -42,7 +42,7 @@ public static class Result
         {
             return Result<TResult>.Err(source.Error!);
         }
-        
+
         Result<T2> other = otherFactory();
         return !other.IsOk
             ? Result<TResult>.Err(other.Error!)
@@ -65,4 +65,5 @@ public readonly record struct TextSpan(int Offset, int Length)
 public sealed record LexError(string Code, TextSpan Range, string Message) : IError;
 
 public sealed record EvalError(string Code, TextSpan Range, string Message) : IError;
+
 public sealed record ParseError(string Code, TextSpan Range, string Message) : IError;
