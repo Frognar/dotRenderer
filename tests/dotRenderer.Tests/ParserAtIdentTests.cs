@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using DotRenderer;
 
 namespace dotRenderer.Tests;
