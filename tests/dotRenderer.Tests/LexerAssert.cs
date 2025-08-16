@@ -12,9 +12,9 @@ internal static class LexerAssert
         Assert.True(result.IsOk);
         ImmutableArray<Token> tokens = result.Value;
         Assert.Equal(expected.Length, tokens.Length);
-        for (int i = 0; i < expected.Length; i++)
+        foreach ((Token exp, Token act) in expected.Zip(tokens))
         {
-            Assert.Equal(expected[i], tokens[i]);
+            Assert.Equal(exp, act);
         }
     }
 }
