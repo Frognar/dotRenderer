@@ -16,9 +16,8 @@ public static class Evaluator
     }
 
     [Pure]
-    public static Result<Value> EvaluateExpr(IExpr expr, IValueAccessor accessor, TextSpan range)
-    {
-        return expr switch
+    public static Result<Value> EvaluateExpr(IExpr expr, IValueAccessor accessor, TextSpan range) =>
+        expr switch
         {
             NumberExpr n => Result<Value>.Ok(Value.FromNumber(n.Value)),
             BooleanExpr b => Result<Value>.Ok(Value.FromBool(b.Value)),
@@ -29,11 +28,9 @@ public static class Evaluator
             UnaryExpr u => EvaluateUnaryExpr(u, accessor, range),
             _ => Result<Value>.Err(new EvalError("UnsupportedExpr", range, "Expression kind not supported yet."))
         };
-    }
 
-    private static Result<Value> EvaluateUnaryExpr(UnaryExpr expr, IValueAccessor accessor, TextSpan range)
-    {
-        return EvaluateExpr(expr.Operand, accessor, range)
+    private static Result<Value> EvaluateUnaryExpr(UnaryExpr expr, IValueAccessor accessor, TextSpan range) =>
+        EvaluateExpr(expr.Operand, accessor, range)
             .Bind(t => (t, expr.Op) switch
             {
                 ({ Kind: ValueKind.Boolean } b, UnaryOp.Not) =>
@@ -45,21 +42,17 @@ public static class Evaluator
                 _ =>
                     Result<Value>.Err(new EvalError("UnsupportedOp", range, "Unary operator not supported."))
             });
-    }
 
-    private static Result<Value> EvaluateMember(MemberExpr expr, IValueAccessor accessor, TextSpan range)
-    {
-        return EvaluateExpr(expr.Target, accessor, range)
+    private static Result<Value> EvaluateMember(MemberExpr expr, IValueAccessor accessor, TextSpan range) =>
+        EvaluateExpr(expr.Target, accessor, range)
             .Bind(t => t.Kind != ValueKind.Map
                 ? Result<Value>.Err(new EvalError("TypeMismatch", range, "Member access requires a map/object value."))
                 : t.Map.TryGetValue(expr.Name, out Value value)
                     ? Result<Value>.Ok(value)
                     : Result<Value>.Err(new EvalError("MissingMember", range, $"Member '{expr.Name}' was not found.")));
-    }
 
-    private static Result<Value> EvaluateBinaryExpr(BinaryExpr expr, IValueAccessor accessor, TextSpan range)
-    {
-        return EvaluateExpr(expr.Left, accessor, range)
+    private static Result<Value> EvaluateBinaryExpr(BinaryExpr expr, IValueAccessor accessor, TextSpan range) =>
+        EvaluateExpr(expr.Left, accessor, range)
             .Bind2(
                 () => EvaluateExpr(expr.Right, accessor, range),
                 (l, r) => (l, r, expr.Op) switch
@@ -103,10 +96,8 @@ public static class Evaluator
                     (_, _, BinaryOp.Add) =>
                         Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers.")),
                     (_, _, BinaryOp.Eq) =>
-                        Result<Value>.Err(new EvalError("TypeMismatch", range,
-                            "Operator '==' expects operands of the same scalar type.")),
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '==' expects operands of the same scalar type.")),
                     _ =>
                         Result<Value>.Err(new EvalError("UnsupportedOp", range, "Binary operator not supported."))
                 });
-    }
 }
