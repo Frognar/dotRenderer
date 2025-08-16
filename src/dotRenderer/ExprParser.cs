@@ -9,546 +9,605 @@ public static class ExprParser
     [Pure]
     public static Result<IExpr> Parse(string text)
     {
-        text ??= "";
-        int i = 0;
-        int n = text.Length;
-
-        SkipWs(text, ref i, n);
-
-        Result<IExpr> expr = ParseOr(text, ref i, n);
-        if (!expr.IsOk)
+        State s = State.Of(text).SkipWs();
+        Result<(IExpr expr, State rest)> parsed = ParseOr(s);
+        if (!parsed.IsOk)
         {
-            return expr;
+            return Result<IExpr>.Err(parsed.Error!);
         }
 
-        SkipWs(text, ref i, n);
-        if (i != n)
+        (IExpr expr, State rest) = parsed.Value;
+        rest = rest.SkipWs();
+        if (!rest.Eof)
         {
-            return Result<IExpr>.Err(new ParseError("ExprTrailing", TextSpan.At(i, n - i),
+            return Result<IExpr>.Err(new ParseError(
+                "ExprTrailing",
+                TextSpan.At(rest.Pos, rest.Remaining),
                 "Unexpected trailing input in expression."));
         }
 
-        return expr;
+        return Result<IExpr>.Ok(expr);
     }
 
-    private static Result<IExpr> ParseOr(string text, ref int i, int n)
+    private readonly record struct State(string Text, int Pos)
     {
-        Result<IExpr> leftRes = ParseAnd(text, ref i, n);
+        public int Length => Text.Length;
+        public int Remaining => Length - Pos;
+        public bool Eof => Pos >= Length;
+
+        public State Advance(int delta = 1) => this with { Pos = Pos + delta };
+
+        public State SkipWs()
+        {
+            int i = Pos;
+            while (i < Length && char.IsWhiteSpace(Text[i]))
+            {
+                i++;
+            }
+
+            return this with { Pos = i };
+        }
+
+        public bool StartsWith(ReadOnlySpan<char> s) =>
+            Remaining >= s.Length && Text.AsSpan(Pos, s.Length).SequenceEqual(s);
+
+        public static State Of(string text) => new(text, 0);
+    }
+
+    private static Result<(T value, State rest)> Ok<T>(T v, State rest)
+        => Result<(T, State)>.Ok((v, rest));
+
+    private static Result<(T value, State rest)> Err<T>(string code, TextSpan span, string message)
+        => Result<(T, State)>.Err(new ParseError(code, span, message));
+
+    private static Result<(IExpr expr, State rest)> ParseOr(State s)
+    {
+        Result<(IExpr expr, State rest)> leftRes = ParseAnd(s);
         if (!leftRes.IsOk)
         {
             return leftRes;
         }
 
-        IExpr left = leftRes.Value;
+        (IExpr left, State rest) = leftRes.Value;
 
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-            if (i + 1 < n && text[i] == '|' && text[i + 1] == '|')
+            State save = rest;
+            rest = rest.SkipWs();
+            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '|' && rest.Text[rest.Pos + 1] == '|')
             {
-                i += 2;
-                SkipWs(text, ref i, n);
-
-                Result<IExpr> rightRes = ParseAnd(text, ref i, n);
+                rest = rest.Advance(2).SkipWs();
+                Result<(IExpr expr, State rest)> rightRes = ParseAnd(rest);
                 if (!rightRes.IsOk)
                 {
                     return rightRes;
                 }
 
-                IExpr right = rightRes.Value;
+                (IExpr right, State after) = rightRes.Value;
                 left = Expr.FromBinaryOr(left, right);
+                rest = after;
                 continue;
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseAnd(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseAnd(State s)
     {
-        Result<IExpr> leftRes = ParseEquality(text, ref i, n);
+        Result<(IExpr expr, State rest)> leftRes = ParseEquality(s);
         if (!leftRes.IsOk)
         {
             return leftRes;
         }
 
-        IExpr left = leftRes.Value;
+        (IExpr left, State rest) = leftRes.Value;
 
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-            if (i + 1 < n && text[i] == '&' && text[i + 1] == '&')
+            State save = rest;
+            rest = rest.SkipWs();
+            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '&' && rest.Text[rest.Pos + 1] == '&')
             {
-                i += 2;
-                SkipWs(text, ref i, n);
-
-                Result<IExpr> rightRes = ParseEquality(text, ref i, n);
+                rest = rest.Advance(2).SkipWs();
+                Result<(IExpr expr, State rest)> rightRes = ParseEquality(rest);
                 if (!rightRes.IsOk)
                 {
                     return rightRes;
                 }
 
-                IExpr right = rightRes.Value;
+                (IExpr right, State after) = rightRes.Value;
                 left = Expr.FromBinaryAnd(left, right);
+                rest = after;
                 continue;
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseEquality(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseEquality(State s)
     {
-        Result<IExpr> leftRes = ParseRelational(text, ref i, n);
+        Result<(IExpr expr, State rest)> leftRes = ParseRelational(s);
         if (!leftRes.IsOk)
         {
             return leftRes;
         }
 
-        IExpr left = leftRes.Value;
+        (IExpr left, State rest) = leftRes.Value;
 
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-            if (i + 1 < n && text[i] == '=' && text[i + 1] == '=')
+            State save = rest;
+            rest = rest.SkipWs();
+            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '=' && rest.Text[rest.Pos + 1] == '=')
             {
-                i += 2;
-                SkipWs(text, ref i, n);
-
-                Result<IExpr> rightRes = ParseRelational(text, ref i, n);
+                rest = rest.Advance(2).SkipWs();
+                Result<(IExpr expr, State rest)> rightRes = ParseRelational(rest);
                 if (!rightRes.IsOk)
                 {
                     return rightRes;
                 }
 
-                IExpr right = rightRes.Value;
+                (IExpr right, State after) = rightRes.Value;
                 left = Expr.FromBinaryEq(left, right);
+                rest = after;
                 continue;
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseRelational(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseRelational(State s)
     {
-        Result<IExpr> leftRes = ParseAdditive(text, ref i, n);
+        Result<(IExpr expr, State rest)> leftRes = ParseAdditive(s);
         if (!leftRes.IsOk)
         {
             return leftRes;
         }
 
-        IExpr left = leftRes.Value;
-
+        (IExpr left, State rest) = leftRes.Value;
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-
-            if (i < n)
+            State save = rest;
+            rest = rest.SkipWs();
+            if (!rest.Eof)
             {
-                if (i + 1 < n && text[i] == '<' && text[i + 1] == '=')
+                if (rest.StartsWith("<="))
                 {
-                    i += 2;
-                    SkipWs(text, ref i, n);
-                    Result<IExpr> rightLe = ParseAdditive(text, ref i, n);
-                    if (!rightLe.IsOk)
+                    rest = rest.Advance(2).SkipWs();
+                    Result<(IExpr expr, State rest)> r = ParseAdditive(rest);
+                    if (!r.IsOk)
                     {
-                        return rightLe;
+                        return r;
                     }
 
-                    left = Expr.FromBinaryLe(left, rightLe.Value);
+                    (IExpr right, State after) = r.Value;
+                    left = Expr.FromBinaryLe(left, right);
+                    rest = after;
                     continue;
                 }
 
-                if (i + 1 < n && text[i] == '>' && text[i + 1] == '=')
+                if (rest.StartsWith(">="))
                 {
-                    i += 2;
-                    SkipWs(text, ref i, n);
-                    Result<IExpr> rightGe = ParseAdditive(text, ref i, n);
-                    if (!rightGe.IsOk)
+                    rest = rest.Advance(2).SkipWs();
+                    Result<(IExpr expr, State rest)> r = ParseAdditive(rest);
+                    if (!r.IsOk)
                     {
-                        return rightGe;
+                        return r;
                     }
 
-                    left = Expr.FromBinaryGe(left, rightGe.Value);
+                    (IExpr right, State after) = r.Value;
+                    left = Expr.FromBinaryGe(left, right);
+                    rest = after;
                     continue;
                 }
 
-                if (text[i] == '<')
+                if (rest.Text[rest.Pos] == '<')
                 {
-                    i++;
-                    SkipWs(text, ref i, n);
-                    Result<IExpr> rightLt = ParseAdditive(text, ref i, n);
-                    if (!rightLt.IsOk)
+                    rest = rest.Advance().SkipWs();
+                    Result<(IExpr expr, State rest)> r = ParseAdditive(rest);
+                    if (!r.IsOk)
                     {
-                        return rightLt;
+                        return r;
                     }
 
-                    left = Expr.FromBinaryLt(left, rightLt.Value);
+                    (IExpr right, State after) = r.Value;
+                    left = Expr.FromBinaryLt(left, right);
+                    rest = after;
                     continue;
                 }
 
-                if (text[i] == '>')
+                if (rest.Text[rest.Pos] == '>')
                 {
-                    i++;
-                    SkipWs(text, ref i, n);
-                    Result<IExpr> rightGt = ParseAdditive(text, ref i, n);
-                    if (!rightGt.IsOk)
+                    rest = rest.Advance().SkipWs();
+                    Result<(IExpr expr, State rest)> r = ParseAdditive(rest);
+                    if (!r.IsOk)
                     {
-                        return rightGt;
+                        return r;
                     }
 
-                    left = Expr.FromBinaryGt(left, rightGt.Value);
+                    (IExpr right, State after) = r.Value;
+                    left = Expr.FromBinaryGt(left, right);
+                    rest = after;
                     continue;
                 }
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseAdditive(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseAdditive(State s)
     {
-        Result<IExpr> first = ParseMultiplicative(text, ref i, n);
+        Result<(IExpr expr, State rest)> first = ParseMultiplicative(s);
         if (!first.IsOk)
         {
             return first;
         }
 
-        IExpr left = first.Value;
+        (IExpr left, State rest) = first.Value;
 
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-            if (i < n && (text[i] == '+' || text[i] == '-'))
+            State save = rest;
+            rest = rest.SkipWs();
+            if (!rest.Eof && (rest.Text[rest.Pos] == '+' || rest.Text[rest.Pos] == '-'))
             {
-                char op = text[i];
-                i++;
-                SkipWs(text, ref i, n);
-
-                Result<IExpr> rightRes = ParseMultiplicative(text, ref i, n);
-                if (!rightRes.IsOk)
+                char op = rest.Text[rest.Pos];
+                rest = rest.Advance().SkipWs();
+                Result<(IExpr expr, State rest)> r = ParseMultiplicative(rest);
+                if (!r.IsOk)
                 {
-                    return rightRes;
+                    return r;
                 }
 
-                IExpr right = rightRes.Value;
-                left = op == '+'
-                    ? Expr.FromBinaryAdd(left, right)
-                    : Expr.FromBinarySub(left, right);
+                (IExpr right, State after) = r.Value;
+                left = op == '+' ? Expr.FromBinaryAdd(left, right) : Expr.FromBinarySub(left, right);
+                rest = after;
                 continue;
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseMultiplicative(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseMultiplicative(State s)
     {
-        Result<IExpr> first = ParseUnary(text, ref i, n);
+        Result<(IExpr expr, State rest)> first = ParseUnary(s);
         if (!first.IsOk)
         {
             return first;
         }
 
-        IExpr left = first.Value;
+        (IExpr left, State rest) = first.Value;
 
         while (true)
         {
-            int save = i;
-            SkipWs(text, ref i, n);
-            if (i < n && (text[i] == '*' || text[i] == '/' || text[i] == '%'))
+            State save = rest;
+            rest = rest.SkipWs();
+            if (!rest.Eof && (rest.Text[rest.Pos] == '*' || rest.Text[rest.Pos] == '/' || rest.Text[rest.Pos] == '%'))
             {
-                char op = text[i];
-                i++;
-                SkipWs(text, ref i, n);
-
-                Result<IExpr> rightRes = ParseUnary(text, ref i, n);
-                if (!rightRes.IsOk)
+                char op = rest.Text[rest.Pos];
+                rest = rest.Advance().SkipWs();
+                Result<(IExpr expr, State rest)> r = ParseUnary(rest);
+                if (!r.IsOk)
                 {
-                    return rightRes;
+                    return r;
                 }
 
-                IExpr right = rightRes.Value;
+                (IExpr right, State after) = r.Value;
                 left = op switch
                 {
                     '*' => Expr.FromBinaryMul(left, right),
                     '/' => Expr.FromBinaryDiv(left, right),
                     _ => Expr.FromBinaryMod(left, right)
                 };
+                rest = after;
                 continue;
             }
 
-            i = save;
+            rest = save;
             break;
         }
 
-        return Result<IExpr>.Ok(left);
+        return Ok(left, rest);
     }
 
-    private static Result<IExpr> ParseUnary(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParseUnary(State s)
     {
-        int save = i;
-        SkipWs(text, ref i, n);
-        if (i < n && text[i] == '!')
+        State save = s.SkipWs();
+        if (!save.Eof && save.Text[save.Pos] == '!')
         {
-            i++;
-            Result<IExpr> inner = ParseUnary(text, ref i, n);
+            State afterBang = save.Advance();
+            Result<(IExpr expr, State rest)> inner = ParseUnary(afterBang);
             if (!inner.IsOk)
             {
                 return inner;
             }
 
-            return Result<IExpr>.Ok(Expr.FromUnaryNot(inner.Value));
+            return Result<(IExpr, State)>.Ok((Expr.FromUnaryNot(inner.Value.expr), inner.Value.rest));
         }
 
-        i = save;
-        SkipWs(text, ref i, n);
-        if (i < n && text[i] == '-')
+        save = s.SkipWs();
+        if (!save.Eof && save.Text[save.Pos] == '-')
         {
-            i++;
-            Result<IExpr> innerNeg = ParseUnary(text, ref i, n);
-            if (!innerNeg.IsOk)
+            State afterMinus = save.Advance();
+            Result<(IExpr expr, State rest)> inner = ParseUnary(afterMinus);
+            if (!inner.IsOk)
             {
-                return innerNeg;
+                return inner;
             }
-            return Result<IExpr>.Ok(Expr.FromUnaryNeg(innerNeg.Value));
-        }
-        i = save;
 
-        return ParsePrimaryWithMemberChain(text, ref i, n);
+            return Result<(IExpr, State)>.Ok((Expr.FromUnaryNeg(inner.Value.expr), inner.Value.rest));
+        }
+
+        return ParsePrimaryWithMemberChain(s);
     }
 
-    private static void SkipWs(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParsePrimaryWithMemberChain(State s)
     {
-        while (i < n && char.IsWhiteSpace(text[i]))
-        {
-            i++;
-        }
-    }
-
-    private static Result<IExpr> ParsePrimaryWithMemberChain(string text, ref int i, int n)
-    {
-        Result<IExpr> atom = ParsePrimary(text, ref i, n);
+        Result<(IExpr expr, State rest)> atom = ParsePrimary(s);
         if (!atom.IsOk)
         {
             return atom;
         }
 
-        IExpr current = atom.Value;
+        (IExpr current, State rest) = atom.Value;
+
         while (true)
         {
-            int dotIndex = i;
-            SkipWs(text, ref i, n);
-            if (i < n && text[i] == '.')
+            State dotPos = rest;
+            rest = rest.SkipWs();
+            if (!rest.Eof && rest.Text[rest.Pos] == '.')
             {
-                i++;
-                if (i >= n || !IsIdentStart(text[i]))
+                rest = rest.Advance();
+                if (rest.Eof || !IsIdentStart(rest.Text[rest.Pos]))
                 {
                     if (current is NumberExpr)
                     {
-                        int numberStart = FindNumberStart(text, dotIndex);
-                        return Result<IExpr>.Err(new ParseError(
+                        int numberStart = FindNumberStart(dotPos.Text, dotPos.Pos);
+                        return Err<IExpr>(
                             "NumberFormat",
-                            TextSpan.At(numberStart, dotIndex + 1 - numberStart),
-                            "Invalid number literal."));
+                            TextSpan.At(numberStart, dotPos.Pos + 1 - numberStart),
+                            "Invalid number literal.");
                     }
 
-                    return Result<IExpr>.Err(new ParseError("MemberName", TextSpan.At(i, 0),
-                        "Expected member name after '.'."));
+                    return Err<IExpr>(
+                        "MemberName",
+                        TextSpan.At(rest.Pos, 0),
+                        "Expected member name after '.'.");
                 }
 
-                int start = i;
-                i++;
-                while (i < n && IsIdentPart(text[i]))
+                (bool ok, string name, State rest) ident = ReadIdent(rest);
+                if (!ident.ok)
                 {
-                    i++;
+                    return Err<IExpr>(
+                        "MemberName",
+                        TextSpan.At(rest.Pos, 0),
+                        "Expected member name after '.'.");
                 }
 
-                string name = text[start..i];
-                current = Expr.FromMember(current, name);
+                current = Expr.FromMember(current, ident.name);
+                rest = ident.rest;
                 continue;
             }
 
-            i = dotIndex;
+            rest = dotPos;
             break;
         }
 
-        return Result<IExpr>.Ok(current);
+        return Ok(current, rest);
     }
 
-    private static Result<IExpr> ParsePrimary(string text, ref int i, int n)
+    private static Result<(IExpr expr, State rest)> ParsePrimary(State s)
     {
-        if (i >= n)
+        State rest = s.SkipWs();
+        if (rest.Eof)
         {
-            return Result<IExpr>.Err(new ParseError("ExprEmpty", TextSpan.At(i, 0), "Expected expression."));
+            return Err<IExpr>("ExprEmpty", TextSpan.At(rest.Pos, 0), "Expected expression.");
         }
 
-        char c = text[i];
+        char c = rest.Text[rest.Pos];
 
         if (c == '(')
         {
-            i++;
-            SkipWs(text, ref i, n);
-
-            Result<IExpr> inner = ParseOr(text, ref i, n);
+            rest = rest.Advance().SkipWs();
+            Result<(IExpr expr, State rest)> inner = ParseOr(rest);
             if (!inner.IsOk)
             {
                 return inner;
             }
 
-            SkipWs(text, ref i, n);
-            if (i >= n || text[i] != ')')
+            rest = inner.Value.rest.SkipWs();
+            if (rest.Eof || rest.Text[rest.Pos] != ')')
             {
-                return Result<IExpr>.Err(new ParseError("MissingRParen", TextSpan.At(i, i < n ? 1 : 0),
-                    "Expected ')' to close parenthesized expression."));
+                return Err<IExpr>("MissingRParen", TextSpan.At(rest.Pos, rest.Eof ? 0 : 1),
+                    "Expected ')' to close parenthesized expression.");
             }
 
-            i++;
-            return Result<IExpr>.Ok(inner.Value);
+            return Ok(inner.Value.expr, rest.Advance());
         }
-        
+
         if (c == '"')
         {
-            Result<string> s = ParseStringLiteral(text, ref i, n);
-            if (!s.IsOk)
+            Result<(string value, State rest)> sLit = ParseStringLiteral(rest);
+            if (!sLit.IsOk)
             {
-                return Result<IExpr>.Err(s.Error!);
+                return Err<IExpr>(sLit.Error!.Code, sLit.Error!.Range, sLit.Error!.Message);
             }
-            return Result<IExpr>.Ok(Expr.FromString(s.Value));
+
+            return Result<(IExpr, State)>.Ok((Expr.FromString(sLit.Value.value), sLit.Value.rest));
         }
 
-        if (i + 4 <= n && text.Substring(i, 4) == "true" && (i + 4 == n || !IsIdentPart(text[i + 4])))
+        if (rest.StartsWith("true") && (rest.Pos + 4 == rest.Length || !IsIdentPart(rest.Text[rest.Pos + 4])))
         {
-            i += 4;
-            return Result<IExpr>.Ok(Expr.FromBoolean(true));
+            return Ok<IExpr>(Expr.FromBoolean(true), rest.Advance(4));
         }
 
-        if (i + 5 <= n && text.Substring(i, 5) == "false" && (i + 5 == n || !IsIdentPart(text[i + 5])))
+        if (rest.StartsWith("false") && (rest.Pos + 5 == rest.Length || !IsIdentPart(rest.Text[rest.Pos + 5])))
         {
-            i += 5;
-            return Result<IExpr>.Ok(Expr.FromBoolean(false));
+            return Ok<IExpr>(Expr.FromBoolean(false), rest.Advance(5));
         }
 
         if (char.IsDigit(c))
         {
-            int start = i;
-            i++;
-            while (i < n && char.IsDigit(text[i]))
+            Result<(double value, State rest)> num = ParseNumber(rest);
+            if (!num.IsOk)
             {
-                i++;
+                return Err<IExpr>(num.Error!.Code, num.Error!.Range, num.Error!.Message);
             }
 
-            if (i < n && text[i] == '.')
-            {
-                i++;
-                while (i < n && char.IsDigit(text[i]))
-                {
-                    i++;
-                }
-            }
-
-            string slice = text[start..i];
-            if (!double.TryParse(slice, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
-            {
-                return Result<IExpr>.Err(
-                    new ParseError("NumberFormat", TextSpan.At(start, i - start), "Invalid number literal."));
-            }
-
-            return Result<IExpr>.Ok(Expr.FromNumber(value));
+            return Ok<IExpr>(Expr.FromNumber(num.Value.value), num.Value.rest);
         }
 
         if (IsIdentStart(c))
         {
-            int start = i;
-            i++;
-            while (i < n && IsIdentPart(text[i]))
+            (bool ok, string name, State rest) ident = ReadIdent(rest);
+            if (!ident.ok)
             {
-                i++;
+                return Err<IExpr>("UnexpectedChar", TextSpan.At(rest.Pos, 1), $"Unexpected character '{c}'.");
             }
 
-            string name = text[start..i];
-            return Result<IExpr>.Ok(Expr.FromIdent(name));
+            return Ok<IExpr>(Expr.FromIdent(ident.name), ident.rest);
         }
 
-        return Result<IExpr>.Err(new ParseError("UnexpectedChar", TextSpan.At(i, 1), $"Unexpected character '{c}'."));
+        return Err<IExpr>("UnexpectedChar", TextSpan.At(rest.Pos, 1), $"Unexpected character '{c}'.");
     }
-    
-    private static Result<string> ParseStringLiteral(string text, ref int i, int n)
+
+    private static (bool ok, string name, State rest) ReadIdent(State s)
     {
-        int start = i;
-        if (i >= n || text[i] != '"')
+        if (s.Eof || !IsIdentStart(s.Text[s.Pos]))
         {
-            return Result<string>.Err(new ParseError("StringStart", TextSpan.At(i, 0), "Expected '\"'."));
+            return (false, string.Empty, s);
         }
 
-        i++;
+        int start = s.Pos;
+        int i = s.Pos + 1;
+        while (i < s.Length && IsIdentPart(s.Text[i]))
+        {
+            i++;
+        }
+
+        string name = s.Text.Substring(start, i - start);
+        return (true, name, s with { Pos = i });
+    }
+
+    private static Result<(string value, State rest)> ParseStringLiteral(State s)
+    {
+        int start = s.Pos;
+        if (s.Eof || s.Text[s.Pos] != '"')
+        {
+            return Result<(string, State)>.Err(new ParseError("StringStart", TextSpan.At(s.Pos, 0), "Expected '\"'."));
+        }
+
+        State rest = s.Advance();
         StringBuilder sb = new();
         bool escape = false;
-        while (i < n)
+        while (!rest.Eof)
         {
-            char c = text[i];
+            char ch = rest.Text[rest.Pos];
             if (escape)
             {
-                switch (c)
+                switch (ch)
                 {
-                    case '"': sb.Append('\"'); break;
+                    case '"': sb.Append('"'); break;
                     case '\\': sb.Append('\\'); break;
                     case 'n': sb.Append('\n'); break;
                     case 'r': sb.Append('\r'); break;
                     case 't': sb.Append('\t'); break;
                     default:
-                        return Result<string>.Err(new ParseError("StringEscape", TextSpan.At(i - 1, 2),
+                        return Result<(string, State)>.Err(new ParseError(
+                            "StringEscape",
+                            TextSpan.At(rest.Pos - 1, 2),
                             "Unsupported escape sequence."));
                 }
+
                 escape = false;
-                i++;
+                rest = rest.Advance();
                 continue;
             }
 
-            if (c == '\\')
+            if (ch == '\\')
             {
                 escape = true;
-                i++;
+                rest = rest.Advance();
                 continue;
             }
 
-            if (c == '"')
+            if (ch == '"')
             {
-                i++;
-                return Result<string>.Ok(sb.ToString());
+                return Ok(sb.ToString(), rest.Advance());
             }
 
-            sb.Append(c);
+            sb.Append(ch);
+            rest = rest.Advance();
+        }
+
+        return Result<(string, State)>.Err(new ParseError(
+            "StringUnterminated",
+            TextSpan.At(start, s.Length - start),
+            "Unterminated string literal."));
+    }
+
+    private static Result<(double value, State rest)> ParseNumber(State s)
+    {
+        int start = s.Pos;
+        int i = s.Pos;
+        while (i < s.Length && char.IsDigit(s.Text[i]))
+        {
             i++;
         }
 
-        return Result<string>.Err(new ParseError("StringUnterminated", TextSpan.At(start, n - start),
-            "Unterminated string literal."));
+        if (i < s.Length && s.Text[i] == '.')
+        {
+            int dot = i;
+            i++;
+            while (i < s.Length && char.IsDigit(s.Text[i]))
+            {
+                i++;
+            }
+
+            if (i == dot + 1)
+            {
+                return Result<(double, State)>.Err(new ParseError(
+                    "NumberFormat",
+                    TextSpan.At(start, i - start),
+                    "Invalid number literal."));
+            }
+        }
+
+        string slice = s.Text.Substring(start, i - start);
+        if (!double.TryParse(slice, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+        {
+            return Result<(double, State)>.Err(new ParseError(
+                "NumberFormat",
+                TextSpan.At(start, i - start),
+                "Invalid number literal."));
+        }
+
+        return Ok(value, s with { Pos = i });
     }
 
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';
     private static bool IsIdentPart(char c) => char.IsLetterOrDigit(c) || c == '_';
+
     private static int FindNumberStart(string text, int dotIndex)
     {
         int k = dotIndex - 1;
