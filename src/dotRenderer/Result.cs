@@ -15,6 +15,14 @@ public readonly record struct Result<T>
 
 public static class Result
 {
+    public static Result<TResult> Map<T, TResult>(this Result<T> source, Func<T, TResult> map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        return !source.IsOk
+            ? Result<TResult>.Err(source.Error!)
+            : Result<TResult>.Ok(map(source.Value));
+    }
+
     public static Result<TResult> Bind<T, TResult>(this Result<T> source, Func<T, Result<TResult>> bind)
     {
         ArgumentNullException.ThrowIfNull(bind);
