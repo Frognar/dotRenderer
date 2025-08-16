@@ -7,9 +7,6 @@ namespace DotRenderer;
 public static class Renderer
 {
     [Pure]
-    public static Result<string> Render(Template template) => Render(template, null);
-
-    [Pure]
     public static Func<Template, Result<string>> RenderWithAccessor(IValueAccessor? accessor) =>
         template => Render(template, accessor);
 
@@ -17,172 +14,149 @@ public static class Renderer
     public static Result<string> Render(Template template, IValueAccessor? globals)
     {
         template ??= new Template([]);
+        return RenderChildren(template.Children, globals);
+    }
+
+    private static Result<string> RenderChildren(ImmutableArray<INode> nodes, IValueAccessor? globals)
+    {
         StringBuilder sb = new();
-
-        foreach (INode node in template.Children)
+        foreach (INode node in nodes)
         {
-            if (node is TextNode textNode)
+            Result<string> part = RenderNode(node, globals);
+            if (!part.IsOk)
             {
-                sb.Append(textNode.Text);
+                return part;
             }
 
-            if (node is InterpolateIdentNode identNode)
-            {
-                if (globals is null)
-                {
-                    return Result<string>.Err(new EvalError("MissingIdent", identNode.Range,
-                        $"Identifier '{identNode.Name}' was not found."));
-                }
-
-                Result<Value> got = Evaluator.EvaluateIdent(globals, identNode.Name, identNode.Range);
-                if (!got.IsOk)
-                {
-                    return Result<string>.Err(got.Error!);
-                }
-
-                Value value = got.Value;
-
-                switch (value.Kind)
-                {
-                    case ValueKind.Text:
-                    case ValueKind.Number:
-                    case ValueKind.Boolean:
-                        sb.Append(value.ToInvariantString());
-                        break;
-                    default:
-                        return Result<string>.Err(new EvalError("TypeMismatch", identNode.Range,
-                            $"Identifier '{identNode.Name}' is not a scalar value."));
-                }
-
-                continue;
-            }
-
-            if (node is InterpolateExprNode exprNode)
-            {
-                IValueAccessor accessor = globals ?? MapAccessor.Empty;
-
-                Result<Value> got = Evaluator.EvaluateExpr(exprNode.Expr, accessor, exprNode.Range);
-                if (!got.IsOk)
-                {
-                    return Result<string>.Err(got.Error!);
-                }
-
-                Value value = got.Value;
-
-                switch (value.Kind)
-                {
-                    case ValueKind.Text:
-                    case ValueKind.Number:
-                    case ValueKind.Boolean:
-                        sb.Append(value.ToInvariantString());
-                        break;
-                    default:
-                        return Result<string>.Err(new EvalError("TypeMismatch", exprNode.Range,
-                            "Expression did not evaluate to a scalar value."));
-                }
-
-                continue;
-            }
-
-            if (node is IfNode ifNode)
-            {
-                IValueAccessor accessorForIf = globals ?? MapAccessor.Empty;
-                Result<Value> cond = Evaluator.EvaluateExpr(ifNode.Condition, accessorForIf, ifNode.Range);
-                if (!cond.IsOk)
-                {
-                    return Result<string>.Err(cond.Error!);
-                }
-
-                Value cv = cond.Value;
-                if (cv.Kind != ValueKind.Boolean)
-                {
-                    return Result<string>.Err(new EvalError("TypeMismatch", ifNode.Range,
-                        "Condition of @if must be boolean."));
-                }
-
-                bool isTrue = cv.Boolean;
-                if (isTrue)
-                {
-                    Result<string> thenRendered = Render(new Template(ifNode.Then), accessorForIf);
-                    if (!thenRendered.IsOk)
-                    {
-                        return thenRendered;
-                    }
-
-                    sb.Append(thenRendered.Value);
-                }
-                else if (ifNode.Else.Length > 0)
-                {
-                    Result<string> elseRendered = Render(new Template(ifNode.Else), accessorForIf);
-                    if (!elseRendered.IsOk)
-                    {
-                        return elseRendered;
-                    }
-
-                    sb.Append(elseRendered.Value);
-                }
-
-                continue;
-            }
-
-            if (node is ForNode forNode)
-            {
-                IValueAccessor accessorForFor = globals ?? MapAccessor.Empty;
-
-                Result<Value> seqRes = Evaluator.EvaluateExpr(forNode.Seq, accessorForFor, forNode.Range);
-                if (!seqRes.IsOk)
-                {
-                    return Result<string>.Err(seqRes.Error!);
-                }
-
-                Value seqVal = seqRes.Value;
-                if (seqVal.Kind != ValueKind.Sequence)
-                {
-                    return Result<string>.Err(new EvalError("TypeMismatch", forNode.Range,
-                        $"Expression of @for must evaluate to a sequence, but got {seqVal.Kind}."));
-                }
-
-                ImmutableArray<Value> items = seqVal.Sequence;
-
-                if (items.Length == 0)
-                {
-                    if (forNode.Else.Length > 0)
-                    {
-                        Result<string> elseRendered = Render(new Template(forNode.Else), accessorForFor);
-                        if (!elseRendered.IsOk)
-                        {
-                            return elseRendered;
-                        }
-
-                        sb.Append(elseRendered.Value);
-                    }
-                }
-                else
-                {
-                    int index = 0;
-                    foreach (Value item in items)
-                    {
-                        IValueAccessor scoped = new ChainAccessor(accessorForFor, forNode.Item, item);
-                        if (forNode.Index is not null)
-                        {
-                            scoped = new ChainAccessor(scoped, forNode.Index, Value.FromNumber(index));
-                        }
-
-                        Result<string> bodyRendered = Render(new Template(forNode.Body), scoped);
-                        if (!bodyRendered.IsOk)
-                        {
-                            return bodyRendered;
-                        }
-
-                        sb.Append(bodyRendered.Value);
-                        index++;
-                    }
-                }
-
-                continue;
-            }
+            sb.Append(part.Value);
         }
 
         return Result<string>.Ok(sb.ToString());
     }
+
+    private static Result<string> RenderNode(INode node, IValueAccessor? globals) =>
+        node switch
+        {
+            TextNode t => Result<string>.Ok(t.Text),
+            InterpolateIdentNode id => RenderInterpolateIdent(id, globals),
+            InterpolateExprNode ex => RenderInterpolateExpr(ex, globals),
+            IfNode i => RenderIfNode(i, globals),
+            ForNode f => RenderForNode(f, globals),
+            _ => Result<string>.Ok(string.Empty)
+        };
+
+    private static Result<string> RenderInterpolateIdent(InterpolateIdentNode node, IValueAccessor? globals)
+    {
+        if (globals is null)
+        {
+            return Result<string>.Err(
+                new EvalError("MissingIdent", node.Range, $"Identifier '{node.Name}' was not found."));
+        }
+
+        Result<Value> got = Evaluator.EvaluateIdent(globals, node.Name, node.Range);
+        if (!got.IsOk)
+        {
+            return Result<string>.Err(got.Error!);
+        }
+
+        return ScalarToString(got.Value, node.Range, $"Identifier '{node.Name}' is not a scalar value.");
+    }
+
+    private static Result<string> RenderInterpolateExpr(InterpolateExprNode node, IValueAccessor? globals)
+    {
+        IValueAccessor accessor = globals ?? MapAccessor.Empty;
+        Result<Value> got = Evaluator.EvaluateExpr(node.Expr, accessor, node.Range);
+        if (!got.IsOk)
+        {
+            return Result<string>.Err(got.Error!);
+        }
+
+        return ScalarToString(got.Value, node.Range, "Expression did not evaluate to a scalar value.");
+    }
+
+    private static Result<string> RenderIfNode(IfNode node, IValueAccessor? globals)
+    {
+        IValueAccessor accessor = globals ?? MapAccessor.Empty;
+        Result<Value> cond = Evaluator.EvaluateExpr(node.Condition, accessor, node.Range);
+        if (!cond.IsOk)
+        {
+            return Result<string>.Err(cond.Error!);
+        }
+
+        Value cv = cond.Value;
+        if (cv.Kind != ValueKind.Boolean)
+        {
+            return Result<string>.Err(
+                new EvalError("TypeMismatch", node.Range, "Condition of @if must be boolean."));
+        }
+
+        bool isTrue = cv.Boolean;
+        if (isTrue)
+        {
+            return RenderChildren(node.Then, accessor);
+        }
+
+        if (node.Else.Length > 0)
+        {
+            return RenderChildren(node.Else, accessor);
+        }
+
+        return Result<string>.Ok(string.Empty);
+    }
+
+    private static Result<string> RenderForNode(ForNode node, IValueAccessor? globals)
+    {
+        IValueAccessor accessor = globals ?? MapAccessor.Empty;
+        Result<Value> seqRes = Evaluator.EvaluateExpr(node.Seq, accessor, node.Range);
+        if (!seqRes.IsOk)
+        {
+            return Result<string>.Err(seqRes.Error!);
+        }
+
+        Value seqVal = seqRes.Value;
+        if (seqVal.Kind != ValueKind.Sequence)
+        {
+            return Result<string>.Err(new EvalError(
+                "TypeMismatch", node.Range,
+                $"Expression of @for must evaluate to a sequence, but got {seqVal.Kind}."));
+        }
+
+        ImmutableArray<Value> items = seqVal.Sequence;
+        if (items.Length == 0)
+        {
+            return node.Else.Length > 0
+                ? RenderChildren(node.Else, accessor)
+                : Result<string>.Ok(string.Empty);
+        }
+
+        StringBuilder sb = new();
+        int index = 0;
+        foreach (Value item in items)
+        {
+            IValueAccessor scoped = new ChainAccessor(accessor, node.Item, item);
+            if (node.Index is not null)
+            {
+                scoped = new ChainAccessor(scoped, node.Index, Value.FromNumber(index));
+            }
+
+            Result<string> body = RenderChildren(node.Body, scoped);
+            if (!body.IsOk)
+            {
+                return body;
+            }
+
+            sb.Append(body.Value);
+            index++;
+        }
+
+        return Result<string>.Ok(sb.ToString());
+    }
+
+    private static Result<string> ScalarToString(Value value, TextSpan range, string notScalarMessage) =>
+        value.Kind switch
+        {
+            ValueKind.Text or ValueKind.Number or ValueKind.Boolean
+                => Result<string>.Ok(value.ToInvariantString()),
+            _ => Result<string>.Err(new EvalError("TypeMismatch", range, notScalarMessage))
+        };
 }
