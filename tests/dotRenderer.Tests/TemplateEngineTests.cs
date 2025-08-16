@@ -184,54 +184,30 @@ public class TemplateEngineTests
             "XabY");
 
     [Fact]
-    public void Should_Report_Error_When_Division_By_Zero()
-    {
-        // arrange
-        const string template = "Result: @(1 / 0)";
-
-        // act
-        Result<string> result = TemplateEngine.Render(template);
-
-        // assert
-        Assert.False(result.IsOk);
-        IError error = result.Error!;
-        Assert.Equal("DivisionByZero", error.Code);
-    }
+    public void Should_Report_Error_When_Division_By_Zero() =>
+        TemplateEngineAssert.FailsToRender(
+            "Result: @(1 / 0)",
+            MapAccessor.Empty,
+            "DivisionByZero",
+            TextSpan.At(8, 8));
 
     [Fact]
-    public void Should_Report_Error_Even_When_Left_ShortCircuits()
-    {
-        // arrange
-        const string template = "A@if(false && 1 + true > 0){T}else{E}B";
-
-        // act
-        Result<string> result = TemplateEngine.Render(template);
-
-        // assert
-        Assert.False(result.IsOk);
-        IError error = result.Error!;
-        Assert.Equal("TypeMismatch", error.Code);
-        Assert.Equal(TextSpan.At(1, 26), error.Range); // spans "@if(false && 1 + true > 0)"
-        Assert.Equal("Operator '+' expects numbers.", error.Message);
-    }
+    public void Should_Report_Error_Even_When_Left_ShortCircuits() =>
+        TemplateEngineAssert.FailsToRender(
+            "A@if(false && 1 + true > 0){T}else{E}B",
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(1, 26), // spans "@if(false && 1 + true > 0)"
+            "Operator '+' expects numbers.");
 
     [Fact]
-    public void Should_Fail_For_When_Expression_Is_Not_A_Sequence()
-    {
-        // arrange
-        const string template = "X@for(item in num){@item}Y";
-        MapAccessor globals = MapAccessor.With(
-            ("num", Value.FromNumber(123))
-        );
-
-        // act
-        Result<string> result = TemplateEngine.Render(template, globals);
-
-        // assert
-        Assert.False(result.IsOk);
-        IError error = result.Error!;
-        Assert.Equal("TypeMismatch", error.Code);
-        Assert.Equal(TextSpan.At(1, 17), error.Range); // "@for(item in num)"
-        Assert.Equal("Expression of @for must evaluate to a sequence, but got Number.", error.Message);
-    }
+    public void Should_Fail_For_When_Expression_Is_Not_A_Sequence() =>
+        TemplateEngineAssert.FailsToRender(
+            "X@for(item in num){@item}Y",
+            MapAccessor.With(
+                ("num", Value.FromNumber(123))
+            ),
+            "TypeMismatch",
+            TextSpan.At(1, 17), // spans "@for(item in num)"
+            "Expression of @for must evaluate to a sequence, but got Number.");
 }
