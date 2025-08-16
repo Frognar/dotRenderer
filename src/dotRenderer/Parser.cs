@@ -8,481 +8,313 @@ public static class Parser
     [Pure]
     public static Result<Template> Parse(ImmutableArray<Token> tokens)
     {
-        ImmutableArray<INode>.Builder nodesBuilder = ImmutableArray.CreateBuilder<INode>();
-        int i = 0;
-        int n = tokens.Length;
+        return ParseSequence(new TokenReader(tokens), stopAtRBrace: false)
+            .Map(nodes => new Template(nodes));
+    }
 
-        while (i < n)
+    private sealed class TokenReader(ImmutableArray<Token> tokens)
+    {
+        private readonly ImmutableArray<Token> _tokens = tokens;
+        private int _i;
+
+        public bool Eof => _i >= _tokens.Length;
+        public Token Current => _tokens[_i];
+        public TokenKind? Kind => Eof ? null : Current.Kind;
+
+        public Token Take()
         {
-            Token t = tokens[i];
-            switch (t.Kind)
+            Token t = Current;
+            _i++;
+            return t;
+        }
+
+        public bool Match(TokenKind kind)
+        {
+            if (Kind == kind)
+            {
+                _i++;
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    private static Result<ImmutableArray<INode>> ParseSequence(
+        TokenReader reader,
+        bool stopAtRBrace)
+    {
+        ImmutableArray<INode>.Builder nodes = ImmutableArray.CreateBuilder<INode>();
+        while (!reader.Eof)
+        {
+            if (stopAtRBrace && reader.Kind == TokenKind.RBrace)
+            {
+                break;
+            }
+
+            switch (reader.Kind)
             {
                 case TokenKind.Text:
-                    nodesBuilder.Add(Node.FromText(t.Text, t.Range));
-                    i++;
-                    break;
+                    nodes.Add(ParseText(reader));
+                    continue;
 
                 case TokenKind.AtIdent:
-                    nodesBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
-                    i++;
-                    break;
+                    nodes.Add(ParseAtIdent(reader));
+                    continue;
 
                 case TokenKind.AtExpr:
-                    Result<IExpr> parsed = ExprParser.Parse(t.Text);
-                    if (!parsed.IsOk)
+                {
+                    Result<INode> res = ParseAtExpr(reader);
+                    if (!res.IsOk)
                     {
-                        IError err = parsed.Error!;
-                        return Result<Template>.Err(new ParseError(err.Code, t.Range, err.Message));
+                        return Result<ImmutableArray<INode>>.Err(res.Error!);
                     }
 
-                    nodesBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
-                    i++;
-                    break;
+                    nodes.Add(res.Value);
+                    continue;
+                }
 
                 case TokenKind.AtIf:
-                    Result<(int newi, INode node)> ifNode = ParseIf(tokens, i);
-                    if (!ifNode.IsOk)
+                {
+                    Result<INode> res = ParseIf(reader);
+                    if (!res.IsOk)
                     {
-                        return Result<Template>.Err(ifNode.Error!);
+                        return Result<ImmutableArray<INode>>.Err(res.Error!);
                     }
 
-                    nodesBuilder.Add(ifNode.Value.node);
-                    i = ifNode.Value.newi;
-                    ;
-                    break;
+                    nodes.Add(res.Value);
+                    continue;
+                }
 
                 case TokenKind.AtFor:
-                    Result<(int newi, INode node)> forNode = ParseFor(tokens, i);
-                    if (!forNode.IsOk)
+                {
+                    Result<INode> res = ParseFor(reader);
+                    if (!res.IsOk)
                     {
-                        return Result<Template>.Err(forNode.Error!);
+                        return Result<ImmutableArray<INode>>.Err(res.Error!);
                     }
 
-                    nodesBuilder.Add(forNode.Value.node);
-                    i = forNode.Value.newi;
-                    break;
+                    nodes.Add(res.Value);
+                    continue;
+                }
+
+                default:
+                    reader.Take();
+                    continue;
             }
         }
 
-        Template template = new(nodesBuilder.ToImmutable());
-        return Result<Template>.Ok(template);
+        return Result<ImmutableArray<INode>>.Ok(nodes.ToImmutable());
     }
 
-    private static Result<(int, INode)> ParseIf(ImmutableArray<Token> tokens, int i)
+    private static TextNode ParseText(TokenReader reader)
     {
-        int n = tokens.Length;
-        Token atIf = tokens[i];
-        Result<IExpr> cond = ExprParser.Parse(atIf.Text);
-        if (!cond.IsOk)
-        {
-            IError err = cond.Error!;
-            return Result<(int, INode)>.Err(new ParseError(err.Code, atIf.Range, err.Message));
-        }
-
-        i++;
-        if (i >= n || tokens[i].Kind != TokenKind.LBrace)
-        {
-            return Result<(int, INode)>.Err(new ParseError("IfMissingLBrace", atIf.Range,
-                "Expected '{' after @if(...)."));
-        }
-
-        i++;
-        ImmutableArray<INode>.Builder thenBuilder = ImmutableArray.CreateBuilder<INode>();
-        while (i < n && tokens[i].Kind != TokenKind.RBrace)
-        {
-            Token t = tokens[i];
-            switch (t.Kind)
-            {
-                case TokenKind.Text:
-                    thenBuilder.Add(Node.FromText(t.Text, t.Range));
-                    i++;
-                    break;
-
-                case TokenKind.AtIdent:
-                    thenBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
-                    i++;
-                    break;
-
-                case TokenKind.AtExpr:
-                {
-                    Result<IExpr> parsed = ExprParser.Parse(t.Text);
-                    if (!parsed.IsOk)
-                    {
-                        IError err = parsed.Error!;
-                        return Result<(int, INode)>.Err(new ParseError(err.Code, t.Range, err.Message));
-                    }
-
-                    thenBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
-                    i++;
-                    break;
-                }
-
-                case TokenKind.AtIf:
-                {
-                    Result<(int i, INode node)> inner = ParseIf(tokens, i);
-                    if (!inner.IsOk)
-                    {
-                        return inner;
-                    }
-
-                    i = inner.Value.i;
-                    thenBuilder.Add(inner.Value.node);
-                    break;
-                }
-
-                case TokenKind.LBrace:
-                    return Result<(int, INode)>.Err(new ParseError("UnexpectedLBrace", t.Range,
-                        "Unexpected '{' inside @if block."));
-            }
-        }
-
-        if (i >= n || tokens[i].Kind != TokenKind.RBrace)
-        {
-            return Result<(int, INode)>.Err(new ParseError("IfMissingRBrace", atIf.Range,
-                "Expected '}' to close @if block."));
-        }
-
-        i++;
-
-        ImmutableArray<INode>.Builder elseBuilder = ImmutableArray.CreateBuilder<INode>();
-        if (i < n && tokens[i].Kind == TokenKind.Else)
-        {
-            i++;
-            if (i >= n || tokens[i].Kind != TokenKind.LBrace)
-            {
-                return Result<(int, INode)>.Err(new ParseError("ElseMissingLBrace", atIf.Range,
-                    "Expected '{' after else."));
-            }
-
-            i++;
-            while (i < n && tokens[i].Kind != TokenKind.RBrace)
-            {
-                Token t = tokens[i];
-                switch (t.Kind)
-                {
-                    case TokenKind.Text:
-                        elseBuilder.Add(Node.FromText(t.Text, t.Range));
-                        i++;
-                        break;
-
-                    case TokenKind.AtIdent:
-                        elseBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
-                        i++;
-                        break;
-
-                    case TokenKind.AtExpr:
-                    {
-                        Result<IExpr> parsed = ExprParser.Parse(t.Text);
-                        if (!parsed.IsOk)
-                        {
-                            IError err = parsed.Error!;
-                            return Result<(int, INode)>.Err(new ParseError(err.Code, t.Range, err.Message));
-                        }
-
-                        elseBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
-                        i++;
-                        break;
-                    }
-
-                    case TokenKind.AtIf:
-                    {
-                        Result<(int i2, INode node)> inner = ParseIf(tokens, i);
-                        if (!inner.IsOk)
-                        {
-                            return inner;
-                        }
-
-                        i = inner.Value.i2;
-                        elseBuilder.Add(inner.Value.node);
-                        break;
-                    }
-
-                    case TokenKind.LBrace:
-                        return Result<(int, INode)>.Err(new ParseError("UnexpectedLBrace", t.Range,
-                            "Unexpected '{' inside else block."));
-
-                    case TokenKind.RBrace:
-                        break;
-
-                    default:
-                        i++;
-                        break;
-                }
-            }
-
-            if (i >= n || tokens[i].Kind != TokenKind.RBrace)
-            {
-                return Result<(int, INode)>.Err(new ParseError("ElseMissingRBrace", atIf.Range,
-                    "Expected '}' to close else block."));
-            }
-
-            i++;
-        }
-
-        IfNode node = elseBuilder.Count > 0
-            ? Node.FromIf(cond.Value, thenBuilder.ToImmutable(), elseBuilder.ToImmutable(), atIf.Range)
-            : Node.FromIf(cond.Value, thenBuilder.ToImmutable(), atIf.Range);
-
-        return Result<(int, INode)>.Ok((i, node));
+        Token t = reader.Take();
+        return Node.FromText(t.Text, t.Range);
     }
 
-    private static Result<(int, INode)> ParseFor(ImmutableArray<Token> tokens, int i)
+    private static InterpolateIdentNode ParseAtIdent(TokenReader reader)
     {
-        int n = tokens.Length;
-        Token atFor = tokens[i];
+        Token t = reader.Take();
+        return Node.FromInterpolateIdent(t.Text, t.Range);
+    }
+
+    private static Result<INode> ParseAtExpr(TokenReader reader)
+    {
+        Token t = reader.Take();
+        Result<IExpr> expr = ExprParser.Parse(t.Text);
+        if (!expr.IsOk)
+        {
+            IError e = expr.Error!;
+            return Result<INode>.Err(new ParseError(e.Code, t.Range, e.Message));
+        }
+
+        return Result<INode>.Ok(Node.FromInterpolateExpr(expr.Value, t.Range));
+    }
+
+    private static Result<INode> ParseIf(TokenReader reader)
+    {
+        Token atIf = reader.Take();
+        Result<IExpr> condRes = ExprParser.Parse(atIf.Text);
+        if (!condRes.IsOk)
+        {
+            IError e = condRes.Error!;
+            return Result<INode>.Err(new ParseError(e.Code, atIf.Range, e.Message));
+        }
+
+        if (!reader.Match(TokenKind.LBrace))
+        {
+            return Result<INode>.Err(new ParseError("IfMissingLBrace", atIf.Range, "Expected '{' after @if(...)."));
+        }
+
+        Result<ImmutableArray<INode>> thenRes = ParseSequence(reader, stopAtRBrace: true);
+        if (!thenRes.IsOk)
+        {
+            return Result<INode>.Err(thenRes.Error!);
+        }
+
+        if (!reader.Match(TokenKind.RBrace))
+        {
+            return Result<INode>.Err(new ParseError("IfMissingRBrace", atIf.Range, "Expected '}' to close @if block."));
+        }
+
+        ImmutableArray<INode> elseNodes = ImmutableArray<INode>.Empty;
+        if (reader.Kind == TokenKind.Else)
+        {
+            reader.Take();
+            if (!reader.Match(TokenKind.LBrace))
+            {
+                return Result<INode>.Err(new ParseError("ElseMissingLBrace", atIf.Range, "Expected '{' after else."));
+            }
+
+            Result<ImmutableArray<INode>> elseRes = ParseSequence(reader, stopAtRBrace: true);
+            if (!elseRes.IsOk)
+            {
+                return Result<INode>.Err(elseRes.Error!);
+            }
+
+            if (!reader.Match(TokenKind.RBrace))
+            {
+                return Result<INode>.Err(new ParseError("ElseMissingRBrace", atIf.Range, "Expected '}' to close else block."));
+            }
+
+            elseNodes = elseRes.Value;
+        }
+
+        IfNode node = elseNodes.IsDefaultOrEmpty
+            ? Node.FromIf(condRes.Value, thenRes.Value, atIf.Range)
+            : Node.FromIf(condRes.Value, thenRes.Value, elseNodes, atIf.Range);
+
+        return Result<INode>.Ok(node);
+    }
+
+    private static Result<INode> ParseFor(TokenReader reader)
+    {
+        Token atFor = reader.Take();
         Result<(string item, string? index, IExpr seq)> header = ParseForHeader(atFor.Text, atFor.Range);
         if (!header.IsOk)
         {
-            return Result<(int, INode)>.Err(header.Error!);
+            return Result<INode>.Err(header.Error!);
         }
 
-        i++;
-        if (i >= n || tokens[i].Kind != TokenKind.LBrace)
+        if (!reader.Match(TokenKind.LBrace))
         {
-            return Result<(int, INode)>.Err(new ParseError("ForMissingLBrace", atFor.Range,
-                "Expected '{' after @for(...)."));
+            return Result<INode>.Err(new ParseError("ForMissingLBrace", atFor.Range, "Expected '{' after @for(...)."));
         }
 
-        i++;
-        ImmutableArray<INode>.Builder bodyBuilder = ImmutableArray.CreateBuilder<INode>();
-        while (i < n && tokens[i].Kind != TokenKind.RBrace)
+        Result<ImmutableArray<INode>> bodyRes = ParseSequence(reader, stopAtRBrace: true);
+        if (!bodyRes.IsOk)
         {
-            Token t = tokens[i];
-            switch (t.Kind)
+            return Result<INode>.Err(bodyRes.Error!);
+        }
+
+        if (!reader.Match(TokenKind.RBrace))
+        {
+            return Result<INode>.Err(new ParseError("ForMissingRBrace", atFor.Range, "Expected '}' to close @for block."));
+        }
+
+        ImmutableArray<INode> elseNodes = ImmutableArray<INode>.Empty;
+        if (reader.Kind == TokenKind.Else)
+        {
+            reader.Take();
+            if (!reader.Match(TokenKind.LBrace))
             {
-                case TokenKind.Text:
-                    bodyBuilder.Add(Node.FromText(t.Text, t.Range));
-                    i++;
-                    break;
-
-                case TokenKind.AtIdent:
-                    bodyBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
-                    i++;
-                    break;
-
-                case TokenKind.AtExpr:
-                {
-                    Result<IExpr> parsed = ExprParser.Parse(t.Text);
-                    if (!parsed.IsOk)
-                    {
-                        IError err = parsed.Error!;
-                        return Result<(int, INode)>.Err(new ParseError(err.Code, t.Range, err.Message));
-                    }
-
-                    bodyBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
-                    i++;
-                    break;
-                }
-
-                case TokenKind.AtIf:
-                {
-                    Result<(int i2, INode node)> innerIf = ParseIf(tokens, i);
-                    if (!innerIf.IsOk)
-                    {
-                        return innerIf;
-                    }
-
-                    i = innerIf.Value.i2;
-                    bodyBuilder.Add(innerIf.Value.node);
-                    break;
-                }
-
-                case TokenKind.AtFor:
-                {
-                    Result<(int i2, INode node)> innerFor = ParseFor(tokens, i);
-                    if (!innerFor.IsOk)
-                    {
-                        return innerFor;
-                    }
-
-                    i = innerFor.Value.i2;
-                    bodyBuilder.Add(innerFor.Value.node);
-                    break;
-                }
-
-                case TokenKind.LBrace:
-                    return Result<(int, INode)>.Err(new ParseError("UnexpectedLBrace", t.Range,
-                        "Unexpected '{' inside @for block."));
-            }
-        }
-
-        if (i >= n || tokens[i].Kind != TokenKind.RBrace)
-        {
-            return Result<(int, INode)>.Err(new ParseError("ForMissingRBrace", atFor.Range,
-                "Expected '}' to close @for block."));
-        }
-
-        i++;
-        ImmutableArray<INode>.Builder elseBuilder = ImmutableArray.CreateBuilder<INode>();
-        if (i < n && tokens[i].Kind == TokenKind.Else)
-        {
-            i++;
-            if (i >= n || tokens[i].Kind != TokenKind.LBrace)
-            {
-                return Result<(int, INode)>.Err(
-                    new ParseError("ElseMissingLBrace", atFor.Range, "Expected '{' after else."));
+                return Result<INode>.Err(new ParseError("ElseMissingLBrace", atFor.Range, "Expected '{' after else."));
             }
 
-            i++;
-            while (i < n && tokens[i].Kind != TokenKind.RBrace)
+            Result<ImmutableArray<INode>> elseRes = ParseSequence(reader, stopAtRBrace: true);
+            if (!elseRes.IsOk)
             {
-                Token t = tokens[i];
-                switch (t.Kind)
-                {
-                    case TokenKind.Text:
-                        elseBuilder.Add(Node.FromText(t.Text, t.Range));
-                        i++;
-                        break;
-                    case TokenKind.AtIdent:
-                        elseBuilder.Add(Node.FromInterpolateIdent(t.Text, t.Range));
-                        i++;
-                        break;
-                    case TokenKind.AtExpr:
-                    {
-                        Result<IExpr> parsed = ExprParser.Parse(t.Text);
-                        if (!parsed.IsOk)
-                        {
-                            IError err = parsed.Error!;
-                            return Result<(int, INode)>.Err(new ParseError(err.Code, t.Range, err.Message));
-                        }
-
-                        elseBuilder.Add(Node.FromInterpolateExpr(parsed.Value, t.Range));
-                        i++;
-                        break;
-                    }
-                    case TokenKind.AtIf:
-                    {
-                        Result<(int i2, INode node)> innerIf = ParseIf(tokens, i);
-                        if (!innerIf.IsOk)
-                        {
-                            return innerIf;
-                        }
-
-                        i = innerIf.Value.i2;
-                        elseBuilder.Add(innerIf.Value.node);
-                        break;
-                    }
-                    case TokenKind.AtFor:
-                    {
-                        Result<(int i2, INode node)> innerFor = ParseFor(tokens, i);
-                        if (!innerFor.IsOk)
-                        {
-                            return innerFor;
-                        }
-
-                        i = innerFor.Value.i2;
-                        elseBuilder.Add(innerFor.Value.node);
-                        break;
-                    }
-                    case TokenKind.LBrace:
-                        return Result<(int, INode)>.Err(new ParseError("UnexpectedLBrace", t.Range,
-                            "Unexpected '{' inside else block."));
-                }
+                return Result<INode>.Err(elseRes.Error!);
             }
 
-            if (i >= n || tokens[i].Kind != TokenKind.RBrace)
+            if (!reader.Match(TokenKind.RBrace))
             {
-                return Result<(int, INode)>.Err(new ParseError("ElseMissingRBrace", atFor.Range,
-                    "Expected '}' to close else block."));
+                return Result<INode>.Err(new ParseError("ElseMissingRBrace", atFor.Range, "Expected '}' to close else block."));
             }
 
-            i++;
+            elseNodes = elseRes.Value;
         }
 
-        (string item, string? index, IExpr seq) h = header.Value;
-        ForNode node = h.index is null
-            ? Node.FromFor(h.item, h.seq, bodyBuilder.ToImmutable(), elseBuilder.ToImmutable(), atFor.Range)
-            : Node.FromFor(h.item, h.index!, h.seq, bodyBuilder.ToImmutable(), elseBuilder.ToImmutable(), atFor.Range);
+        (string item, string? index, IExpr seq) = header.Value;
+        ForNode node = index is null
+            ? Node.FromFor(item, seq, bodyRes.Value, elseNodes, atFor.Range)
+            : Node.FromFor(item, index, seq, bodyRes.Value, elseNodes, atFor.Range);
 
-
-        return Result<(int, INode)>.Ok((i, node));
+        return Result<INode>.Ok(node);
     }
 
     private static Result<(string item, string? index, IExpr seq)> ParseForHeader(string header, TextSpan range)
     {
         int i = 0;
         int n = header.Length;
-        while (i < n && char.IsWhiteSpace(header[i]))
-        {
-            i++;
-        }
-
+        i = SkipWs(header, i, n);
         if (i >= n || !(char.IsLetter(header[i]) || header[i] == '_'))
         {
-            return Result<(string, string?, IExpr)>.Err(new ParseError("ForItemIdent", range,
-                "Expected loop variable identifier."));
+            return Err("ForItemIdent", "Expected loop variable identifier.");
         }
 
-        int startIdent = i;
-        i++;
-        while (i < n && (char.IsLetterOrDigit(header[i]) || header[i] == '_'))
-        {
-            i++;
-        }
-
-        string item = header[startIdent..i];
-
-        while (i < n && char.IsWhiteSpace(header[i]))
-        {
-            i++;
-        }
-
+        (string item, i) = ReadIdent(header, i, n);
+        i = SkipWs(header, i, n);
         string? index = null;
         if (i < n && header[i] == ',')
         {
             i++;
-            while (i < n && char.IsWhiteSpace(header[i]))
-            {
-                i++;
-            }
-
+            i = SkipWs(header, i, n);
             if (i >= n || !(char.IsLetter(header[i]) || header[i] == '_'))
             {
-                return Result<(string, string?, IExpr)>.Err(new ParseError("ForIndexIdent", range,
-                    "Expected index identifier after ','."));
+                return Err("ForIndexIdent", "Expected index identifier after ','.");
             }
 
-            int startIndex = i;
-            i++;
-            while (i < n && (char.IsLetterOrDigit(header[i]) || header[i] == '_'))
-            {
-                i++;
-            }
-
-            index = header[startIndex..i];
-
-            while (i < n && char.IsWhiteSpace(header[i]))
-            {
-                i++;
-            }
+            (index, i) = ReadIdent(header, i, n);
+            i = SkipWs(header, i, n);
         }
 
         if (!(i + 2 <= n && header.AsSpan(i, 2).SequenceEqual("in".AsSpan())))
         {
-            return Result<(string, string?, IExpr)>.Err(new ParseError("ForMissingIn", range,
-                "Expected 'in' in @for header."));
+            return Err("ForMissingIn", "Expected 'in' in @for header.");
         }
 
         i += 2;
-        while (i < n && char.IsWhiteSpace(header[i]))
-        {
-            i++;
-        }
-
+        i = SkipWs(header, i, n);
         if (i >= n)
         {
-            return Result<(string, string?, IExpr)>.Err(new ParseError("ForMissingExpr", range,
-                "Expected expression after 'in'."));
+            return Err("ForMissingExpr", "Expected expression after 'in'.");
         }
 
         string exprText = header[i..].Trim();
         Result<IExpr> expr = ExprParser.Parse(exprText);
         if (!expr.IsOk)
         {
-            IError err = expr.Error!;
-            return Result<(string, string?, IExpr)>.Err(new ParseError(err.Code, range, err.Message));
+            IError e = expr.Error!;
+            return Result<(string, string?, IExpr)>.Err(new ParseError(e.Code, range, e.Message));
         }
 
         return Result<(string, string?, IExpr)>.Ok((item, index, expr.Value));
+
+        static int SkipWs(string s, int i, int n)
+        {
+            while (i < n && char.IsWhiteSpace(s[i]))
+            {
+                i++;
+            }
+
+            return i;
+        }
+
+        static (string ident, int newI) ReadIdent(string s, int i, int n)
+        {
+            int start = i;
+            i++;
+            while (i < n && (char.IsLetterOrDigit(s[i]) || s[i] == '_'))
+            {
+                i++;
+            }
+
+            return (s[start..i], i);
+        }
+
+        Result<(string, string?, IExpr)> Err(string code, string message)
+            => Result<(string, string?, IExpr)>.Err(new ParseError(code, range, message));
     }
 }
