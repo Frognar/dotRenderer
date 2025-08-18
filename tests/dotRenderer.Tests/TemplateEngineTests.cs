@@ -241,6 +241,38 @@ public class TemplateEngineTests
             <style>
             </style>
             """);
+    
+    [Fact]
+    public void Should_Allow_LBrace_On_Next_Line_After_If() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @if(true)
+            {abc}
+            xyz
+            """,
+            MapAccessor.Empty,
+            """
+            xyz
+            abc
+            xyz
+            """);
+
+    [Fact]
+    public void Should_Allow_LBrace_On_Next_Line_After_For() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @for(item in items)
+            {@item}
+            xyz
+            """,
+            MapAccessor.With(("items", Value.FromSequence(Value.FromNumber(1)))),
+            """
+            xyz
+            1
+            xyz
+            """);
 
     [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>

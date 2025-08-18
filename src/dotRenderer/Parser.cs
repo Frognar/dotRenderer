@@ -119,6 +119,7 @@ public static class Parser
     private static Result<(INode node, State rest)> ParseIf(State r)
     {
         (Token atIf, State afterIf) = r.Take();
+        afterIf = SkipWhitespaceTextTokens(afterIf);
         Result<IExpr> condRes = ExprParser.Parse(atIf.Text);
         if (!condRes.IsOk)
         {
@@ -152,6 +153,7 @@ public static class Parser
         if (rest.Kind == TokenKind.Else)
         {
             (_, rest) = rest.Take();
+            rest = SkipWhitespaceTextTokens(rest);
             (bool hasElseL, State afterElseL) = rest.Match(TokenKind.LBrace);
             if (!hasElseL)
             {
@@ -187,6 +189,7 @@ public static class Parser
     private static Result<(INode node, State rest)> ParseFor(State r)
     {
         (Token atFor, State afterFor) = r.Take();
+        afterFor = SkipWhitespaceTextTokens(afterFor);
         Result<(string item, string? index, IExpr seq)> header = ParseForHeader(atFor.Text, atFor.Range);
         if (!header.IsOk)
         {
@@ -219,6 +222,7 @@ public static class Parser
         if (rest.Kind == TokenKind.Else)
         {
             (_, rest) = rest.Take();
+            rest = SkipWhitespaceTextTokens(rest);
             (bool hasElseL, State afterElseL) = rest.Match(TokenKind.LBrace);
             if (!hasElseL)
             {
@@ -325,5 +329,21 @@ public static class Parser
 
         Result<(string, string?, IExpr)> Err(string code, string message)
             => Result<(string, string?, IExpr)>.Err(new ParseError(code, range, message));
+    }
+
+    private static State SkipWhitespaceTextTokens(State s)
+    {
+        while (s is { Eof: false, Kind: TokenKind.Text })
+        {
+            string t = s.Current.Text;
+            if (!t.All(char.IsWhiteSpace))
+            {
+                break;
+            }
+
+            s = s.Advance();
+        }
+
+        return s;
     }
 }
