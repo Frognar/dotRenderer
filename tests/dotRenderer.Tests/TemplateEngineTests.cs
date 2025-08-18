@@ -349,6 +349,91 @@ public class TemplateEngineTests
             """);
 
     [Fact]
+    public void For_Should_Ignore_Else_When_Sequence_NotEmpty_And_Trim_Outer_Newlines() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @for(x in arr)
+            {
+            <li>@x</li>
+            }
+            else
+            {
+            <p>empty</p>
+            }
+            xyz
+            """,
+            MapAccessor.With(("arr", Value.FromSequence(Value.FromNumber(1), Value.FromNumber(2)))),
+            """
+            xyz
+            <li>1</li>
+            <li>2</li>
+            xyz
+            """);
+
+    [Fact]
+    public void If_With_Empty_Else_Should_Collapse_Newlines() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @if(true)
+            {
+            abc
+            }
+            else
+            {
+            }
+            xyz
+            """,
+            MapAccessor.Empty,
+            """
+            xyz
+            abc
+            xyz
+            """);
+
+    [Fact]
+    public void For_With_Empty_Else_Should_Collapse_Newlines_When_Empty_Sequence() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @for(x in arr)
+            {
+            <li>@x</li>
+            }
+            else
+            {
+            }
+            xyz
+            """,
+            MapAccessor.With(("arr", Value.FromSequence())),
+            """
+            xyz
+            xyz
+            """);
+
+    [Fact]
+    public void For_With_Empty_Else_Should_Collapse_Newlines_When_NotEmpty_Sequence() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @for(x in arr)
+            {
+            <li>@x</li>
+            }
+            else
+            {
+            }
+            xyz
+            """,
+            MapAccessor.With(("arr", Value.FromSequence(Value.FromNumber(1)))),
+            """
+            xyz
+            <li>1</li>
+            xyz
+            """);
+
+    [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(
             "Result: @(1 / 0)",

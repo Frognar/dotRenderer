@@ -164,7 +164,7 @@ public static class Renderer
 
             Value loop = BuildLoopValue(index, items.Length);
             scoped = new ChainAccessor(scoped, "loop", loop);
-            Result<string> body = RenderChildren(node.Body, scoped);
+            Result<string> body = RenderChildren(node.Body, scoped).Map(StripOneLeadingNewline);
             if (!body.IsOk)
             {
                 return body;
@@ -174,7 +174,7 @@ public static class Renderer
             index++;
         }
 
-        return Result<string>.Ok(sb.ToString());
+        return Result<string>.Ok(sb.ToString()).Map(TrimOneOuterNewline);
     }
 
     private static Value BuildLoopValue(int index, int count) =>
