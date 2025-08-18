@@ -184,6 +184,50 @@ public class TemplateEngineTests
             "XabY");
 
     [Fact]
+    public void Should_Render_For_With_Loop_Index_And_Item() =>
+        TemplateEngineAssert.Render(
+            "X@for(item in items){@(loop.index):@item;}Y",
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+            ))),
+            "X0:a;1:b;2:c;Y");
+
+    [Fact]
+    public void Should_Render_For_With_Loop_First_And_Last_Flags() =>
+        TemplateEngineAssert.Render(
+            "X@for(item in items){@if(loop.isFirst){^}@if(loop.isLast){$}@item}Y",
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+            ))),
+            "X^ab$cY");
+
+    [Fact]
+    public void Should_Render_For_With_Loop_Even_Flags() =>
+        TemplateEngineAssert.Render(
+            "X@for(item in items){@if(loop.isEven){E}else{O}}Y",
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+            ))),
+            "XEOEY");
+
+    [Fact]
+    public void Should_Render_For_With_Loop_Odd_Flags() =>
+        TemplateEngineAssert.Render(
+            "X@for(item in items){@if(loop.isOdd){O}else{E}}Y",
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+            ))),
+            "XEOEY");
+
+    [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(
             "Result: @(1 / 0)",

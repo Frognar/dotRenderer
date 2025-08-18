@@ -193,6 +193,101 @@ public class RendererTests
             ), "XabY");
 
     [Fact]
+    public void Should_Expose_Loop_Index_And_Count() =>
+        RendererAssert.Render(
+            new Template([
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [
+                        Node.FromInterpolateExpr(Expr.FromMember(Expr.FromIdent("loop"), "index"), TextSpan.At(0, 1)),
+                        Node.FromText(":", TextSpan.At(0, 1)),
+                        Node.FromInterpolateIdent("item", TextSpan.At(0, 1)),
+                        Node.FromText(";", TextSpan.At(0, 1)),
+                    ],
+                    TextSpan.At(0, 1)
+                )
+            ]),
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b")
+            ))),
+            "0:a;1:b;");
+
+    [Fact]
+    public void Should_Expose_Loop_Even_Flags() =>
+        RendererAssert.Render(
+            new Template([
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [
+                        Node.FromIf(
+                            Expr.FromMember(Expr.FromIdent("loop"), "isEven"),
+                            [ Node.FromText("E", TextSpan.At(0, 1)) ],
+                            [ Node.FromText("O", TextSpan.At(0, 1)) ],
+                            TextSpan.At(0, 1)
+                        )
+                    ],
+                    TextSpan.At(0, 1)
+                )
+            ]),
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+
+            ))),
+            "EOE");
+
+    [Fact]
+    public void Should_Expose_Loop_Odd_Flags() =>
+        RendererAssert.Render(
+            new Template([
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [
+                        Node.FromIf(
+                            Expr.FromMember(Expr.FromIdent("loop"), "isOdd"),
+                            [ Node.FromText("O", TextSpan.At(0, 1)) ],
+                            [ Node.FromText("E", TextSpan.At(0, 1)) ],
+                            TextSpan.At(0, 1)
+                        )
+                    ],
+                    TextSpan.At(0, 1)
+                )
+            ]),
+            MapAccessor.With(("items", Value.FromSequence(
+                Value.FromString("a"),
+                Value.FromString("b"),
+                Value.FromString("c")
+
+            ))),
+            "EOE");
+
+    [Fact]
+    public void Should_Shadow_Global_Loop_Identifier() =>
+        RendererAssert.Render(
+            new Template([
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [
+                        Node.FromInterpolateExpr(
+                            Expr.FromMember(Expr.FromIdent("loop"), "index"),
+                            TextSpan.At(0, 1)),
+                    ],
+                    TextSpan.At(0, 1)
+                )
+            ]),
+            MapAccessor.With(
+                ("loop", Value.FromString("should_be_shadowed")),
+                ("items", Value.FromSequence(Value.FromString("x")))
+            ),
+            "0");
+
+    [Fact]
     public void Should_Error_When_Interpolated_Ident_Not_Found() =>
         RendererAssert.FailsToRender(
             new Template([

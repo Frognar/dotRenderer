@@ -139,6 +139,8 @@ public static class Renderer
                 scoped = new ChainAccessor(scoped, node.Index, Value.FromNumber(index));
             }
 
+            Value loop = BuildLoopValue(index, items.Length);
+            scoped = new ChainAccessor(scoped, "loop", loop);
             Result<string> body = RenderChildren(node.Body, scoped);
             if (!body.IsOk)
             {
@@ -151,6 +153,17 @@ public static class Renderer
 
         return Result<string>.Ok(sb.ToString());
     }
+
+    private static Value BuildLoopValue(int index, int count) =>
+        Value.FromMap(new Dictionary<string, Value>
+        {
+            ["index"] = Value.FromNumber(index),
+            ["count"] = Value.FromNumber(count),
+            ["isFirst"] = Value.FromBool(index == 0),
+            ["isLast"] = Value.FromBool(index == count - 1),
+            ["isOdd"] = Value.FromBool((index & 1) == 1),
+            ["isEven"] = Value.FromBool((index & 1) == 0),
+        });
 
     private static Result<string> ScalarToString(Value value, TextSpan range, string notScalarMessage) =>
         value.Kind switch
