@@ -148,8 +148,8 @@ public static class Parser
                 "Expected '}' to close @if block."));
         }
 
-        ImmutableArray<INode> elseNodes = ImmutableArray<INode>.Empty;
-        State rest = afterR;
+        ImmutableArray<INode> elseNodes = [];
+        State rest = SkipWhitespaceTextTokens(afterR);
         if (rest.Kind == TokenKind.Else)
         {
             (_, rest) = rest.Take();
@@ -217,7 +217,7 @@ public static class Parser
                 "Expected '}' to close @for block."));
         }
 
-        ImmutableArray<INode> elseNodes = ImmutableArray<INode>.Empty;
+        ImmutableArray<INode> elseNodes = [];
         State rest = afterR;
         if (rest.Kind == TokenKind.Else)
         {

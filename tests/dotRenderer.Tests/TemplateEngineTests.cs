@@ -241,7 +241,7 @@ public class TemplateEngineTests
             <style>
             </style>
             """);
-    
+
     [Fact]
     public void Should_Allow_LBrace_On_Next_Line_After_If() =>
         TemplateEngineAssert.Render(
@@ -257,7 +257,7 @@ public class TemplateEngineTests
             abc
             xyz
             """);
-    
+
     [Fact]
     public void Should_Collapse_Surrounding_Newlines_When_If_False_Renders_Empty() =>
         TemplateEngineAssert.Render(
@@ -286,6 +286,43 @@ public class TemplateEngineTests
             """
             xyz
             1
+            xyz
+            """);
+
+    [Fact]
+    public void Else_Should_Trim_Outer_Newlines_SameLine_Braces() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @if(false){abc}else{def}
+            xyz
+            """,
+            MapAccessor.Empty,
+            """
+            xyz
+            def
+            xyz
+            """);
+
+    [Fact]
+    public void Else_Should_Trim_Outer_Newlines_NextLine_Braces() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @if(false)
+            {
+            abc
+            }
+            else
+            {
+            def
+            }
+            xyz
+            """,
+            MapAccessor.Empty,
+            """
+            xyz
+            def
             xyz
             """);
 

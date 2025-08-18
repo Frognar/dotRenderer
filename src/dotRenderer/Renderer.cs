@@ -120,7 +120,8 @@ public static class Renderer
 
         if (node.Else.Length > 0)
         {
-            return RenderChildren(node.Else, accessor);
+            return RenderChildren(node.Else, accessor)
+                .Map(TrimOneOuterNewline);
         }
 
         return Result<string>.Ok(string.Empty);
