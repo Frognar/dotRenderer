@@ -460,7 +460,44 @@ public class TemplateEngineTests
             <li>1</li>
             xyz
             """);
+    [Fact]
+    public void Should_Render_Inline_CSS_As_Is() =>
+        TemplateEngineAssert.Render(
+            """
+            <style>
+            body { margin:0 }
+            @@media (min-width: 600px) { .grid { display: grid } }
+            .else { color: red }
+            </style>
+            """,
+            MapAccessor.Empty,
+            """
+            <style>
+            body { margin:0 }
+            @media (min-width: 600px) { .grid { display: grid } }
+            .else { color: red }
+            </style>
+            """);
 
+    [Fact]
+    public void Should_Render_CSS_Inside_If_Block() =>
+        TemplateEngineAssert.Render(
+            """
+            @if(true){
+            <style>
+            .card { border:1px solid #000 }
+            .card .title { font-weight: bold }
+            </style>
+            }else{}
+            """,
+            MapAccessor.Empty,
+            """
+            <style>
+            .card { border:1px solid #000 }
+            .card .title { font-weight: bold }
+            </style>
+            """);
+    
     [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(

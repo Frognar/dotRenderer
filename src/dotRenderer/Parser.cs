@@ -45,13 +45,9 @@ public static class Parser
     private static Result<(ImmutableArray<INode> nodes, State rest)> ParseSequence(State r, bool stopAtRBrace)
     {
         ImmutableArray<INode>.Builder nodes = ImmutableArray.CreateBuilder<INode>();
+        int braceDepth = 0;
         while (!r.Eof)
         {
-            if (stopAtRBrace && r.Kind == TokenKind.RBrace)
-            {
-                break;
-            }
-
             switch (r.Kind)
             {
                 case TokenKind.Text:
@@ -71,7 +67,11 @@ public static class Parser
                 case TokenKind.AtExpr:
                 {
                     Result<(INode node, State rest)> res = ParseAtExpr(r);
-                    if (!res.IsOk) return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    if (!res.IsOk)
+                    {
+                        return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    }
+
                     nodes.Add(res.Value.node);
                     r = res.Value.rest;
                     continue;
@@ -79,7 +79,11 @@ public static class Parser
                 case TokenKind.AtIf:
                 {
                     Result<(INode node, State rest)> res = ParseIf(r);
-                    if (!res.IsOk) return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    if (!res.IsOk)
+                    {
+                        return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    }
+
                     nodes.Add(res.Value.node);
                     r = res.Value.rest;
                     continue;
@@ -87,9 +91,45 @@ public static class Parser
                 case TokenKind.AtFor:
                 {
                     Result<(INode node, State rest)> res = ParseFor(r);
-                    if (!res.IsOk) return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    if (!res.IsOk)
+                    {
+                        return Result<(ImmutableArray<INode>, State)>.Err(res.Error!);
+                    }
+
                     nodes.Add(res.Value.node);
                     r = res.Value.rest;
+                    continue;
+                }
+                case TokenKind.LBrace:
+                {
+                    (Token t, State rest) = r.Take();
+                    nodes.Add(Node.FromText("{", t.Range));
+                    braceDepth++;
+                    r = rest;
+                    continue;
+                }
+                case TokenKind.RBrace:
+                {
+                    if (stopAtRBrace && braceDepth == 0)
+                    {
+                        return Result<(ImmutableArray<INode>, State)>.Ok((nodes.ToImmutable(), r));
+                    }
+
+                    (Token t, State rest) = r.Take();
+                    nodes.Add(Node.FromText("}", t.Range));
+                    if (braceDepth > 0)
+                    {
+                        braceDepth--;
+                    }
+
+                    r = rest;
+                    continue;
+                }
+                case TokenKind.Else:
+                {
+                    (Token t, State rest) = r.Take();
+                    nodes.Add(Node.FromText(t.Text, t.Range));
+                    r = rest;
                     continue;
                 }
                 default:
