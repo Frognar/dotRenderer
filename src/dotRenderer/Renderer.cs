@@ -20,8 +20,7 @@ public static class Renderer
     private static Result<string> RenderChildren(ImmutableArray<INode> nodes, IValueAccessor? globals)
     {
         StringBuilder sb = new();
-        bool pendingSkipLeadingNlFromNext = false;
-
+        bool pendingInsertLeadingNl = false;
         foreach (INode node in nodes)
         {
             Result<string> partRes = RenderNode(node, globals);
@@ -31,22 +30,38 @@ public static class Renderer
             }
 
             string part = partRes.Value;
-
-            if (pendingSkipLeadingNlFromNext && part.Length > 0)
-            {
-                part = StripOneLeadingNewline(part);
-                pendingSkipLeadingNlFromNext = false;
-            }
-
             if (IsBlockNode(node) && part.Length == 0)
             {
-                bool trimmedPrev = TrimOneTrailingNewline(sb);
-                if (!trimmedPrev)
+                bool removedPrevNl = TrimOneTrailingNewline(sb);
+                if (removedPrevNl)
                 {
-                    pendingSkipLeadingNlFromNext = true;
+                    pendingInsertLeadingNl = true;
                 }
 
                 continue;
+            }
+
+            if (part.Length > 0)
+            {
+                if (node is IfNode { BreakBeforeLBrace: true } && !EndsWithNewline(sb))
+                {
+                    part = PrependSingleLf(part);
+                }
+                else if (node is ForNode { BreakBeforeLBrace: true } && !EndsWithNewline(sb))
+                {
+                    part = PrependSingleLf(part);
+                }
+            }
+
+            if (pendingInsertLeadingNl && part.Length > 0 && !StartsWithNewline(part))
+            {
+                part = PrependSingleLf(part);
+                pendingInsertLeadingNl = false;
+            }
+            else if (pendingInsertLeadingNl && part.Length > 0 && StartsWithNewline(part))
+            {
+                // Segment już zaczyna się od NL – nic nie dokładamy, kasujemy oczekiwanie.
+                pendingInsertLeadingNl = false;
             }
 
             sb.Append(part);
@@ -54,6 +69,23 @@ public static class Renderer
 
         return Result<string>.Ok(sb.ToString());
     }
+
+    private static bool EndsWithNewline(StringBuilder sb)
+    {
+        if (sb.Length == 0)
+        {
+            return false;
+        }
+
+        int len = sb.Length;
+        return sb[len - 1] == '\n';
+    }
+
+    private static bool StartsWithNewline(string s)
+        => s.Length > 0 && (s[0] == '\n' || (s.Length > 1 && s[0] == '\r' && s[1] == '\n'));
+
+    private static string PrependSingleLf(string s)
+        => s.Length == 0 ? s : "\n" + s;
 
     private static Result<string> RenderNode(INode node, IValueAccessor? globals) =>
         node switch

@@ -370,6 +370,34 @@ public class TemplateEngineTests
             <li>2</li>
             xyz
             """);
+    
+    [Theory]
+    [InlineData("xyz@if(false){abc}\nxyz", "xyz\nxyz")]
+    [InlineData("xyz@if(true)\n{abc}\nxyz", "xyz\nabc\nxyz")]
+    [InlineData("xyz\n@if(false){abc}xyz", "xyz\nxyz")]
+    [InlineData("xyz\n@if(false)\n{abc}xyz", "xyz\nxyz")]
+    public void If_Should_Handle_Inline_And_NextLine_Whitespaces(string template, string expected)
+        => TemplateEngineAssert.Render(template, MapAccessor.Empty, expected);
+    
+    [Theory]
+    [InlineData("xyz\n@for(x in xs){<i>@x</i>}xyz", "xyz\nxyz")]
+    [InlineData("xyz\n@for(x in xs)\n{<i>@x</i>}xyz", "xyz\nxyz")]
+    [InlineData("xyz@for(x in xs){<i>@x</i>}\nxyz", "xyz\nxyz")]
+    public void For_Empty_Inline_After_Block_Should_Leave_Single_Newline(string template, string expected)
+        => TemplateEngineAssert.Render(
+            template,
+            MapAccessor.With(("xs", Value.FromSequence())),
+            expected);
+    
+    [Theory]
+    [InlineData("xyz@for(x in xs)\n{<i>@x</i>}\nxyz", "xyz\n<i>1</i>\nxyz")]
+    [InlineData("xyz\n@for(x in xs){<i>@x</i>}\nxyz", "xyz\n<i>1</i>\nxyz")]
+    [InlineData("xyz\n@for(x in xs)\n{<i>@x</i>}\nxyz", "xyz\n<i>1</i>\nxyz")]
+    public void For_Should_Handle_Inline_And_NextLine_Whitespaces(string template, string expected)
+        => TemplateEngineAssert.Render(
+            template,
+            MapAccessor.With(("xs", Value.FromSequence(Value.FromNumber(1)))),
+            expected);
 
     [Fact]
     public void If_With_Empty_Else_Should_Collapse_Newlines() =>

@@ -118,8 +118,8 @@ public static class Parser
 
     private static Result<(INode node, State rest)> ParseIf(State r)
     {
-        (Token atIf, State afterIf) = r.Take();
-        afterIf = SkipWhitespaceTextTokens(afterIf);
+        (Token atIf, State afterIf0) = r.Take();
+        (State afterIf, bool hadNlBeforeL) = SkipWhitespaceTextTokensWithNewlineInfo(afterIf0);
         Result<IExpr> condRes = ExprParser.Parse(atIf.Text);
         if (!condRes.IsOk)
         {
@@ -180,16 +180,16 @@ public static class Parser
         }
 
         IfNode node = elseNodes.IsDefaultOrEmpty
-            ? Node.FromIf(condRes.Value, thenNodes, atIf.Range)
-            : Node.FromIf(condRes.Value, thenNodes, elseNodes, atIf.Range);
+            ? Node.FromIf(condRes.Value, thenNodes, hadNlBeforeL, atIf.Range)
+            : Node.FromIf(condRes.Value, thenNodes, elseNodes, hadNlBeforeL, atIf.Range);
 
         return Result<(INode, State)>.Ok((node, rest));
     }
 
     private static Result<(INode node, State rest)> ParseFor(State r)
     {
-        (Token atFor, State afterFor) = r.Take();
-        afterFor = SkipWhitespaceTextTokens(afterFor);
+        (Token atFor, State afterFor0) = r.Take();
+        (State afterFor, bool hadNlBeforeL) = SkipWhitespaceTextTokensWithNewlineInfo(afterFor0);
         Result<(string item, string? index, IExpr seq)> header = ParseForHeader(atFor.Text, atFor.Range);
         if (!header.IsOk)
         {
@@ -250,8 +250,8 @@ public static class Parser
 
         (string item, string? index, IExpr seq) = header.Value;
         ForNode node = index is null
-            ? Node.FromFor(item, seq, body, elseNodes, atFor.Range)
-            : Node.FromFor(item, index, seq, body, elseNodes, atFor.Range);
+            ? Node.FromFor(item, seq, body, elseNodes, hadNlBeforeL, atFor.Range)
+            : Node.FromFor(item, index, seq, body, elseNodes, hadNlBeforeL, atFor.Range);
 
         return Result<(INode, State)>.Ok((node, rest));
     }
@@ -345,5 +345,20 @@ public static class Parser
         }
 
         return s;
+    }
+
+    private static (State rest, bool hadNewline) SkipWhitespaceTextTokensWithNewlineInfo(State s)
+    {
+        bool hadNl = false;
+        while (s is { Eof: false, Kind: TokenKind.Text } && s.Current.Text.All(char.IsWhiteSpace))
+        {
+            if (!hadNl && s.Current.Text.AsSpan().IndexOfAny('\n', '\r') >= 0)
+            {
+                hadNl = true;
+            }
+
+            s = s.Advance();
+        }
+        return (s, hadNl);
     }
 }

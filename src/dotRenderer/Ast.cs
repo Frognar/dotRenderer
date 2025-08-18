@@ -17,17 +17,70 @@ public static class Node
         IExpr condition,
         ImmutableArray<INode> thenNodes,
         ImmutableArray<INode> elseNodes,
+        bool breakBeforeLBrace,
         TextSpan range) =>
-        new(condition, thenNodes, elseNodes, range);
+        new(condition, thenNodes, elseNodes, breakBeforeLBrace, range);
+    
+    public static IfNode FromIf(
+        IExpr condition,
+        ImmutableArray<INode> thenNodes,
+        ImmutableArray<INode> elseNodes,
+        TextSpan range) =>
+        new(condition, thenNodes, elseNodes, false, range);
 
-    public static IfNode FromIf(IExpr condition, ImmutableArray<INode> thenNodes, TextSpan range) =>
-        new(condition, thenNodes, [], range);
+    public static IfNode FromIf(
+        IExpr condition,
+        ImmutableArray<INode> thenNodes,
+        bool breakBeforeLBrace,
+        TextSpan range) =>
+        new(condition, thenNodes, [], breakBeforeLBrace, range);
 
-    public static ForNode FromFor(string item, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
-        new(item, null, seq, body, [], range);
+    public static IfNode FromIf(
+        IExpr condition,
+        ImmutableArray<INode> thenNodes,
+        TextSpan range) =>
+        new(condition, thenNodes, [], false, range);
 
-    public static ForNode FromFor(string item, string index, IExpr seq, ImmutableArray<INode> body, TextSpan range) =>
-        new(item, index, seq, body, [], range);
+    public static ForNode FromFor(
+        string item,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        bool breakBeforeLBrace,
+        TextSpan range) =>
+        new(item, null, seq, body, [], breakBeforeLBrace, range);
+
+    public static ForNode FromFor(
+        string item,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        TextSpan range) =>
+        new(item, null, seq, body, [], false, range);
+
+    public static ForNode FromFor(
+        string item,
+        string index,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        bool breakBeforeLBrace,
+        TextSpan range) =>
+        new(item, index, seq, body, [], breakBeforeLBrace, range);
+
+    public static ForNode FromFor(
+        string item,
+        string index,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        TextSpan range) =>
+        new(item, index, seq, body, [], false, range);
+
+    public static ForNode FromFor(
+        string item,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        ImmutableArray<INode> @else,
+        bool breakBeforeLBrace,
+        TextSpan range) =>
+        new(item, null, seq, body, @else, breakBeforeLBrace, range);
 
     public static ForNode FromFor(
         string item,
@@ -35,7 +88,17 @@ public static class Node
         ImmutableArray<INode> body,
         ImmutableArray<INode> @else,
         TextSpan range) =>
-        new(item, null, seq, body, @else, range);
+        new(item, null, seq, body, @else, false, range);
+
+    public static ForNode FromFor(
+        string item,
+        string index,
+        IExpr seq,
+        ImmutableArray<INode> body,
+        ImmutableArray<INode> @else,
+        bool breakBeforeLBrace,
+        TextSpan range) =>
+        new(item, index, seq, body, @else, breakBeforeLBrace, range);
 
     public static ForNode FromFor(
         string item,
@@ -44,7 +107,7 @@ public static class Node
         ImmutableArray<INode> body,
         ImmutableArray<INode> @else,
         TextSpan range) =>
-        new(item, index, seq, body, @else, range);
+        new(item, index, seq, body, @else, false, range);
 }
 
 public sealed record TextNode(string Text, TextSpan Range) : INode;
@@ -53,7 +116,12 @@ public sealed record InterpolateIdentNode(string Name, TextSpan Range) : INode;
 
 public sealed record InterpolateExprNode(IExpr Expr, TextSpan Range) : INode;
 
-public sealed record IfNode(IExpr Condition, ImmutableArray<INode> Then, ImmutableArray<INode> Else, TextSpan Range)
+public sealed record IfNode(
+    IExpr Condition,
+    ImmutableArray<INode> Then,
+    ImmutableArray<INode> Else,
+    bool BreakBeforeLBrace,
+    TextSpan Range)
     : INode;
 
 public sealed record ForNode(
@@ -62,6 +130,7 @@ public sealed record ForNode(
     IExpr Seq,
     ImmutableArray<INode> Body,
     ImmutableArray<INode> Else,
+    bool BreakBeforeLBrace,
     TextSpan Range) : INode;
 
 public sealed record Template(ImmutableArray<INode> Children);
