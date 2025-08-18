@@ -8,7 +8,7 @@ internal static class RendererAssert
     {
         Result<string> result = Renderer.Render(template, valueAccessor);
 
-        Assert.True(result.IsOk);
+        Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         Assert.Equal(expected, result.Value);
     }
 

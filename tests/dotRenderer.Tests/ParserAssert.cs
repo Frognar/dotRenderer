@@ -11,7 +11,7 @@ internal static class ParserAssert
     {
         Result<Template> result = Parser.Parse(tokens);
 
-        Assert.True(result.IsOk);
+        Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         Template template = result.Value;
         Assert.Equal(expected.Children.Length, template.Children.Length);
         foreach ((INode a, INode e) in template.Children.Zip(expected.Children))

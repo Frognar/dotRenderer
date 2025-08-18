@@ -10,7 +10,7 @@ internal static class ExprParserAssert
     {
         Result<IExpr> result = ExprParser.Parse(text);
 
-        Assert.True(result.IsOk);
+        Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         Assert.Equal(expected, result.Value);
     }
     

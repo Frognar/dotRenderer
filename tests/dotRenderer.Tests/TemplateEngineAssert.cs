@@ -8,7 +8,7 @@ internal static class TemplateEngineAssert
     {
         Result<string> result = TemplateEngine.Render(template, valueAccessor);
 
-        Assert.True(result.IsOk);
+        Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         Assert.Equal(expected, result.Value);
     }
 

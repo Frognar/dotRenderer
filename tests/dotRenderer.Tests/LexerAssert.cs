@@ -9,7 +9,7 @@ internal static class LexerAssert
     {
         Result<ImmutableArray<Token>> result = Lexer.Lex(input);
         
-        Assert.True(result.IsOk);
+        Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         ImmutableArray<Token> tokens = result.Value;
         Assert.Equal(expected.Length, tokens.Length);
         foreach ((Token exp, Token act) in expected.Zip(tokens))
