@@ -52,6 +52,9 @@ public readonly record struct Value
     public static Value FromSequence(params Value[] items) =>
         new(ValueKind.Sequence, "", 0d, false, [..items], ImmutableDictionary<string, Value>.Empty);
 
+    public static Value FromMap(params IEnumerable<(string key, Value value)> map) =>
+        new(ValueKind.Map, "", 0d, false, [], map.ToImmutableDictionary(kv => kv.key, kv => kv.value));
+    
     public static Value FromMap(ImmutableDictionary<string, Value> map) =>
         new(ValueKind.Map, "", 0d, false, [], map);
 
