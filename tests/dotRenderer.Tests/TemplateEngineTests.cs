@@ -370,7 +370,7 @@ public class TemplateEngineTests
             <li>2</li>
             xyz
             """);
-    
+
     [Theory]
     [InlineData("xyz@if(false){abc}\nxyz", "xyz\nxyz")]
     [InlineData("xyz@if(true)\n{abc}\nxyz", "xyz\nabc\nxyz")]
@@ -378,7 +378,7 @@ public class TemplateEngineTests
     [InlineData("xyz\n@if(false)\n{abc}xyz", "xyz\nxyz")]
     public void If_Should_Handle_Inline_And_NextLine_Whitespaces(string template, string expected)
         => TemplateEngineAssert.Render(template, MapAccessor.Empty, expected);
-    
+
     [Theory]
     [InlineData("xyz\n@for(x in xs){<i>@x</i>}xyz", "xyz\nxyz")]
     [InlineData("xyz\n@for(x in xs)\n{<i>@x</i>}xyz", "xyz\nxyz")]
@@ -388,7 +388,7 @@ public class TemplateEngineTests
             template,
             MapAccessor.With(("xs", Value.FromSequence())),
             expected);
-    
+
     [Theory]
     [InlineData("xyz@for(x in xs)\n{<i>@x</i>}\nxyz", "xyz\n<i>1</i>\nxyz")]
     [InlineData("xyz\n@for(x in xs){<i>@x</i>}\nxyz", "xyz\n<i>1</i>\nxyz")]
@@ -460,6 +460,7 @@ public class TemplateEngineTests
             <li>1</li>
             xyz
             """);
+
     [Fact]
     public void Should_Render_Inline_CSS_As_Is() =>
         TemplateEngineAssert.Render(
@@ -497,7 +498,112 @@ public class TemplateEngineTests
             .card .title { font-weight: bold }
             </style>
             """);
-    
+
+    [Fact]
+    public void Should_Render_Html_Invoice_EndToEnd() =>
+        TemplateEngineAssert.Render("""
+                                    <!doctype html>
+                                    <html>
+                                    <head>
+                                    <meta charset="utf-8">
+                                    <title>Invoice @(invoice.number)</title>
+                                    <style>
+                                    body { font-family: Arial, sans-serif; margin: 40px; }
+                                    h1 { color: #333; }
+                                    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                                    th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                                    th { background-color: #f2f2f2; }
+                                    td:first-child, th:first-child { text-align: center; }
+                                    tfoot td { font-weight: bold; }
+                                    </style>
+                                    </head>
+                                    <body>
+                                    <h1>Invoice @(invoice.number)</h1>
+                                    <p>Date: @(invoice.date)</p>
+                                    <p>Seller: @(seller.name)</p>
+                                    <p>Buyer: @(buyer.name)</p>
+                                    @if(buyer.vat == ""){<p>Buyer VAT: N/A</p>}else{<p>Buyer VAT: @(buyer.vat)</p>}
+                                    <table>
+                                    <thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Line Total</th></tr></thead>
+                                    <tbody>
+                                    @for (item, i in items) {<tr>
+                                    <td>@(i+1)</td><td style="text-align:left">@(item.description)</td><td>@(item.qty)</td><td>pcs</td><td>@(item.unitPrice)</td><td>@(item.qty * item.unitPrice)</td>
+                                    </tr>}
+                                    </tbody>
+                                    <tfoot>
+                                    <tr><td colspan="5">Subtotal</td><td>@subtotal</td></tr>
+                                    <tr><td colspan="5">Tax (@(taxRate*100)%)</td><td>@tax</td></tr>
+                                    <tr><td colspan="5"><strong>Total</strong></td><td><strong>@total</strong></td></tr>
+                                    </tfoot>
+                                    </table>
+                                    <p>Notes: @notes</p>
+                                    </body>
+                                    </html>
+                                    """,
+            MapAccessor.With(
+                ("invoice", Value.FromMap(
+                    ("number", Value.FromString("FV-2025/08/001")),
+                    ("date", Value.FromString("2025-08-01")))),
+                ("seller", Value.FromMap(("name", Value.FromString("Acme Sp. z o.o.")))),
+                ("buyer", Value.FromMap(
+                    ("name", Value.FromString("Globex S.A.")),
+                    ("vat", Value.FromString("")))),
+                ("items", Value.FromSequence(
+                    Value.FromMap(
+                        ("description", Value.FromString("Widget A")),
+                        ("qty", Value.FromNumber(2)),
+                        ("unitPrice", Value.FromNumber(100))),
+                    Value.FromMap(
+                        ("description", Value.FromString("Widget B")),
+                        ("qty", Value.FromNumber(1)),
+                        ("unitPrice", Value.FromNumber(50.5))))),
+                ("taxRate", Value.FromNumber(0.23)),
+                ("subtotal", Value.FromNumber(250.5)),
+                ("tax", Value.FromNumber(57.615)),
+                ("total", Value.FromNumber(308.115)),
+                ("notes", Value.FromString("Thank you for your business!"))),
+            """
+            <!doctype html>
+            <html>
+            <head>
+            <meta charset="utf-8">
+            <title>Invoice FV-2025/08/001</title>
+            <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #333; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+            th { background-color: #f2f2f2; }
+            td:first-child, th:first-child { text-align: center; }
+            tfoot td { font-weight: bold; }
+            </style>
+            </head>
+            <body>
+            <h1>Invoice FV-2025/08/001</h1>
+            <p>Date: 2025-08-01</p>
+            <p>Seller: Acme Sp. z o.o.</p>
+            <p>Buyer: Globex S.A.</p>
+            <p>Buyer VAT: N/A</p>
+            <table>
+            <thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Unit Price</th><th>Line Total</th></tr></thead>
+            <tbody>
+            <tr>
+            <td>1</td><td style="text-align:left">Widget A</td><td>2</td><td>pcs</td><td>100</td><td>200</td>
+            </tr><tr>
+            <td>2</td><td style="text-align:left">Widget B</td><td>1</td><td>pcs</td><td>50.5</td><td>50.5</td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr><td colspan="5">Subtotal</td><td>250.5</td></tr>
+            <tr><td colspan="5">Tax (23%)</td><td>57.615</td></tr>
+            <tr><td colspan="5"><strong>Total</strong></td><td><strong>308.115</strong></td></tr>
+            </tfoot>
+            </table>
+            <p>Notes: Thank you for your business!</p>
+            </body>
+            </html>
+            """);
+
     [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(
