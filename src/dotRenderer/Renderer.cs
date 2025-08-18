@@ -93,7 +93,8 @@ public static class Renderer
         bool isTrue = cv.Boolean;
         if (isTrue)
         {
-            return RenderChildren(node.Then, accessor);
+            return RenderChildren(node.Then, accessor)
+                .Map(TrimOneOuterNewline);
         }
 
         if (node.Else.Length > 0)
@@ -172,4 +173,29 @@ public static class Renderer
                 => Result<string>.Ok(value.ToInvariantString()),
             _ => Result<string>.Err(new EvalError("TypeMismatch", range, notScalarMessage))
         };
+
+    private static string TrimOneOuterNewline(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+
+        if (s.StartsWith("\r\n", StringComparison.Ordinal))
+        {
+            s = s.Substring(2);
+        }
+        else if (s.Length > 0 && s[0] == '\n')
+        {
+            s = s.Substring(1);
+        }
+
+        if (s.EndsWith("\r\n", StringComparison.Ordinal))
+        {
+            s = s.Substring(0, s.Length - 2);
+        }
+        else if (s.Length > 0 && s[^1] == '\n')
+        {
+            s = s.Substring(0, s.Length - 1);
+        }
+
+        return s;
+    }
 }

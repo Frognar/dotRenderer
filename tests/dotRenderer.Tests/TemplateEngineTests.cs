@@ -228,6 +228,21 @@ public class TemplateEngineTests
             "XEOEY");
 
     [Fact]
+    public void Should_Trim_One_Outer_Newline_Inside_If_Block() =>
+        TemplateEngineAssert.Render(
+            """
+            @if(true){
+            <style>
+            </style>
+            }else{}
+            """,
+            MapAccessor.Empty,
+            """
+            <style>
+            </style>
+            """);
+
+    [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(
             "Result: @(1 / 0)",

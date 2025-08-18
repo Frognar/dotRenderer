@@ -224,8 +224,8 @@ public class RendererTests
                     [
                         Node.FromIf(
                             Expr.FromMember(Expr.FromIdent("loop"), "isEven"),
-                            [ Node.FromText("E", TextSpan.At(0, 1)) ],
-                            [ Node.FromText("O", TextSpan.At(0, 1)) ],
+                            [Node.FromText("E", TextSpan.At(0, 1))],
+                            [Node.FromText("O", TextSpan.At(0, 1))],
                             TextSpan.At(0, 1)
                         )
                     ],
@@ -236,7 +236,6 @@ public class RendererTests
                 Value.FromString("a"),
                 Value.FromString("b"),
                 Value.FromString("c")
-
             ))),
             "EOE");
 
@@ -250,8 +249,8 @@ public class RendererTests
                     [
                         Node.FromIf(
                             Expr.FromMember(Expr.FromIdent("loop"), "isOdd"),
-                            [ Node.FromText("O", TextSpan.At(0, 1)) ],
-                            [ Node.FromText("E", TextSpan.At(0, 1)) ],
+                            [Node.FromText("O", TextSpan.At(0, 1))],
+                            [Node.FromText("E", TextSpan.At(0, 1))],
                             TextSpan.At(0, 1)
                         )
                     ],
@@ -262,7 +261,6 @@ public class RendererTests
                 Value.FromString("a"),
                 Value.FromString("b"),
                 Value.FromString("c")
-
             ))),
             "EOE");
 
