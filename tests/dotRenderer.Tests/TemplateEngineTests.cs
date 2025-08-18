@@ -257,6 +257,21 @@ public class TemplateEngineTests
             abc
             xyz
             """);
+    
+    [Fact]
+    public void Should_Collapse_Surrounding_Newlines_When_If_False_Renders_Empty() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @if(false)
+            {abc}
+            xyz
+            """,
+            MapAccessor.Empty,
+            """
+            xyz
+            xyz
+            """);
 
     [Fact]
     public void Should_Allow_LBrace_On_Next_Line_After_For() =>

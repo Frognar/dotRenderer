@@ -20,15 +20,36 @@ public static class Renderer
     private static Result<string> RenderChildren(ImmutableArray<INode> nodes, IValueAccessor? globals)
     {
         StringBuilder sb = new();
+        bool pendingSkipLeadingNlFromNext = false;
+
         foreach (INode node in nodes)
         {
-            Result<string> part = RenderNode(node, globals);
-            if (!part.IsOk)
+            Result<string> partRes = RenderNode(node, globals);
+            if (!partRes.IsOk)
             {
-                return part;
+                return partRes;
             }
 
-            sb.Append(part.Value);
+            string part = partRes.Value;
+
+            if (pendingSkipLeadingNlFromNext && part.Length > 0)
+            {
+                part = StripOneLeadingNewline(part);
+                pendingSkipLeadingNlFromNext = false;
+            }
+
+            if (IsBlockNode(node) && part.Length == 0)
+            {
+                bool trimmedPrev = TrimOneTrailingNewline(sb);
+                if (!trimmedPrev)
+                {
+                    pendingSkipLeadingNlFromNext = true;
+                }
+
+                continue;
+            }
+
+            sb.Append(part);
         }
 
         return Result<string>.Ok(sb.ToString());
@@ -174,26 +195,74 @@ public static class Renderer
             _ => Result<string>.Err(new EvalError("TypeMismatch", range, notScalarMessage))
         };
 
+    private static bool IsBlockNode(INode node) => node is IfNode or ForNode;
+
     private static string TrimOneOuterNewline(string s)
     {
-        if (string.IsNullOrEmpty(s)) return s;
+        if (string.IsNullOrEmpty(s))
+        {
+            return s;
+        }
 
         if (s.StartsWith("\r\n", StringComparison.Ordinal))
         {
-            s = s.Substring(2);
+            s = s[2..];
         }
         else if (s.Length > 0 && s[0] == '\n')
         {
-            s = s.Substring(1);
+            s = s[1..];
         }
 
         if (s.EndsWith("\r\n", StringComparison.Ordinal))
         {
-            s = s.Substring(0, s.Length - 2);
+            s = s[..^2];
         }
         else if (s.Length > 0 && s[^1] == '\n')
         {
-            s = s.Substring(0, s.Length - 1);
+            s = s[..^1];
+        }
+
+        return s;
+    }
+
+    private static bool TrimOneTrailingNewline(StringBuilder sb)
+    {
+        if (sb.Length == 0)
+        {
+            return false;
+        }
+
+        int len = sb.Length;
+        if (len >= 2 && sb[len - 2] == '\r' && sb[len - 1] == '\n')
+        {
+            sb.Length = len - 2;
+            return true;
+        }
+
+        if (sb[len - 1] == '\n')
+        {
+            sb.Length = len - 1;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string StripOneLeadingNewline(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return s;
+        }
+
+        if (s.StartsWith("\r\n", StringComparison.Ordinal))
+        {
+            return s[2..];
+        }
+
+        if (s[0] == '\n')
+        {
+            return s[1..];
         }
 
         return s;
