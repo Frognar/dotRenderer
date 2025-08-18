@@ -148,7 +148,7 @@ public static class Renderer
         if (items.Length == 0)
         {
             return node.Else.Length > 0
-                ? RenderChildren(node.Else, accessor)
+                ? RenderChildren(node.Else, accessor).Map(TrimOneOuterNewline)
                 : Result<string>.Ok(string.Empty);
         }
 

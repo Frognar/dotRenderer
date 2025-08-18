@@ -218,7 +218,7 @@ public static class Parser
         }
 
         ImmutableArray<INode> elseNodes = [];
-        State rest = afterR;
+        State rest = SkipWhitespaceTextTokens(afterR);
         if (rest.Kind == TokenKind.Else)
         {
             (_, rest) = rest.Take();

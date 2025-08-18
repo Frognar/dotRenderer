@@ -327,6 +327,28 @@ public class TemplateEngineTests
             """);
 
     [Fact]
+    public void For_Else_Should_Render_When_Sequence_Is_Empty_And_Trim_Newlines() =>
+        TemplateEngineAssert.Render(
+            """
+            xyz
+            @for(x in arr)
+            {
+            <li>@x</li>
+            }
+            else
+            {
+            <p>empty</p>
+            }
+            xyz
+            """,
+            MapAccessor.With(("arr", Value.FromSequence())),
+            """
+            xyz
+            <p>empty</p>
+            xyz
+            """);
+
+    [Fact]
     public void Should_Report_Error_When_Division_By_Zero() =>
         TemplateEngineAssert.FailsToRender(
             "Result: @(1 / 0)",
