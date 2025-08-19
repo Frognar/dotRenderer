@@ -197,7 +197,7 @@ public static class Lexer
         int i = s.Pos;
         int n = s.Length;
         int j = i + 1;
-        if (j + 1 < n && s.Text[j] == 'i' && s.Text[j + 1] == 'f')
+        if (j + 1 < n && s.Text.AsSpan(j, 2).SequenceEqual("if".AsSpan()))
         {
             int k = SkipWs(s.Text, j + 2, n);
             if (k < n && s.Text[k] == '(')
@@ -321,7 +321,6 @@ public static class Lexer
         while (i < n)
         {
             char c = s[i];
-
             if (inString)
             {
                 if (escape)
