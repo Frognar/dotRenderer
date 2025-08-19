@@ -91,6 +91,13 @@ public static class Lexer
             return (true, atAt.rest, atAt.rest.Pos, emitted);
         }
 
+        (bool matched, State rest, List<Token> tokens) atElif = TryLexAtElif(s);
+        if (atElif.matched)
+        {
+            List<Token> emitted = NewEmitted(flush, atElif.tokens[0], atElif.tokens[1]);
+            return (true, atElif.rest, atElif.rest.Pos, emitted);
+        }
+
         (bool matched, State rest, Token token) atIf = TryLexAtIf(s);
         if (atIf.matched)
         {
@@ -114,7 +121,7 @@ public static class Lexer
 
         return (false, s, textStart, []);
 
-        static List<Token> NewEmitted(Token? flush, Token tok)
+        static List<Token> NewEmitted(Token? flush, params IEnumerable<Token> tokens)
         {
             List<Token> emitted = [];
             if (flush.HasValue)
@@ -122,7 +129,7 @@ public static class Lexer
                 emitted.Add(flush.Value);
             }
 
-            emitted.Add(tok);
+            emitted.AddRange(tokens);
             return emitted;
         }
     }
@@ -157,6 +164,31 @@ public static class Lexer
         }
 
         return (false, s, default);
+    }
+
+    [Pure]
+    private static (bool matched, State rest, List<Token> tokens) TryLexAtElif(State s)
+    {
+        int i = s.Pos;
+        int n = s.Length;
+        int j = i + 1;
+        if (j + 3 < n && s.Text.AsSpan(j, 4).SequenceEqual("elif".AsSpan()))
+        {
+            int k = SkipWs(s.Text, j + 4, n);
+            if (k < n && s.Text[k] == '(')
+            {
+                (bool ok, int closeExclusive) paren = TryScanParen(s.Text, k);
+                if (paren.ok)
+                {
+                    int closeExcl = paren.closeExclusive;
+                    Token elseTok = Token.FromElse(TextSpan.At(i, 4));
+                    string expr = s.Text[(k + 1)..(closeExcl - 1)];
+                    Token ifTok = Token.FromAtIf(expr, TextSpan.At(i, closeExcl - i));
+                    return (true, s with { Pos = closeExcl }, [elseTok, ifTok]);
+                }
+            }
+        }
+        return (false, s, []);
     }
 
     [Pure]

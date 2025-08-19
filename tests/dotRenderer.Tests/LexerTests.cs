@@ -104,4 +104,23 @@ public class LexerTests
             Token.FromText("e", TextSpan.At(28, 1)),
             Token.FromRBrace(TextSpan.At(29, 1)),
             Token.FromText("B", TextSpan.At(30, 1)));
+
+    [Fact]
+    public void Should_Tokenize_If_Elif_Else_Chain()
+        => LexerAssert.Lex("A@if(false){T}@elif(true){U}else{E}B",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIf("false", TextSpan.At(1, 10)), // "@if(false)"
+            Token.FromLBrace(TextSpan.At(11, 1)),
+            Token.FromText("T", TextSpan.At(12, 1)),
+            Token.FromRBrace(TextSpan.At(13, 1)),
+            Token.FromElse(TextSpan.At(14, 4)),
+            Token.FromAtIf("true", TextSpan.At(14, 11)),
+            Token.FromLBrace(TextSpan.At(25, 1)),
+            Token.FromText("U", TextSpan.At(26, 1)),
+            Token.FromRBrace(TextSpan.At(27, 1)),
+            Token.FromElse(TextSpan.At(28, 4)),
+            Token.FromLBrace(TextSpan.At(32, 1)),
+            Token.FromText("E", TextSpan.At(33, 1)),
+            Token.FromRBrace(TextSpan.At(34, 1)),
+            Token.FromText("B", TextSpan.At(35, 1)));
 }
