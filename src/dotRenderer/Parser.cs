@@ -184,8 +184,8 @@ public static class Parser
         (bool hasR, State afterR) = afterThen.Match(TokenKind.RBrace);
         if (!hasR)
         {
-            return Result<(INode, State)>.Err(new ParseError("IfMissingRBrace", atIf.Range,
-                "Expected '}' to close @if block."));
+            return Result<(INode, State)>.Err(
+                new ParseError("IfMissingRBrace", atIf.Range, "Expected '}' to close @if block."));
         }
 
         ImmutableArray<INode> elseNodes = [];
@@ -194,29 +194,43 @@ public static class Parser
         {
             (_, rest) = rest.Take();
             rest = SkipWhitespaceTextTokens(rest);
-            (bool hasElseL, State afterElseL) = rest.Match(TokenKind.LBrace);
-            if (!hasElseL)
+            if (rest.Kind == TokenKind.AtIf)
             {
-                return Result<(INode, State)>.Err(new ParseError("ElseMissingLBrace", atIf.Range,
-                    "Expected '{' after else."));
-            }
+                Result<(INode node, State rest)> elifRes = ParseIf(rest);
+                if (!elifRes.IsOk)
+                {
+                    return Result<(INode, State)>.Err(elifRes.Error!);
+                }
 
-            Result<(ImmutableArray<INode> nodes, State rest)> elseSeq = ParseSequence(afterElseL, stopAtRBrace: true);
-            if (!elseSeq.IsOk)
+                elseNodes = [elifRes.Value.node];
+                rest = elifRes.Value.rest;
+            }
+            else
             {
-                return Result<(INode, State)>.Err(elseSeq.Error!);
-            }
+                (bool hasElseL, State afterElseL) = rest.Match(TokenKind.LBrace);
+                if (!hasElseL)
+                {
+                    return Result<(INode, State)>.Err(
+                        new ParseError("ElseMissingLBrace", atIf.Range, "Expected '{' after else."));
+                }
 
-            (ImmutableArray<INode> elseParsed, State afterElseBody) = elseSeq.Value;
-            (bool hasElseR, State afterElseR) = afterElseBody.Match(TokenKind.RBrace);
-            if (!hasElseR)
-            {
-                return Result<(INode, State)>.Err(new ParseError("ElseMissingRBrace", atIf.Range,
-                    "Expected '}' to close else block."));
-            }
+                Result<(ImmutableArray<INode> nodes, State rest)> elseSeq = ParseSequence(afterElseL, stopAtRBrace: true);
+                if (!elseSeq.IsOk)
+                {
+                    return Result<(INode, State)>.Err(elseSeq.Error!);
+                }
 
-            elseNodes = elseParsed;
-            rest = afterElseR;
+                (ImmutableArray<INode> elseParsed, State afterElseBody) = elseSeq.Value;
+                (bool hasElseR, State afterElseR) = afterElseBody.Match(TokenKind.RBrace);
+                if (!hasElseR)
+                {
+                    return Result<(INode, State)>.Err(
+                        new ParseError("ElseMissingRBrace", atIf.Range, "Expected '}' to close else block."));
+                }
+
+                elseNodes = elseParsed;
+                rest = afterElseR;
+            }
         }
 
         IfNode node = elseNodes.IsDefaultOrEmpty
@@ -399,6 +413,7 @@ public static class Parser
 
             s = s.Advance();
         }
+
         return (s, hadNl);
     }
 }

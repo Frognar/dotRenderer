@@ -217,7 +217,49 @@ public class ParserTests
                 ),
                 Node.FromText("B", TextSpan.At(30, 1))
             ])
-        );
+        );[Fact]
+    public void Should_Parse_If_Elif_Else_Chain() =>
+        ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                Token.FromAtIf("false", TextSpan.At(1, 10)),
+                Token.FromLBrace(TextSpan.At(11, 1)),
+                Token.FromText("T", TextSpan.At(12, 1)),
+                Token.FromRBrace(TextSpan.At(13, 1)),
+                Token.FromElse(TextSpan.At(14, 4)),
+                Token.FromAtIf("true", TextSpan.At(14, 11)),
+                Token.FromLBrace(TextSpan.At(25, 1)),
+                Token.FromText("U", TextSpan.At(26, 1)),
+                Token.FromRBrace(TextSpan.At(27, 1)),
+                Token.FromElse(TextSpan.At(28, 4)),
+                Token.FromLBrace(TextSpan.At(32, 1)),
+                Token.FromText("E", TextSpan.At(33, 1)),
+                Token.FromRBrace(TextSpan.At(34, 1)),
+                Token.FromText("B", TextSpan.At(35, 1)),
+            ],
+            new Template([
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromIf(
+                    Expr.FromBoolean(false),
+                    [
+                        Node.FromText("T", TextSpan.At(12, 1))
+                    ],
+                    [
+                        Node.FromIf(
+                            Expr.FromBoolean(true),
+                            [
+                                Node.FromText("U", TextSpan.At(26, 1))
+                            ],
+                            [
+                                Node.FromText("E", TextSpan.At(33, 1))
+                            ],
+                            TextSpan.At(14, 11)
+                        )
+                    ],
+                    TextSpan.At(1, 10)
+                ),
+                Node.FromText("B", TextSpan.At(35, 1))
+            ]));
 
     [Fact]
     public void Should_Error_When_AtExpr_Contains_Invalid_Expr() =>
