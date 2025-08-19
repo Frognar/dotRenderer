@@ -500,6 +500,19 @@ public class TemplateEngineTests
             """);
 
     [Fact]
+    public void Should_Render_If_Elif_Else_Chain()
+        => TemplateEngineAssert.Render(
+            "A@if(false){T}@elif(true){U}else{E}B",
+            MapAccessor.Empty,
+            "AUB");
+
+    [Theory]
+    [InlineData("A@if(false){T}@elif(false){U}else{E}B", "AEB")]
+    [InlineData("A@if(true){T}@elif(true){U}else{E}B",  "ATB")]
+    public void Should_Pick_First_Matching_Branch_In_Chain(string template, string expected)
+        => TemplateEngineAssert.Render(template, MapAccessor.Empty, expected);
+
+    [Fact]
     public void Should_Render_Html_Invoice_EndToEnd() =>
         TemplateEngineAssert.Render("""
                                     <!doctype html>
