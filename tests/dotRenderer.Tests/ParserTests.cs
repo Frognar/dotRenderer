@@ -220,17 +220,10 @@ public class ParserTests
         );
 
     [Fact]
-    public void Should_Error_When_AtExpr_Contains_Invalid_Expr()
-    {
-        Result<Template> parsed = Parser.Parse([
-            Token.FromAtExpr("1 2", TextSpan.At(0, 6))
-        ]);
-
-        Assert.False(parsed.IsOk);
-        IError e = parsed.Error!;
-        Assert.Equal("ExprTrailing", e.Code);
-        Assert.Equal(TextSpan.At(0, 6), e.Range);
-    }
+    public void Should_Error_When_AtExpr_Contains_Invalid_Expr() =>
+        ParserAssert.FailsToParse([Token.FromAtExpr("1 2", TextSpan.At(0, 6))],
+            "ExprTrailing",
+            TextSpan.At(0, 6));
 
     [Fact]
     public void Should_Error_IfMissingLBrace_After_If() =>
