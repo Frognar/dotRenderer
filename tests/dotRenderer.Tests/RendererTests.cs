@@ -7,9 +7,9 @@ public class RendererTests
     [Fact]
     public void Should_Render_Single_TextNode_Verbatim() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("Hello, renderer!", TextSpan.At(0, "Hello, renderer!".Length))
-            ]),
+            ),
             MapAccessor.Empty,
             "Hello, renderer!"
         );
@@ -17,11 +17,11 @@ public class RendererTests
     [Fact]
     public void Should_Render_Interpolated_Identifier_Using_Accessor() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("Hello ", TextSpan.At(0, "Hello ".Length)),
                 Node.FromInterpolateIdent("name", TextSpan.At("Hello ".Length, 1 + "name".Length)),
                 Node.FromText("!", TextSpan.At("Hello ".Length + 1 + "name".Length, "!".Length))
-            ]),
+            ),
             MapAccessor.With(("name", Value.FromString("Alice"))),
             "Hello Alice!"
         );
@@ -29,7 +29,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_InterpolateExpr_Number_Addition() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromInterpolateExpr(
                     Expr.FromBinaryAdd(
                         Expr.FromNumber(1),
@@ -37,7 +37,7 @@ public class RendererTests
                     ),
                     TextSpan.At(0, 6) // spans "@(1+2)" in source
                 )
-            ]),
+            ),
             MapAccessor.Empty,
             "3"
         );
@@ -45,7 +45,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_String_Concatenation() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromInterpolateExpr(
                     Expr.FromBinaryAdd(
@@ -55,14 +55,14 @@ public class RendererTests
                     TextSpan.At(1, 10)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.Empty,
             "XABY");
 
     [Fact]
     public void Should_Render_If_Then_Block_When_Condition_Is_True() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(true),
@@ -72,7 +72,7 @@ public class RendererTests
                     TextSpan.At(1, 9)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.Empty,
             "XokY"
         );
@@ -80,7 +80,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_Else_Block_When_Condition_Is_False() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(false),
@@ -93,7 +93,7 @@ public class RendererTests
                     TextSpan.At(1, 14)
                 ),
                 Node.FromText("B", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.Empty,
             "AEB");
 
@@ -101,7 +101,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_For_Block_By_Iterating_Sequence_And_Binding_Item() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -112,7 +112,7 @@ public class RendererTests
                     TextSpan.At(1, 19)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.With(
                 ("items", Value.FromSequence(
                     Value.FromString("a"),
@@ -123,7 +123,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_For_Block_With_Index_Bound_As_Number() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -138,7 +138,7 @@ public class RendererTests
                     TextSpan.At(1, 23)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.With(
                 ("items", Value.FromSequence(
                     Value.FromString("a"),
@@ -149,7 +149,7 @@ public class RendererTests
     [Fact]
     public void Should_Render_Else_When_Sequence_Is_Empty() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -163,14 +163,14 @@ public class RendererTests
                     TextSpan.At(1, 19)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.With(("items", Value.FromSequence())),
             "XEMPTYY");
 
     [Fact]
     public void Should_Ignore_Else_When_Sequence_Is_Not_Empty() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -184,7 +184,7 @@ public class RendererTests
                     TextSpan.At(1, 19)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
-            ]),
+            ),
             MapAccessor.With(
                 ("items", Value.FromSequence(
                     Value.FromString("a"),
@@ -195,7 +195,7 @@ public class RendererTests
     [Fact]
     public void Should_Expose_Loop_Index_And_Count() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
@@ -207,7 +207,7 @@ public class RendererTests
                     ],
                     TextSpan.At(0, 1)
                 )
-            ]),
+            ),
             MapAccessor.With(("items", Value.FromSequence(
                 Value.FromString("a"),
                 Value.FromString("b")
@@ -217,7 +217,7 @@ public class RendererTests
     [Fact]
     public void Should_Expose_Loop_Even_Flags() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
@@ -231,7 +231,7 @@ public class RendererTests
                     ],
                     TextSpan.At(0, 1)
                 )
-            ]),
+            ),
             MapAccessor.With(("items", Value.FromSequence(
                 Value.FromString("a"),
                 Value.FromString("b"),
@@ -242,7 +242,7 @@ public class RendererTests
     [Fact]
     public void Should_Expose_Loop_Odd_Flags() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
@@ -256,7 +256,7 @@ public class RendererTests
                     ],
                     TextSpan.At(0, 1)
                 )
-            ]),
+            ),
             MapAccessor.With(("items", Value.FromSequence(
                 Value.FromString("a"),
                 Value.FromString("b"),
@@ -267,7 +267,7 @@ public class RendererTests
     [Fact]
     public void Should_Shadow_Global_Loop_Identifier() =>
         RendererAssert.Render(
-            new Template([
+            Template.With(
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
@@ -278,7 +278,7 @@ public class RendererTests
                     ],
                     TextSpan.At(0, 1)
                 )
-            ]),
+            ),
             MapAccessor.With(
                 ("loop", Value.FromString("should_be_shadowed")),
                 ("items", Value.FromSequence(Value.FromString("x")))
@@ -288,9 +288,9 @@ public class RendererTests
     [Fact]
     public void Should_Error_When_Interpolated_Ident_Not_Found() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
-            ]),
+            ),
             MapAccessor.Empty,
             "MissingIdent",
             TextSpan.At(0, 5));
@@ -298,9 +298,9 @@ public class RendererTests
     [Fact]
     public void Should_Error_When_Interpolated_Ident_Is_Not_Scalar() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
-            ]),
+            ),
             MapAccessor.With(("name", Value.FromMap(new Dictionary<string, Value>()))),
             "TypeMismatch",
             TextSpan.At(0, 5),
@@ -309,10 +309,10 @@ public class RendererTests
     [Fact]
     public void Should_Error_When_Interpolated_Expr_Evaluates_To_NonScalar() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromInterpolateExpr(
                     Expr.FromIdent("u"), TextSpan.At(0, 3))
-            ]),
+            ),
             MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
             "TypeMismatch",
             TextSpan.At(0, 3),
@@ -321,11 +321,11 @@ public class RendererTests
     [Fact]
     public void Should_Error_If_Condition_Is_Not_Boolean() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromIf(
                     Expr.FromNumber(1),
                     [Node.FromText("T", TextSpan.At(0, 1))], TextSpan.At(5, 4))
-            ]),
+            ),
             MapAccessor.Empty,
             "TypeMismatch",
             TextSpan.At(5, 4),
@@ -334,10 +334,10 @@ public class RendererTests
     [Fact]
     public void Should_Error_When_Member_Is_Missing() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromInterpolateExpr(
                     Expr.FromMember(Expr.FromIdent("u"), "x"), TextSpan.At(0, 5))
-            ]),
+            ),
             MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
             "MissingMember",
             TextSpan.At(0, 5));
@@ -345,10 +345,10 @@ public class RendererTests
     [Fact]
     public void Should_Error_When_Unary_Not_On_Number() =>
         RendererAssert.FailsToRender(
-            new Template([
+            Template.With(
                 Node.FromInterpolateExpr(
                     Expr.FromUnaryNot(Expr.FromNumber(1)), TextSpan.At(0, 2))
-            ]),
+            ),
             MapAccessor.Empty,
             "TypeMismatch",
             TextSpan.At(0, 2),

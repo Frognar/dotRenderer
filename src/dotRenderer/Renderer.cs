@@ -13,7 +13,7 @@ public static class Renderer
     [Pure]
     public static Result<string> Render(Template template, IValueAccessor? globals)
     {
-        template ??= new Template([]);
+        template ??= Template.Empty;
         return RenderChildren(template.Children, globals);
     }
 

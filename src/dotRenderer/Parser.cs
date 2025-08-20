@@ -12,7 +12,7 @@ public static class Parser
         Result<(ImmutableArray<INode> nodes, State rest)> seq = ParseSequence(r, stopAtRBrace: false);
         return !seq.IsOk
             ? Result<Template>.Err(seq.Error!)
-            : Result<Template>.Ok(new Template(seq.Value.nodes));
+            : Result<Template>.Ok(Template.With(seq.Value.nodes));
     }
 
     private readonly record struct State(ImmutableArray<Token> Tokens, int Index)

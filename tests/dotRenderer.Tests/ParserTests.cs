@@ -10,9 +10,9 @@ public class ParserTests
             [
                 Token.FromText("Hello, World!", TextSpan.At(0, 13))
             ],
-            new Template([
+            Template.With(
                 Node.FromText("Hello, World!", TextSpan.At(0, 13))
-            ]));
+            ));
 
     [Fact]
     public void Should_Parse_AtIdent_Token_Into_InterpolateIdentNode_Between_Text_Nodes() =>
@@ -22,11 +22,11 @@ public class ParserTests
                 Token.FromAtIdent("name", TextSpan.At(6, 5)),
                 Token.FromText("1", TextSpan.At(11, 1))
             ],
-            new Template([
+            Template.With(
                 Node.FromText("Hello ", TextSpan.At(0, 6)),
                 Node.FromInterpolateIdent("name", TextSpan.At(6, 5)),
                 Node.FromText("1", TextSpan.At(11, 1))
-            ]));
+            ));
 
     [Fact]
     public void Should_Parse_AtExpr_Token_Into_InterpolateExprNode_Between_Text_Nodes() =>
@@ -36,11 +36,11 @@ public class ParserTests
                 Token.FromAtExpr("1+2", TextSpan.At(6, 6)), // spans "@(1+2)"
                 Token.FromText("!", TextSpan.At(12, 1))
             ],
-            new Template([
+            Template.With(
                 Node.FromText("Hello ", TextSpan.At(0, 6)),
                 Node.FromInterpolateExpr(Expr.FromBinaryAdd(Expr.FromNumber(1), Expr.FromNumber(2)), TextSpan.At(6, 6)),
                 Node.FromText("!", TextSpan.At(12, 1))
-            ]));
+            ));
 
     [Fact]
     public void Should_Parse_AtExpr_With_String_Concat() =>
@@ -50,7 +50,7 @@ public class ParserTests
                 Token.FromAtExpr("\"A\" + \"B\"", TextSpan.At(6, 12)), // "@(\"A\" + \"B\")"
                 Token.FromText("!", TextSpan.At(18, 1))
             ],
-            new Template([
+            Template.With(
                 Node.FromText("Hello ", TextSpan.At(0, 6)),
                 Node.FromInterpolateExpr(
                     Expr.FromBinaryAdd(
@@ -60,7 +60,7 @@ public class ParserTests
                     TextSpan.At(6, 12)
                 ),
                 Node.FromText("!", TextSpan.At(18, 1))
-            ])
+            )
         );
 
     [Fact]
@@ -71,14 +71,14 @@ public class ParserTests
                 Token.FromAtExpr("u.name", TextSpan.At(6, 9)), // spans "@(u.name)"
                 Token.FromText("!", TextSpan.At(15, 1))
             ],
-            new Template([
+            Template.With(
                 Node.FromText("Hello ", TextSpan.At(0, 6)),
                 Node.FromInterpolateExpr(
                     Expr.FromMember(Expr.FromIdent("u"), "name"),
                     TextSpan.At(6, 9)
                 ),
                 Node.FromText("!", TextSpan.At(15, 1))
-            ])
+            )
         );
 
     [Fact]
@@ -92,7 +92,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(13, 1)), // "}"
                 Token.FromText("Y", TextSpan.At(14, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(true),
@@ -101,8 +101,8 @@ public class ParserTests
                     ],
                     TextSpan.At(1, 9) // range of "@if(true)"
                 ),
-                Node.FromText("Y", TextSpan.At(14, 1)),
-            ])
+                Node.FromText("Y", TextSpan.At(14, 1))
+            )
         );
 
     [Fact]
@@ -120,7 +120,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(19, 1)),
                 Token.FromText("B", TextSpan.At(20, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(true),
@@ -132,8 +132,8 @@ public class ParserTests
                     ],
                     TextSpan.At(1, 9) // range of "@if(true)"
                 ),
-                Node.FromText("B", TextSpan.At(20, 1)),
-            ])
+                Node.FromText("B", TextSpan.At(20, 1))
+            )
         );
 
     [Fact]
@@ -147,7 +147,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(22, 1)),
                 Token.FromText("B", TextSpan.At(23, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -158,7 +158,7 @@ public class ParserTests
                     TextSpan.At(1, 19)
                 ),
                 Node.FromText("B", TextSpan.At(23, 1))
-            ])
+            )
         );
 
     [Fact]
@@ -172,7 +172,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(24, 1)),
                 Token.FromText("B", TextSpan.At(25, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -184,7 +184,7 @@ public class ParserTests
                     TextSpan.At(1, 21)
                 ),
                 Node.FromText("B", TextSpan.At(25, 1))
-            ])
+            )
         );
 
     [Fact]
@@ -202,7 +202,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(29, 1)),
                 Token.FromText("B", TextSpan.At(30, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromFor(
                     "item",
@@ -216,8 +216,10 @@ public class ParserTests
                     TextSpan.At(1, 19)
                 ),
                 Node.FromText("B", TextSpan.At(30, 1))
-            ])
-        );[Fact]
+            )
+        );
+
+    [Fact]
     public void Should_Parse_If_Elif_Else_Chain() =>
         ParserAssert.Parse(
             [
@@ -237,7 +239,7 @@ public class ParserTests
                 Token.FromRBrace(TextSpan.At(34, 1)),
                 Token.FromText("B", TextSpan.At(35, 1)),
             ],
-            new Template([
+            Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(false),
@@ -259,7 +261,7 @@ public class ParserTests
                     TextSpan.At(1, 10)
                 ),
                 Node.FromText("B", TextSpan.At(35, 1))
-            ]));
+            ));
 
     [Fact]
     public void Should_Error_When_AtExpr_Contains_Invalid_Expr() =>

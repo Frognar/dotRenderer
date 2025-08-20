@@ -133,7 +133,15 @@ public sealed record ForNode(
     bool BreakBeforeLBrace,
     TextSpan Range) : INode;
 
-public sealed record Template(ImmutableArray<INode> Children);
+public sealed record Template(ImmutableArray<INode> Children)
+{
+    public static Template Empty { get; } = new([]);
+    public static Template With(IEnumerable<INode> children)
+        => new([..children]);
+
+    public static Template With(INode child, params IEnumerable<INode> children)
+        => new([..children.Prepend(child)]);
+}
 
 public interface IExpr;
 
