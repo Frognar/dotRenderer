@@ -138,4 +138,25 @@ public class LexerTests
     public void Should_Treat_Unclosed_At_Expr_As_Plain_Text()
         => LexerAssert.Lex("A@(",
             Token.FromText("A@(", TextSpan.At(0, 3)));
+    
+    [Fact]
+    public void Should_Not_Tokenize_AtElif_Without_Paren_As_Else_If()
+        => LexerAssert.Lex("A@elif x",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("elif", TextSpan.At(1, 5)),
+            Token.FromText(" x", TextSpan.At(6, 2)));
+
+    [Fact]
+    public void Should_Not_Tokenize_AtElif_When_Paren_Unclosed_Immediately()
+        => LexerAssert.Lex("A@elif(",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("elif", TextSpan.At(1, 5)),
+            Token.FromText("(", TextSpan.At(6, 1)));
+
+    [Fact]
+    public void Should_Not_Tokenize_AtElif_When_Paren_Unclosed_After_Spaces()
+        => LexerAssert.Lex("A@elif   (x",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("elif", TextSpan.At(1, 5)),
+            Token.FromText("   (x", TextSpan.At(6, 5)));
 }
