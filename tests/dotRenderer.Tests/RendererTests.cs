@@ -175,6 +175,13 @@ public class RendererTests
             "True");
 
     [Fact]
+    public void Should_Render_Empty_Template_As_Empty_String() =>
+        RendererAssert.Render(
+            Template.Empty,
+            MapAccessor.Empty,
+            "");
+
+    [Fact]
     public void Should_Ignore_Else_When_Sequence_Is_Not_Empty() =>
         RendererAssert.Render(
             Template.With(
