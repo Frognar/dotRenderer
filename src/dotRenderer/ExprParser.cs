@@ -31,6 +31,7 @@ public static class ExprParser
 
     private readonly record struct State(string Text, int Pos)
     {
+        public string Text { get; } = Text;
         public int Length => Text.Length;
         public int Remaining => Length - Pos;
         public bool Eof => Pos >= Length;
