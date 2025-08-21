@@ -123,7 +123,7 @@ public class LexerTests
             Token.FromText("E", TextSpan.At(33, 1)),
             Token.FromRBrace(TextSpan.At(34, 1)),
             Token.FromText("B", TextSpan.At(35, 1)));
-    
+
     [Fact]
     public void Should_Tokenize_At_Expr_With_Escaped_Quote_In_String()
         => LexerAssert.Lex("@(\"A\\\"B\")",
@@ -138,7 +138,7 @@ public class LexerTests
     public void Should_Treat_Unclosed_At_Expr_As_Plain_Text()
         => LexerAssert.Lex("A@(",
             Token.FromText("A@(", TextSpan.At(0, 3)));
-    
+
     [Fact]
     public void Should_Not_Tokenize_AtElif_Without_Paren_As_Else_If()
         => LexerAssert.Lex("A@elif x",
@@ -159,6 +159,7 @@ public class LexerTests
             Token.FromText("A", TextSpan.At(0, 1)),
             Token.FromAtIdent("elif", TextSpan.At(1, 5)),
             Token.FromText("   (x", TextSpan.At(6, 5)));
+
     [Fact]
     public void Should_Not_Tokenize_AtIf_When_Paren_Unclosed_Immediately()
         => LexerAssert.Lex("A@if(",
@@ -172,4 +173,18 @@ public class LexerTests
             Token.FromText("A", TextSpan.At(0, 1)),
             Token.FromAtIdent("if", TextSpan.At(1, 3)),
             Token.FromText("   (", TextSpan.At(4, 4)));
+
+    [Fact]
+    public void Should_Not_Tokenize_AtFor_When_Paren_Unclosed_Immediately()
+        => LexerAssert.Lex("A@for(",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("for", TextSpan.At(1, 4)),
+            Token.FromText("(", TextSpan.At(5, 1)));
+
+    [Fact]
+    public void Should_Not_Tokenize_AtFor_When_Paren_Unclosed_After_Spaces()
+        => LexerAssert.Lex("A@for   (",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("for", TextSpan.At(1, 4)),
+            Token.FromText("   (", TextSpan.At(5, 4)));
 }
