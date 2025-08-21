@@ -513,6 +513,27 @@ public class TemplateEngineTests
             MapAccessor.Empty,
             "A@(");
 
+    [Fact]
+    public void Should_Render_Unclosed_AtIf_As_Identifier_And_Text()
+        => TemplateEngineAssert.Render(
+            "A@if(",
+            MapAccessor.With(("if", Value.FromString("B"))),
+            "AB(");
+
+    [Fact]
+    public void Should_Render_Unclosed_AtElif_As_Identifier_And_Text()
+        => TemplateEngineAssert.Render(
+            "A@elif(",
+            MapAccessor.With(("elif", Value.FromString("B"))),
+            "AB(");
+
+    [Fact]
+    public void Should_Render_Unclosed_AtFor_As_Identifier_And_Text()
+        => TemplateEngineAssert.Render(
+            "A@for(",
+            MapAccessor.With(("for", Value.FromString("B"))),
+            "AB(");
+
     [Theory]
     [InlineData("A@if(false){T}@elif(false){U}else{E}B", "AEB")]
     [InlineData("A@if(true){T}@elif(true){U}else{E}B",  "ATB")]
