@@ -45,25 +45,8 @@ public static class Node
         string item,
         IExpr seq,
         ImmutableArray<INode> body,
-        bool breakBeforeLBrace,
-        TextSpan range) =>
-        new(item, null, seq, body, [], breakBeforeLBrace, range);
-
-    public static ForNode FromFor(
-        string item,
-        IExpr seq,
-        ImmutableArray<INode> body,
         TextSpan range) =>
         new(item, null, seq, body, [], false, range);
-
-    public static ForNode FromFor(
-        string item,
-        string index,
-        IExpr seq,
-        ImmutableArray<INode> body,
-        bool breakBeforeLBrace,
-        TextSpan range) =>
-        new(item, index, seq, body, [], breakBeforeLBrace, range);
 
     public static ForNode FromFor(
         string item,
@@ -99,15 +82,6 @@ public static class Node
         bool breakBeforeLBrace,
         TextSpan range) =>
         new(item, index, seq, body, @else, breakBeforeLBrace, range);
-
-    public static ForNode FromFor(
-        string item,
-        string index,
-        IExpr seq,
-        ImmutableArray<INode> body,
-        ImmutableArray<INode> @else,
-        TextSpan range) =>
-        new(item, index, seq, body, @else, false, range);
 }
 
 public sealed record TextNode(string Text, TextSpan Range) : INode;
