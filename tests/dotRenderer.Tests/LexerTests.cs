@@ -187,4 +187,13 @@ public class LexerTests
             Token.FromText("A", TextSpan.At(0, 1)),
             Token.FromAtIdent("for", TextSpan.At(1, 4)),
             Token.FromText("   (", TextSpan.At(5, 4)));
+
+    [Fact]
+    public void Should_Flush_Preceding_Text_When_Lexing_Else()
+        => LexerAssert.Lex("X else{y}",
+            Token.FromText("X ", TextSpan.At(0, 2)),
+            Token.FromElse(TextSpan.At(2, 4)),
+            Token.FromLBrace(TextSpan.At(6, 1)),
+            Token.FromText("y", TextSpan.At(7, 1)),
+            Token.FromRBrace(TextSpan.At(8, 1)));
 }
