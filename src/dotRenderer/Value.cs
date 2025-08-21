@@ -64,9 +64,8 @@ public readonly record struct Value
     public string ToInvariantString() =>
         Kind switch
         {
-            ValueKind.Text => Text ?? string.Empty,
             ValueKind.Number => Number.ToString(CultureInfo.InvariantCulture),
             ValueKind.Boolean => Boolean.ToString(),
-            _ => string.Empty
+            _ => Text ?? string.Empty
         };
 }
