@@ -64,6 +64,7 @@ public static class Lexer
 
     private readonly record struct State(string Text, int Pos)
     {
+        public string Text { get; } = Text;
         public int Length => Text.Length;
         public bool Eof => Pos >= Length;
         public char Current => Text[Pos];
