@@ -534,6 +534,13 @@ public class TemplateEngineTests
             MapAccessor.With(("for", Value.FromString("B"))),
             "AB(");
 
+    [Fact]
+    public void Should_Render_Else_As_Plain_Text_When_Not_Preceded_By_At()
+        => TemplateEngineAssert.Render(
+            "X else{y}",
+            MapAccessor.Empty,
+            "X else{y}");
+
     [Theory]
     [InlineData("A@if(false){T}@elif(false){U}else{E}B", "AEB")]
     [InlineData("A@if(true){T}@elif(true){U}else{E}B",  "ATB")]
