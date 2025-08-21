@@ -159,4 +159,17 @@ public class LexerTests
             Token.FromText("A", TextSpan.At(0, 1)),
             Token.FromAtIdent("elif", TextSpan.At(1, 5)),
             Token.FromText("   (x", TextSpan.At(6, 5)));
+    [Fact]
+    public void Should_Not_Tokenize_AtIf_When_Paren_Unclosed_Immediately()
+        => LexerAssert.Lex("A@if(",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("if", TextSpan.At(1, 3)),
+            Token.FromText("(", TextSpan.At(4, 1)));
+
+    [Fact]
+    public void Should_Not_Tokenize_AtIf_When_Paren_Unclosed_After_Spaces()
+        => LexerAssert.Lex("A@if   (",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromAtIdent("if", TextSpan.At(1, 3)),
+            Token.FromText("   (", TextSpan.At(4, 4)));
 }
