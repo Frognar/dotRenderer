@@ -17,6 +17,7 @@ public static class Parser
 
     private readonly record struct State(ImmutableArray<Token> Tokens, int Index)
     {
+        public ImmutableArray<Token> Tokens { get; } = Tokens;
         public bool Eof => Index >= Tokens.Length;
         public Token Current => Tokens[Index];
         public TokenKind? Kind => Eof ? null : Current.Kind;
