@@ -506,6 +506,13 @@ public class TemplateEngineTests
             MapAccessor.Empty,
             "AUB");
 
+    [Fact]
+    public void Should_Render_Unclosed_AtExpr_As_Plain_Text()
+        => TemplateEngineAssert.Render(
+            "A@(",
+            MapAccessor.Empty,
+            "A@(");
+
     [Theory]
     [InlineData("A@if(false){T}@elif(false){U}else{E}B", "AEB")]
     [InlineData("A@if(true){T}@elif(true){U}else{E}B",  "ATB")]

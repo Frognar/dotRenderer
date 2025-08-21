@@ -123,4 +123,19 @@ public class LexerTests
             Token.FromText("E", TextSpan.At(33, 1)),
             Token.FromRBrace(TextSpan.At(34, 1)),
             Token.FromText("B", TextSpan.At(35, 1)));
+    
+    [Fact]
+    public void Should_Tokenize_At_Expr_With_Escaped_Quote_In_String()
+        => LexerAssert.Lex("@(\"A\\\"B\")",
+            Token.FromAtExpr("\"A\\\"B\"", TextSpan.At(0, 9)));
+
+    [Fact]
+    public void Should_Tokenize_At_Expr_With_Nested_Parentheses()
+        => LexerAssert.Lex("@((1+2))",
+            Token.FromAtExpr("(1+2)", TextSpan.At(0, 8)));
+
+    [Fact]
+    public void Should_Treat_Unclosed_At_Expr_As_Plain_Text()
+        => LexerAssert.Lex("A@(",
+            Token.FromText("A@(", TextSpan.At(0, 3)));
 }
