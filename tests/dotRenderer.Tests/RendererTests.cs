@@ -168,6 +168,13 @@ public class RendererTests
             "XEMPTYY");
 
     [Fact]
+    public void Should_Render_Boolean_As_String() =>
+        RendererAssert.Render(
+            Template.With(Node.FromInterpolateIdent("X", TextSpan.At(0, 2))),
+            MapAccessor.With(("X", Value.FromBool(true))),
+            "True");
+
+    [Fact]
     public void Should_Ignore_Else_When_Sequence_Is_Not_Empty() =>
         RendererAssert.Render(
             Template.With(
