@@ -280,12 +280,13 @@ public class ParserTests
             Template.With(
                 Node.FromIf(
                     Expr.FromBoolean(true),
-                    [ Node.FromText("x", TextSpan.At(10, 1)) ],
-                    [ Node.FromText("y", TextSpan.At(21, 1)) ],
+                    [Node.FromText("x", TextSpan.At(10, 1))],
+                    [Node.FromText("y", TextSpan.At(21, 1))],
                     TextSpan.At(0, 9)
                 )
             )
         );
+
     [Fact]
     public void Should_Treat_LBrace_And_RBrace_As_Text_In_Sequence()
         => ParserAssert.Parse(
@@ -331,6 +332,56 @@ public class ParserTests
             Template.With(
                 Node.FromText("A", TextSpan.At(0, 1)),
                 Node.FromText("B", TextSpan.At(2, 1))
+            )
+        );
+
+    [Fact]
+    public void Should_Set_HadNewline_Before_LBrace_In_If()
+        => ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                Token.FromAtIf("true", TextSpan.At(1, 9)),
+                Token.FromText(" \n ", TextSpan.At(10, 3)),
+                Token.FromLBrace(TextSpan.At(13, 1)),
+                Token.FromText("x", TextSpan.At(14, 1)),
+                Token.FromRBrace(TextSpan.At(15, 1)),
+                Token.FromText("B", TextSpan.At(16, 1)),
+            ],
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [Node.FromText("x", TextSpan.At(14, 1))],
+                    true,
+                    TextSpan.At(1, 9)
+                ),
+                Node.FromText("B", TextSpan.At(16, 1))
+            )
+        );
+
+    [Fact]
+    public void Should_Set_HadNewline_Before_LBrace_In_For()
+        => ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                Token.FromAtFor("item in items", TextSpan.At(1, 19)),
+                Token.FromText("\r\n", TextSpan.At(20, 2)),
+                Token.FromLBrace(TextSpan.At(22, 1)),
+                Token.FromText("x", TextSpan.At(23, 1)),
+                Token.FromRBrace(TextSpan.At(24, 1)),
+                Token.FromText("B", TextSpan.At(25, 1)),
+            ],
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [Node.FromText("x", TextSpan.At(23, 1))],
+                    [],
+                    true,
+                    TextSpan.At(1, 19)
+                ),
+                Node.FromText("B", TextSpan.At(25, 1))
             )
         );
 
