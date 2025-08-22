@@ -398,4 +398,28 @@ public class ParserTests
             ],
             "ExprTrailing",
             TextSpan.At(0, 12));
+
+    [Fact]
+    public void Should_Error_ForBody_Expr_Parse_Error_In_For() =>
+        ParserAssert.FailsToParse([
+                Token.FromAtFor("item in items", TextSpan.At(0, 19)),
+                Token.FromLBrace(TextSpan.At(19, 1)),
+                Token.FromAtExpr("1 2", TextSpan.At(20, 6))
+            ],
+            "ExprTrailing",
+            TextSpan.At(20, 6));
+
+    [Fact]
+    public void Should_Error_ForElseBody_Expr_Parse_Error_In_For() =>
+        ParserAssert.FailsToParse([
+                Token.FromAtFor("item in items", TextSpan.At(0, 19)),
+                Token.FromLBrace(TextSpan.At(19, 1)),
+                Token.FromText("x", TextSpan.At(20, 1)),
+                Token.FromRBrace(TextSpan.At(21, 1)),
+                Token.FromElse(TextSpan.At(22, 4)),
+                Token.FromLBrace(TextSpan.At(26, 1)),
+                Token.FromAtExpr("1 2", TextSpan.At(27, 6))
+            ],
+            "ExprTrailing",
+            TextSpan.At(27, 6));
 }
