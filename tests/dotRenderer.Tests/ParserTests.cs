@@ -422,4 +422,50 @@ public class ParserTests
             ],
             "ExprTrailing",
             TextSpan.At(27, 6));
+
+    [Fact]
+    public void Should_Error_If_Condition_Expr_Parse_Error() =>
+        ParserAssert.FailsToParse([
+                // "@if(1 2)" -> ExprTrailing; pokrywa gałąź condRes.IsOk == false (// tu)
+                Token.FromAtIf("1 2", TextSpan.At(0, 9))
+            ],
+            "ExprTrailing",
+            TextSpan.At(0, 9));
+
+    [Fact]
+    public void Should_Error_ThenBody_Expr_Parse_Error_In_If() =>
+        ParserAssert.FailsToParse([
+                Token.FromAtIf("true", TextSpan.At(0, 9)),
+                Token.FromLBrace(TextSpan.At(9, 1)),
+                Token.FromAtExpr("1 2", TextSpan.At(10, 6))
+            ],
+            "ExprTrailing",
+            TextSpan.At(10, 6));
+
+    [Fact]
+    public void Should_Error_Elif_Condition_Expr_Parse_Error() =>
+        ParserAssert.FailsToParse([
+                Token.FromAtIf("false", TextSpan.At(0, 10)),
+                Token.FromLBrace(TextSpan.At(10, 1)),
+                Token.FromText("x", TextSpan.At(11, 1)),
+                Token.FromRBrace(TextSpan.At(12, 1)),
+                Token.FromElse(TextSpan.At(13, 4)),
+                Token.FromAtIf("1 2", TextSpan.At(17, 11))
+            ],
+            "ExprTrailing",
+            TextSpan.At(17, 11));
+
+    [Fact]
+    public void Should_Error_ElseBody_Expr_Parse_Error_In_If() =>
+        ParserAssert.FailsToParse([
+                Token.FromAtIf("true", TextSpan.At(0, 9)),
+                Token.FromLBrace(TextSpan.At(9, 1)),
+                Token.FromText("x", TextSpan.At(10, 1)),
+                Token.FromRBrace(TextSpan.At(11, 1)),
+                Token.FromElse(TextSpan.At(12, 4)),
+                Token.FromLBrace(TextSpan.At(16, 1)),
+                Token.FromAtExpr("1 2", TextSpan.At(17, 6))
+            ],
+            "ExprTrailing",
+            TextSpan.At(17, 6));
 }
