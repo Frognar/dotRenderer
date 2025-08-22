@@ -264,6 +264,30 @@ public class ParserTests
             ));
 
     [Fact]
+    public void Should_Skip_Whitespace_Text_Tokens_Between_Blocks() =>
+        ParserAssert.Parse(
+            [
+                Token.FromAtIf("true", TextSpan.At(0, 9)),
+                Token.FromLBrace(TextSpan.At(9, 1)),
+                Token.FromText("x", TextSpan.At(10, 1)),
+                Token.FromRBrace(TextSpan.At(11, 1)),
+                Token.FromText("   \n", TextSpan.At(12, 4)),
+                Token.FromElse(TextSpan.At(16, 4)),
+                Token.FromLBrace(TextSpan.At(20, 1)),
+                Token.FromText("y", TextSpan.At(21, 1)),
+                Token.FromRBrace(TextSpan.At(22, 1)),
+            ],
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [ Node.FromText("x", TextSpan.At(10, 1)) ],
+                    [ Node.FromText("y", TextSpan.At(21, 1)) ],
+                    TextSpan.At(0, 9)
+                )
+            )
+        );
+
+    [Fact]
     public void Should_Error_When_AtExpr_Contains_Invalid_Expr() =>
         ParserAssert.FailsToParse([Token.FromAtExpr("1 2", TextSpan.At(0, 6))],
             "ExprTrailing",
