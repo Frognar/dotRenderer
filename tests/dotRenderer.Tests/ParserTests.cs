@@ -286,6 +286,53 @@ public class ParserTests
                 )
             )
         );
+    [Fact]
+    public void Should_Treat_LBrace_And_RBrace_As_Text_In_Sequence()
+        => ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                Token.FromLBrace(TextSpan.At(1, 1)),
+                Token.FromText("x", TextSpan.At(2, 1)),
+                Token.FromRBrace(TextSpan.At(3, 1)),
+                Token.FromText("B", TextSpan.At(4, 1)),
+            ],
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromText("{", TextSpan.At(1, 1)),
+                Node.FromText("x", TextSpan.At(2, 1)),
+                Node.FromText("}", TextSpan.At(3, 1)),
+                Node.FromText("B", TextSpan.At(4, 1))
+            )
+        );
+
+    [Fact]
+    public void Should_Treat_Else_Token_As_Text_When_Standalone_In_Sequence()
+        => ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                Token.FromElse(TextSpan.At(1, 4)),
+                Token.FromText("B", TextSpan.At(5, 1)),
+            ],
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromText("else", TextSpan.At(1, 4)),
+                Node.FromText("B", TextSpan.At(5, 1))
+            )
+        );
+
+    [Fact]
+    public void Should_Skip_Unknown_Tokens_In_Default_Case()
+        => ParserAssert.Parse(
+            [
+                Token.FromText("A", TextSpan.At(0, 1)),
+                new Token((TokenKind)(-1), "?", TextSpan.At(1, 1)),
+                Token.FromText("B", TextSpan.At(2, 1)),
+            ],
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                Node.FromText("B", TextSpan.At(2, 1))
+            )
+        );
 
     [Fact]
     public void Should_Error_When_AtExpr_Contains_Invalid_Expr() =>
