@@ -101,4 +101,18 @@ public class ExprParserTests
             "a.",
             "MemberName",
             TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_Addition_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1+",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_Subtraction_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1-",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
 }
