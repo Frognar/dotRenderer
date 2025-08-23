@@ -379,30 +379,22 @@ public static class ExprParser
             if (!rest.Eof && rest.Text[rest.Pos] == '.')
             {
                 rest = rest.Advance();
-                if (rest.Eof || !IsIdentStart(rest.Text[rest.Pos]))
-                {
-                    if (current is NumberExpr)
-                    {
-                        int numberStart = FindNumberStart(dotPos.Text, dotPos.Pos);
-                        return Err<IExpr>(
-                            "NumberFormat",
-                            TextSpan.At(numberStart, dotPos.Pos + 1 - numberStart),
-                            "Invalid number literal.");
-                    }
-
-                    return Err<IExpr>(
-                        "MemberName",
-                        TextSpan.At(rest.Pos, 0),
-                        "Expected member name after '.'.");
-                }
-
                 (bool ok, string name, State rest) ident = ReadIdent(rest);
                 if (!ident.ok)
                 {
+                    if (current is not NumberExpr)
+                    {
+                        return Err<IExpr>(
+                            "MemberName",
+                            TextSpan.At(rest.Pos, 0),
+                            "Expected member name after '.'.");
+                    }
+
+                    int numberStart = FindNumberStart(dotPos.Text, dotPos.Pos);
                     return Err<IExpr>(
-                        "MemberName",
-                        TextSpan.At(rest.Pos, 0),
-                        "Expected member name after '.'.");
+                        "NumberFormat",
+                        TextSpan.At(numberStart, dotPos.Pos + 1 - numberStart),
+                        "Invalid number literal.");
                 }
 
                 current = Expr.FromMember(current, ident.name);
