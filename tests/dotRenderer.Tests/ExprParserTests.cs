@@ -163,6 +163,32 @@ public class ExprParserTests
                 Expr.FromNumber(0)));
 
     [Fact]
+    public void Should_Parse_Unary_Not() =>
+        ExprParserAssert.Parse(
+            "!false",
+            Expr.FromUnaryNot(Expr.FromBoolean(false)));
+
+    [Fact]
+    public void Should_Parse_Unary_Negation() =>
+        ExprParserAssert.Parse(
+            "-1",
+            Expr.FromUnaryNeg(Expr.FromNumber(1)));
+
+    [Fact]
+    public void Should_Error_When_UnaryNot_Missing_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "!",
+            "ExprEmpty",
+            TextSpan.At(1, 0));
+
+    [Fact]
+    public void Should_Error_When_UnaryNeg_Missing_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "-",
+            "ExprEmpty",
+            TextSpan.At(1, 0));
+
+    [Fact]
     public void Should_Error_When_LessThan_Missing_Right_Operand() =>
         ExprParserAssert.FailsToParse(
             "1<",
