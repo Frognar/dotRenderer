@@ -53,6 +53,18 @@ public class ExprParserTests
             Expr.FromString("A\rB"));
 
     [Fact]
+    public void Should_Parse_True_Literal_Into_BooleanExpr() =>
+        ExprParserAssert.Parse(
+            "true",
+            Expr.FromBoolean(true));
+
+    [Fact]
+    public void Should_Parse_False_Literal_Into_BooleanExpr() =>
+        ExprParserAssert.Parse(
+            "false",
+            Expr.FromBoolean(false));
+
+    [Fact]
     public void Should_Error_When_Expression_Is_Empty() =>
         ExprParserAssert.FailsToParse(
             "",
