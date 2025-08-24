@@ -75,6 +75,20 @@ public class ExprParserTests
                 Expr.FromBoolean(false)));
 
     [Fact]
+    public void Should_Error_In_Paren_When_Expression_Is_Empty()
+        => ExprParserAssert.FailsToParse(
+            "(",
+            "ExprEmpty",
+            TextSpan.At(1, 0));
+
+    [Fact]
+    public void Should_Error_In_Paren_On_Unexpected_Char()
+        => ExprParserAssert.FailsToParse(
+            "( )",
+            "UnexpectedChar",
+            TextSpan.At(2, 1));
+
+    [Fact]
     public void Should_Error_When_Or_Missing_Right_Operand() =>
         ExprParserAssert.FailsToParse(
             "true||",
