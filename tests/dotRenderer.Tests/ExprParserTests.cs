@@ -47,6 +47,12 @@ public class ExprParserTests
             Expr.FromString("A\nB\tC"));
 
     [Fact]
+    public void Should_Parse_String_With_Escaped_Carriage_Return() =>
+        ExprParserAssert.Parse(
+            "\"A\\rB\"",
+            Expr.FromString("A\rB"));
+
+    [Fact]
     public void Should_Error_When_Expression_Is_Empty() =>
         ExprParserAssert.FailsToParse(
             "",
