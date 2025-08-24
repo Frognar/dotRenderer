@@ -85,6 +85,36 @@ public class ExprParserTests
                 Expr.FromBoolean(true)));
 
     [Fact]
+    public void Should_Parse_Simple_Multiplication() =>
+        ExprParserAssert.Parse(
+            "2*3",
+            Expr.FromBinaryMul(Expr.FromNumber(2), Expr.FromNumber(3)));
+
+    [Fact]
+    public void Should_Parse_Simple_Division() =>
+        ExprParserAssert.Parse(
+            "6/2",
+            Expr.FromBinaryDiv(Expr.FromNumber(6), Expr.FromNumber(2)));
+
+    [Fact]
+    public void Should_Parse_Simple_Modulo() =>
+        ExprParserAssert.Parse(
+            "7%3",
+            Expr.FromBinaryMod(Expr.FromNumber(7), Expr.FromNumber(3)));
+
+    [Fact]
+    public void Should_Parse_Chained_Multiplicative_As_LeftAssociative() =>
+        ExprParserAssert.Parse(
+            "2*3/4%5",
+            Expr.FromBinaryMod(
+                Expr.FromBinaryDiv(
+                    Expr.FromBinaryMul(
+                        Expr.FromNumber(2),
+                        Expr.FromNumber(3)),
+                    Expr.FromNumber(4)),
+                Expr.FromNumber(5)));
+
+    [Fact]
     public void Should_Parse_Chained_Equality_As_LeftAssociative() =>
         ExprParserAssert.Parse(
             "1 == 2 == 3",
@@ -93,6 +123,27 @@ public class ExprParserTests
                     Expr.FromNumber(1),
                     Expr.FromNumber(2)),
                 Expr.FromNumber(3)));
+
+    [Fact]
+    public void Should_Error_When_Multiplication_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "2*",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_Division_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "2/",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_Modulo_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "2%",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
 
     [Fact]
     public void Should_Error_When_Equality_Missing_Right_Operand() =>
