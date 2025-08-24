@@ -448,15 +448,17 @@ public static class ExprParser
 
             return Result<(IExpr, State)>.Ok((Expr.FromString(sLit.Value.value), sLit.Value.rest));
         }
-
-        if (rest.StartsWith("true") && (rest.Pos + 4 == rest.Length || !IsIdentPart(rest.Text[rest.Pos + 4])))
+        
+        (bool isTrue, State tAfter) = MatchKeyword(rest, "true");
+        if (isTrue)
         {
-            return Ok<IExpr>(Expr.FromBoolean(true), rest.Advance(4));
+            return Ok<IExpr>(Expr.FromBoolean(true), tAfter);
         }
 
-        if (rest.StartsWith("false") && (rest.Pos + 5 == rest.Length || !IsIdentPart(rest.Text[rest.Pos + 5])))
+        (bool isFalse, State fAfter) = MatchKeyword(rest, "false");
+        if (isFalse)
         {
-            return Ok<IExpr>(Expr.FromBoolean(false), rest.Advance(5));
+            return Ok<IExpr>(Expr.FromBoolean(false), fAfter);
         }
 
         if (char.IsDigit(c))
@@ -596,6 +598,16 @@ public static class ExprParser
         }
 
         return Ok(value, s with { Pos = i });
+    }
+    
+    private static (bool matched, State rest) MatchKeyword(State s, string kw)
+    {
+        if (s.StartsWith(kw) && (s.Pos + kw.Length == s.Length || !IsIdentPart(s.Text[s.Pos + kw.Length])))
+        {
+            return (true, s.Advance(kw.Length));
+        }
+
+        return (false, s);
     }
 
     private static bool IsIdentStart(char c) => char.IsLetter(c) || c == '_';
