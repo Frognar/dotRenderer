@@ -75,6 +75,23 @@ public class ExprParserTests
                 Expr.FromBoolean(false)));
 
     [Fact]
+    public void Should_Parse_Chained_And_As_LeftAssociative() =>
+        ExprParserAssert.Parse(
+            "true && false && true",
+            Expr.FromBinaryAnd(
+                Expr.FromBinaryAnd(
+                    Expr.FromBoolean(true),
+                    Expr.FromBoolean(false)),
+                Expr.FromBoolean(true)));
+
+    [Fact]
+    public void Should_Error_When_And_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "true&&",
+            "ExprEmpty",
+            TextSpan.At(6, 0));
+
+    [Fact]
     public void Should_Error_In_Paren_When_Expression_Is_Empty()
         => ExprParserAssert.FailsToParse(
             "(",
