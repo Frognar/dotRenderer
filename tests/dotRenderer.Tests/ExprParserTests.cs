@@ -65,6 +65,20 @@ public class ExprParserTests
             Expr.FromBoolean(false));
 
     [Fact]
+    public void Should_Error_On_Number_With_Dot_And_No_Fraction()
+        => ExprParserAssert.FailsToParse(
+            "1.",
+            "NumberFormat",
+            TextSpan.At(0, 2));
+
+    [Fact]
+    public void Should_Error_On_Number_With_NonAscii_Digits()
+        => ExprParserAssert.FailsToParse(
+            "١",
+            "NumberFormat",
+            TextSpan.At(0, 1));
+
+    [Fact]
     public void Should_Error_When_Expression_Is_Empty() =>
         ExprParserAssert.FailsToParse(
             "",
