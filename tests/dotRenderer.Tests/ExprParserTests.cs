@@ -125,6 +125,72 @@ public class ExprParserTests
                 Expr.FromNumber(3)));
 
     [Fact]
+    public void Should_Parse_Simple_LessThan() =>
+        ExprParserAssert.Parse(
+            "1<2",
+            Expr.FromBinaryLt(Expr.FromNumber(1), Expr.FromNumber(2)));
+
+    [Fact]
+    public void Should_Parse_Simple_GreaterThan() =>
+        ExprParserAssert.Parse(
+            "1>2",
+            Expr.FromBinaryGt(Expr.FromNumber(1), Expr.FromNumber(2)));
+
+    [Fact]
+    public void Should_Parse_Simple_LessOrEqual() =>
+        ExprParserAssert.Parse(
+            "1<=2",
+            Expr.FromBinaryLe(Expr.FromNumber(1), Expr.FromNumber(2)));
+
+    [Fact]
+    public void Should_Parse_Simple_GreaterOrEqual() =>
+        ExprParserAssert.Parse(
+            "1>=2",
+            Expr.FromBinaryGe(Expr.FromNumber(1), Expr.FromNumber(2)));
+
+    [Fact]
+    public void Should_Parse_Chained_Relation_And_Stay_LeftAssociative() =>
+        ExprParserAssert.Parse(
+            "1 < 2 <= 3 > 1 >= 0",
+            Expr.FromBinaryGe(
+                Expr.FromBinaryGt(
+                    Expr.FromBinaryLe(
+                        Expr.FromBinaryLt(
+                            Expr.FromNumber(1),
+                            Expr.FromNumber(2)),
+                        Expr.FromNumber(3)),
+                    Expr.FromNumber(1)),
+                Expr.FromNumber(0)));
+
+    [Fact]
+    public void Should_Error_When_LessThan_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1<",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_GreaterThan_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1>",
+            "ExprEmpty",
+            TextSpan.At(2, 0));
+
+    [Fact]
+    public void Should_Error_When_LessOrEqual_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1<=",
+            "ExprEmpty",
+            TextSpan.At(3, 0));
+
+    [Fact]
+    public void Should_Error_When_GreaterOrEqual_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1>=",
+            "ExprEmpty",
+            TextSpan.At(3, 0));
+
+    [Fact]
     public void Should_Error_When_Multiplication_Missing_Right_Operand() =>
         ExprParserAssert.FailsToParse(
             "2*",
