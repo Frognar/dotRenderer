@@ -85,6 +85,23 @@ public class ExprParserTests
                 Expr.FromBoolean(true)));
 
     [Fact]
+    public void Should_Parse_Chained_Equality_As_LeftAssociative() =>
+        ExprParserAssert.Parse(
+            "1 == 2 == 3",
+            Expr.FromBinaryEq(
+                Expr.FromBinaryEq(
+                    Expr.FromNumber(1),
+                    Expr.FromNumber(2)),
+                Expr.FromNumber(3)));
+
+    [Fact]
+    public void Should_Error_When_Equality_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "1==",
+            "ExprEmpty",
+            TextSpan.At(3, 0));
+
+    [Fact]
     public void Should_Error_When_And_Missing_Right_Operand() =>
         ExprParserAssert.FailsToParse(
             "true&&",
