@@ -65,6 +65,23 @@ public class ExprParserTests
             Expr.FromBoolean(false));
 
     [Fact]
+    public void Should_Parse_Chained_Or_As_LeftAssociative()
+        => ExprParserAssert.Parse(
+            "false || true || false",
+            Expr.FromBinaryOr(
+                Expr.FromBinaryOr(
+                    Expr.FromBoolean(false),
+                    Expr.FromBoolean(true)),
+                Expr.FromBoolean(false)));
+
+    [Fact]
+    public void Should_Error_When_Or_Missing_Right_Operand() =>
+        ExprParserAssert.FailsToParse(
+            "true||",
+            "ExprEmpty",
+            TextSpan.At(6, 0));
+
+    [Fact]
     public void Should_Error_On_Number_With_Dot_And_No_Fraction()
         => ExprParserAssert.FailsToParse(
             "1.",
