@@ -175,6 +175,12 @@ public class ExprParserTests
             Expr.FromUnaryNeg(Expr.FromNumber(1)));
 
     [Fact]
+    public void Should_Parse_Parenthesized_Expression()
+        => ExprParserAssert.Parse(
+            "(1)",
+            Expr.FromNumber(1));
+
+    [Fact]
     public void Should_Error_When_UnaryNot_Missing_Operand() =>
         ExprParserAssert.FailsToParse(
             "!",
