@@ -85,6 +85,12 @@ public class ExprParserTests
                 Expr.FromBoolean(true)));
 
     [Fact]
+    public void Should_Parse_Simple_Subtraction() =>
+        ExprParserAssert.Parse(
+            "3-2",
+            Expr.FromBinarySub(Expr.FromNumber(3), Expr.FromNumber(2)));
+
+    [Fact]
     public void Should_Parse_Simple_Multiplication() =>
         ExprParserAssert.Parse(
             "2*3",
