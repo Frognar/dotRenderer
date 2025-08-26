@@ -300,6 +300,35 @@ public class RendererTests
             "0");
 
     [Fact]
+    public void Should_Render_Empty_When_If_False_And_No_Else()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(false),
+                    [Node.FromText("T", TextSpan.At(0, 1))],
+                    TextSpan.At(0, 5)
+                )
+            ),
+            MapAccessor.Empty,
+            ""
+        );
+
+    [Fact]
+    public void Should_Error_When_If_Condition_Evaluation_Fails()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromMember(Expr.FromIdent("u"), "x"),
+                    [Node.FromText("T", TextSpan.At(0, 1))],
+                    TextSpan.At(0, 10)
+                )
+            ),
+            MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
+            "MissingMember",
+            TextSpan.At(0, 10)
+        );
+
+    [Fact]
     public void Should_Error_When_Interpolated_Ident_Not_Found() =>
         RendererAssert.FailsToRender(
             Template.With(
