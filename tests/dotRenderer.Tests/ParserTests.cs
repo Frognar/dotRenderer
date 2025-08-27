@@ -548,7 +548,6 @@ public class ParserTests
     [Fact]
     public void Should_Error_If_Condition_Expr_Parse_Error() =>
         ParserAssert.FailsToParse([
-                // "@if(1 2)" -> ExprTrailing; pokrywa gałąź condRes.IsOk == false (// tu)
                 Token.FromAtIf("1 2", TextSpan.At(0, 9))
             ],
             "ExprTrailing",

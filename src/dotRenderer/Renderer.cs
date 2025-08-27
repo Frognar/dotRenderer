@@ -43,11 +43,7 @@ public static class Renderer
 
             if (part.Length > 0)
             {
-                if (node is IfNode { BreakBeforeLBrace: true } && !EndsWithNewline(sb))
-                {
-                    part = PrependSingleLf(part);
-                }
-                else if (node is ForNode { BreakBeforeLBrace: true } && !EndsWithNewline(sb))
+                if (node is IfNode { BreakBeforeLBrace: true } or ForNode { BreakBeforeLBrace: true } && !EndsWithNewline(sb))
                 {
                     part = PrependSingleLf(part);
                 }
@@ -60,7 +56,6 @@ public static class Renderer
             }
             else if (pendingInsertLeadingNl && part.Length > 0 && StartsWithNewline(part))
             {
-                // Segment już zaczyna się od NL – nic nie dokładamy, kasujemy oczekiwanie.
                 pendingInsertLeadingNl = false;
             }
 
