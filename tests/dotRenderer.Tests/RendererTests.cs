@@ -314,6 +314,51 @@ public class RendererTests
         );
 
     [Fact]
+    public void Should_Leave_Empty_For_Body_Unchanged()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [ Node.FromText(string.Empty, TextSpan.At(0, 0)) ],
+                    TextSpan.At(0, 5)
+                )
+            ),
+            MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
+            ""
+        );
+
+    [Fact]
+    public void Should_Strip_One_Leading_CRLF_In_For_Body()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [ Node.FromText("\r\nX", TextSpan.At(0, 3)) ],
+                    TextSpan.At(0, 7)
+                )
+            ),
+            MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
+            "X"
+        );
+
+    [Fact]
+    public void Should_Strip_One_Leading_LF_In_For_Body()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [ Node.FromText("\nX", TextSpan.At(0, 2)) ],
+                    TextSpan.At(0, 6)
+                )
+            ),
+            MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
+            "X"
+        );
+
+    [Fact]
     public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
         => RendererAssert.FailsToRender(
             Template.With(
