@@ -314,6 +314,59 @@ public class RendererTests
         );
 
     [Fact]
+    public void Should_Error_When_For_Seq_Evaluation_Fails()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    Expr.FromMember(Expr.FromIdent("u"), "x"),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    TextSpan.At(0, 12)
+                )
+            ),
+            MapAccessor.With(("u", Value.FromMap(new Dictionary<string, Value>()))),
+            "MissingMember",
+            TextSpan.At(0, 12)
+        );
+
+    [Fact]
+    public void Should_Error_When_For_Seq_Is_Not_A_Sequence()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    // wyrażenie ewaluowane do liczby zamiast sekwencji
+                    Expr.FromIdent("x"),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    TextSpan.At(0, 8)
+                )
+            ),
+            MapAccessor.With(("x", Value.FromNumber(123))),
+            "TypeMismatch",
+            TextSpan.At(0, 8),
+            "Expression of @for must evaluate to a sequence, but got Number."
+        );
+
+    [Fact]
+    public void Should_Error_When_For_Body_Rendering_Fails()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromFor(
+                    "item",
+                    Expr.FromIdent("items"),
+                    [
+                        // brakujący identyfikator w ciele pętli
+                        Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
+                    ],
+                    TextSpan.At(0, 15)
+                )
+            ),
+            MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
+            "MissingIdent",
+            TextSpan.At(0, 5)
+        );
+
+    [Fact]
     public void Should_Error_When_If_Condition_Evaluation_Fails()
         => RendererAssert.FailsToRender(
             Template.With(
