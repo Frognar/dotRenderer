@@ -314,6 +314,18 @@ public class RendererTests
         );
 
     [Fact]
+    public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
+            ),
+            null!,
+            "MissingIdent",
+            TextSpan.At(0, 5),
+            "Identifier 'name' was not found."
+        );
+
+    [Fact]
     public void Should_Error_When_For_Seq_Evaluation_Fails()
         => RendererAssert.FailsToRender(
             Template.With(
