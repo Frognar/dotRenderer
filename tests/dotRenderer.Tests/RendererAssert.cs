@@ -6,7 +6,8 @@ internal static class RendererAssert
 {
     public static void Render(Template template, IValueAccessor valueAccessor, string expected)
     {
-        Result<string> result = Renderer.Render(template, valueAccessor);
+        Func<Template, Result<string>> renderWithAccessor = Renderer.RenderWithAccessor(valueAccessor);
+        Result<string> result = renderWithAccessor(template);
 
         Assert.True(result.IsOk, result.Error?.ToString() ?? "");
         Assert.Equal(expected, result.Value);
