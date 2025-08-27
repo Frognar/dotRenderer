@@ -357,6 +357,68 @@ public class RendererTests
             MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
             "X"
         );
+    [Fact]
+    public void Should_Insert_Leading_Newline_When_BreakIf_Is_First_Node()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    true,
+                    TextSpan.At(0, 4)
+                )
+            ),
+            MapAccessor.Empty,
+            "\nT"
+        );
+
+    [Fact]
+    public void Should_Insert_Leading_Newline_When_Previous_Does_Not_End_With_Newline_And_BreakIf()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("X", TextSpan.At(0, 1)),
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    true,
+                    TextSpan.At(1, 4)
+                )
+            ),
+            MapAccessor.Empty,
+            "X\nT"
+        );
+
+    [Fact]
+    public void Should_Not_Insert_Extra_Newline_When_Previous_Already_Ends_With_Newline_And_BreakIf()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("X\n", TextSpan.At(0, 2)),
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    true,
+                    TextSpan.At(2, 4)
+                )
+            ),
+            MapAccessor.Empty,
+            "X\nT"
+        );
+
+    [Fact]
+    public void Should_Not_Prepending_Newline_If_Next_Segment_Already_Starts_With_Newline_After_Empty_Block()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("X\n", TextSpan.At(0, 2)),
+                Node.FromIf(
+                    Expr.FromBoolean(false),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    TextSpan.At(2, 4)
+                ),
+                Node.FromText("\nY", TextSpan.At(0, 2))
+            ),
+            MapAccessor.Empty,
+            "X\nY"
+        );
 
     [Fact]
     public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
