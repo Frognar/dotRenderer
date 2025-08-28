@@ -320,7 +320,7 @@ public class RendererTests
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
-                    [ Node.FromText(string.Empty, TextSpan.At(0, 0)) ],
+                    [Node.FromText(string.Empty, TextSpan.At(0, 0))],
                     TextSpan.At(0, 5)
                 )
             ),
@@ -335,7 +335,7 @@ public class RendererTests
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
-                    [ Node.FromText("\r\nX", TextSpan.At(0, 3)) ],
+                    [Node.FromText("\r\nX", TextSpan.At(0, 3))],
                     TextSpan.At(0, 7)
                 )
             ),
@@ -350,20 +350,21 @@ public class RendererTests
                 Node.FromFor(
                     "item",
                     Expr.FromIdent("items"),
-                    [ Node.FromText("\nX", TextSpan.At(0, 2)) ],
+                    [Node.FromText("\nX", TextSpan.At(0, 2))],
                     TextSpan.At(0, 6)
                 )
             ),
             MapAccessor.With(("items", Value.FromSequence(Value.FromString("a")))),
             "X"
         );
+
     [Fact]
     public void Should_Insert_Leading_Newline_When_BreakIf_Is_First_Node()
         => RendererAssert.Render(
             Template.With(
                 Node.FromIf(
                     Expr.FromBoolean(true),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     true,
                     TextSpan.At(0, 4)
                 )
@@ -379,7 +380,7 @@ public class RendererTests
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(true),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     true,
                     TextSpan.At(1, 4)
                 )
@@ -395,7 +396,7 @@ public class RendererTests
                 Node.FromText("X\n", TextSpan.At(0, 2)),
                 Node.FromIf(
                     Expr.FromBoolean(true),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     true,
                     TextSpan.At(2, 4)
                 )
@@ -411,13 +412,69 @@ public class RendererTests
                 Node.FromText("X\n", TextSpan.At(0, 2)),
                 Node.FromIf(
                     Expr.FromBoolean(false),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     TextSpan.At(2, 4)
                 ),
                 Node.FromText("\nY", TextSpan.At(0, 2))
             ),
             MapAccessor.Empty,
             "X\nY"
+        );
+
+    [Fact]
+    public void Should_Trim_One_Leading_CRLF_In_If_Then()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [Node.FromText("\r\nX", TextSpan.At(0, 3))],
+                    TextSpan.At(0, 5)
+                )
+            ),
+            MapAccessor.Empty,
+            "X"
+        );
+
+    [Fact]
+    public void Should_Trim_One_Leading_LF_In_If_Then()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [Node.FromText("\nX", TextSpan.At(0, 2))],
+                    TextSpan.At(0, 4)
+                )
+            ),
+            MapAccessor.Empty,
+            "X"
+        );
+
+    [Fact]
+    public void Should_Trim_One_Trailing_CRLF_In_If_Then()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [Node.FromText("X\r\n", TextSpan.At(0, 3))],
+                    TextSpan.At(0, 5)
+                )
+            ),
+            MapAccessor.Empty,
+            "X"
+        );
+
+    [Fact]
+    public void Should_Trim_One_Trailing_LF_In_If_Then()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromIf(
+                    Expr.FromBoolean(true),
+                    [Node.FromText("X\n", TextSpan.At(0, 2))],
+                    TextSpan.At(0, 4)
+                )
+            ),
+            MapAccessor.Empty,
+            "X"
         );
 
     [Fact]
@@ -439,7 +496,7 @@ public class RendererTests
                 Node.FromFor(
                     "item",
                     Expr.FromMember(Expr.FromIdent("u"), "x"),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     TextSpan.At(0, 12)
                 )
             ),
@@ -454,9 +511,8 @@ public class RendererTests
             Template.With(
                 Node.FromFor(
                     "item",
-                    // wyrażenie ewaluowane do liczby zamiast sekwencji
                     Expr.FromIdent("x"),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     TextSpan.At(0, 8)
                 )
             ),
@@ -474,7 +530,6 @@ public class RendererTests
                     "item",
                     Expr.FromIdent("items"),
                     [
-                        // brakujący identyfikator w ciele pętli
                         Node.FromInterpolateIdent("name", TextSpan.At(0, 5))
                     ],
                     TextSpan.At(0, 15)
