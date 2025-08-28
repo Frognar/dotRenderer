@@ -478,6 +478,38 @@ public class RendererTests
         );
 
     [Fact]
+    public void Should_Trim_CRLF_Before_Empty_Block_And_Insert_Single_LF_After()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("X\r\n", TextSpan.At(0, 3)),
+                Node.FromIf(
+                    Expr.FromBoolean(false),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    TextSpan.At(3, 4)
+                ),
+                Node.FromText("Y", TextSpan.At(0, 1))
+            ),
+            MapAccessor.Empty,
+            "X\nY"
+        );
+
+    [Fact]
+    public void Should_Not_Insert_Newline_When_No_Trailing_Newline_Before_Empty_Block()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("X", TextSpan.At(0, 1)),
+                Node.FromIf(
+                    Expr.FromBoolean(false),
+                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    TextSpan.At(1, 4)
+                ),
+                Node.FromText("Y", TextSpan.At(0, 1))
+            ),
+            MapAccessor.Empty,
+            "XY"
+        );
+
+    [Fact]
     public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
         => RendererAssert.FailsToRender(
             Template.With(
