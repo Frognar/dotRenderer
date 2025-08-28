@@ -484,7 +484,7 @@ public class RendererTests
                 Node.FromText("X\r\n", TextSpan.At(0, 3)),
                 Node.FromIf(
                     Expr.FromBoolean(false),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     TextSpan.At(3, 4)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
@@ -500,7 +500,7 @@ public class RendererTests
                 Node.FromText("X", TextSpan.At(0, 1)),
                 Node.FromIf(
                     Expr.FromBoolean(false),
-                    [ Node.FromText("T", TextSpan.At(0, 1)) ],
+                    [Node.FromText("T", TextSpan.At(0, 1))],
                     TextSpan.At(1, 4)
                 ),
                 Node.FromText("Y", TextSpan.At(0, 1))
@@ -508,6 +508,20 @@ public class RendererTests
             MapAccessor.Empty,
             "XY"
         );
+
+    [Fact]
+    public void Should_Render_Unknown_Node_As_Empty_String()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromText("A", TextSpan.At(0, 1)),
+                new UnknownNode(TextSpan.At(1, 0)),
+                Node.FromText("B", TextSpan.At(1, 1))
+            ),
+            MapAccessor.Empty,
+            "AB"
+        );
+
+    private sealed record UnknownNode(TextSpan Range) : INode;
 
     [Fact]
     public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
