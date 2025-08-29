@@ -711,6 +711,41 @@ public class RendererTests
             "True");
 
     [Fact]
+    public void Should_Render_Unary_Not_On_Boolean()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromUnaryNot(Expr.FromBoolean(true)),
+                    TextSpan.At(0, 2))
+            ),
+            MapAccessor.Empty,
+            "False");
+
+    [Fact]
+    public void Should_Render_Unary_Neg_On_Number()
+        => RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromUnaryNeg(Expr.FromNumber(5)),
+                    TextSpan.At(0, 2))
+            ),
+            MapAccessor.Empty,
+            "-5");
+
+    [Fact]
+    public void Should_Error_UnsupportedOp_When_Unary_Neg_On_Boolean()
+        => RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromUnaryNeg(Expr.FromBoolean(true)),
+                    TextSpan.At(0, 2))
+            ),
+            MapAccessor.Empty,
+            "UnsupportedOp",
+            TextSpan.At(0, 2),
+            "Unary operator not supported.");
+
+    [Fact]
     public void Should_Error_When_Expr_Kind_Is_Unsupported() =>
         RendererAssert.FailsToRender(
             Template.With(
