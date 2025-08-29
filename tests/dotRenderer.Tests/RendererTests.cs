@@ -711,6 +711,19 @@ public class RendererTests
             "True");
 
     [Fact]
+    public void Should_Error_When_Expr_Kind_Is_Unsupported() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(new UnknownExpr(), TextSpan.At(0, 3))
+            ),
+            MapAccessor.Empty,
+            "UnsupportedExpr",
+            TextSpan.At(0, 3),
+            "Expression kind not supported yet.");
+
+    private sealed record UnknownExpr : IExpr;
+
+    [Fact]
     public void Should_Error_When_NotEqual_On_Mismatched_Scalars() =>
         RendererAssert.FailsToRender(
             Template.With(
