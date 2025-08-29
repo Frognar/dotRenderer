@@ -162,6 +162,21 @@ public static class ExprParser
                 continue;
             }
 
+            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '!' && rest.Text[rest.Pos + 1] == '=')
+            {
+                rest = rest.Advance(2).SkipWs();
+                Result<(IExpr expr, State rest)> rightRes = ParseRelational(rest);
+                if (!rightRes.IsOk)
+                {
+                    return rightRes;
+                }
+
+                (IExpr right, State after) = rightRes.Value;
+                left = Expr.FromBinaryNotEq(left, right);
+                rest = after;
+                continue;
+            }
+
             rest = save;
             break;
         }

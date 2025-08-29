@@ -127,6 +127,7 @@ public enum BinaryOp
     Div,
     Mod,
     Eq,
+    NotEq,
     Lt,
     Le,
     Gt,
@@ -153,6 +154,7 @@ public static class Expr
     public static BinaryExpr FromBinaryDiv(IExpr left, IExpr right) => new(BinaryOp.Div, left, right);
     public static BinaryExpr FromBinaryMod(IExpr left, IExpr right) => new(BinaryOp.Mod, left, right);
     public static BinaryExpr FromBinaryEq(IExpr left, IExpr right) => new(BinaryOp.Eq, left, right);
+    public static BinaryExpr FromBinaryNotEq(IExpr left, IExpr right) => new(BinaryOp.NotEq, left, right);
     public static BinaryExpr FromBinaryLt(IExpr left, IExpr right) => new(BinaryOp.Lt, left, right);
     public static BinaryExpr FromBinaryLe(IExpr left, IExpr right) => new(BinaryOp.Le, left, right);
     public static BinaryExpr FromBinaryGt(IExpr left, IExpr right) => new(BinaryOp.Gt, left, right);

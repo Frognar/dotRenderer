@@ -131,6 +131,16 @@ public class ExprParserTests
                 Expr.FromNumber(3)));
 
     [Fact]
+    public void Should_Parse_Chained_NotEquality_As_LeftAssociative() =>
+        ExprParserAssert.Parse(
+            "1 != 2 != 3",
+            Expr.FromBinaryNotEq(
+                Expr.FromBinaryNotEq(
+                    Expr.FromNumber(1),
+                    Expr.FromNumber(2)),
+                Expr.FromNumber(3)));
+
+    [Fact]
     public void Should_Parse_Simple_LessThan() =>
         ExprParserAssert.Parse(
             "1<2",
