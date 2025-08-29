@@ -524,6 +524,227 @@ public class RendererTests
     private sealed record UnknownNode(TextSpan Range) : INode;
 
     [Fact]
+    public void Should_Render_InterpolateExpr_Number_Subtraction() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinarySub(Expr.FromNumber(5), Expr.FromNumber(3)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "2");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_Multiplication() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryMul(Expr.FromNumber(6), Expr.FromNumber(7)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "42");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_Division() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryDiv(Expr.FromNumber(8), Expr.FromNumber(2)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "4");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_Modulo() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryMod(Expr.FromNumber(10), Expr.FromNumber(4)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "2");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_Equality() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryEq(Expr.FromNumber(1.0), Expr.FromNumber(1.0 + 1e-7)),
+                    TextSpan.At(0, 10))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_LessThan() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryLt(Expr.FromNumber(2), Expr.FromNumber(3)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_LessOrEqual() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryLe(Expr.FromNumber(3), Expr.FromNumber(3)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_GreaterThan() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryGt(Expr.FromNumber(5), Expr.FromNumber(2)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_GreaterOrEqual() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryGe(Expr.FromNumber(5), Expr.FromNumber(5)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Boolean_Equality() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryEq(Expr.FromBoolean(true), Expr.FromBoolean(false)),
+                    TextSpan.At(0, 10))
+            ),
+            MapAccessor.Empty,
+            "False");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Text_Equality() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryEq(Expr.FromString("ab"), Expr.FromString("ab")),
+                    TextSpan.At(0, 10))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Boolean_And() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryAnd(Expr.FromBoolean(true), Expr.FromBoolean(false)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "False");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Boolean_Or() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryOr(Expr.FromBoolean(true), Expr.FromBoolean(false)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Error_UnsupportedOp_When_Subtracting_NonNumbers() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinarySub(Expr.FromString("a"), Expr.FromNumber(1)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "UnsupportedOp",
+            TextSpan.At(0, 7),
+            "Binary operator not supported.");
+
+    [Fact]
+    public void Should_Error_On_Division_By_Zero() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryDiv(Expr.FromNumber(1), Expr.FromNumber(0)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "DivisionByZero",
+            TextSpan.At(0, 7),
+            "Division by zero.");
+
+    [Fact]
+    public void Should_Error_When_And_On_NonBooleans() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryAnd(Expr.FromNumber(1), Expr.FromNumber(2)),
+                    TextSpan.At(0, 8))
+            ),
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 8),
+            "Operator '&&' expects booleans.");
+
+    [Fact]
+    public void Should_Error_When_Or_On_NonBooleans() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryOr(Expr.FromNumber(0), Expr.FromNumber(1)),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 7),
+            "Operator '||' expects booleans.");
+
+    [Fact]
+    public void Should_Error_When_Add_On_NonNumbers() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryAdd(Expr.FromNumber(1), Expr.FromString("a")),
+                    TextSpan.At(0, 7))
+            ),
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 7),
+            "Operator '+' expects numbers.");
+
+    [Fact]
+    public void Should_Error_When_Equality_On_Mismatched_Scalars() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryEq(Expr.FromNumber(1), Expr.FromBoolean(true)),
+                    TextSpan.At(0, 10))
+            ),
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 10),
+            "Operator '==' expects operands of the same scalar type.");
+
+    [Fact]
     public void Should_Error_When_Interpolated_Ident_And_Globals_Are_Null()
         => RendererAssert.FailsToRender(
             Template.With(
