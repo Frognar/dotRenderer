@@ -142,43 +142,31 @@ public static class ExprParser
         }
 
         (IExpr left, State rest) = leftRes.Value;
-
         while (true)
         {
-            State save = rest;
             rest = rest.SkipWs();
-            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '=' && rest.Text[rest.Pos + 1] == '=')
+            if (rest.Remaining < 2)
             {
-                rest = rest.Advance(2).SkipWs();
-                Result<(IExpr expr, State rest)> rightRes = ParseRelational(rest);
-                if (!rightRes.IsOk)
-                {
-                    return rightRes;
-                }
-
-                (IExpr right, State after) = rightRes.Value;
-                left = Expr.FromBinaryEq(left, right);
-                rest = after;
-                continue;
+                break;
             }
 
-            if (rest.Remaining >= 2 && rest.Text[rest.Pos] == '!' && rest.Text[rest.Pos + 1] == '=')
+            char c0 = rest.Text[rest.Pos];
+            if ((c0 != '=' && c0 != '!') || rest.Text[rest.Pos + 1] != '=')
             {
-                rest = rest.Advance(2).SkipWs();
-                Result<(IExpr expr, State rest)> rightRes = ParseRelational(rest);
-                if (!rightRes.IsOk)
-                {
-                    return rightRes;
-                }
-
-                (IExpr right, State after) = rightRes.Value;
-                left = Expr.FromBinaryNotEq(left, right);
-                rest = after;
-                continue;
+                break;
             }
 
-            rest = save;
-            break;
+            bool isNotEq = c0 == '!';
+            rest = rest.Advance(2).SkipWs();
+            Result<(IExpr expr, State rest)> rightRes = ParseRelational(rest);
+            if (!rightRes.IsOk)
+            {
+                return rightRes;
+            }
+
+            (IExpr right, State after) = rightRes.Value;
+            left = isNotEq ? Expr.FromBinaryNotEq(left, right) : Expr.FromBinaryEq(left, right);
+            rest = after;
         }
 
         return Ok(left, rest);
@@ -463,7 +451,7 @@ public static class ExprParser
 
             return Result<(IExpr, State)>.Ok((Expr.FromString(sLit.Value.value), sLit.Value.rest));
         }
-        
+
         (bool isTrue, State tAfter) = MatchKeyword(rest, "true");
         if (isTrue)
         {
@@ -614,7 +602,7 @@ public static class ExprParser
 
         return Ok(value, s with { Pos = i });
     }
-    
+
     private static (bool matched, State rest) MatchKeyword(State s, string kw)
     {
         if (s.StartsWith(kw) && (s.Pos + kw.Length == s.Length || !IsIdentPart(s.Text[s.Pos + kw.Length])))
