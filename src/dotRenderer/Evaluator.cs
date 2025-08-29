@@ -73,6 +73,8 @@ public static class Evaluator
                         Result<Value>.Ok(Value.FromNumber(ln.Number % rn.Number)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(Math.Abs(ln.Number - rn.Number) < 0.000001)),
+                    ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.NotEq) =>
+                        Result<Value>.Ok(Value.FromBool(Math.Abs(ln.Number - rn.Number) >= 0.000001)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Lt) =>
                         Result<Value>.Ok(Value.FromBool(ln.Number < rn.Number)),
                     ({ Kind: ValueKind.Number } ln, { Kind: ValueKind.Number } rn, BinaryOp.Le) =>
@@ -83,8 +85,12 @@ public static class Evaluator
                         Result<Value>.Ok(Value.FromBool(ln.Number >= rn.Number)),
                     ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(ln.Boolean == rn.Boolean)),
+                    ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.NotEq) =>
+                        Result<Value>.Ok(Value.FromBool(ln.Boolean != rn.Boolean)),
                     ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.Eq) =>
                         Result<Value>.Ok(Value.FromBool(ln.Text.Equals(rn.Text, StringComparison.Ordinal))),
+                    ({ Kind: ValueKind.Text } ln, { Kind: ValueKind.Text } rn, BinaryOp.NotEq) =>
+                        Result<Value>.Ok(Value.FromBool(!ln.Text.Equals(rn.Text, StringComparison.Ordinal))),
                     ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.And) =>
                         Result<Value>.Ok(Value.FromBool(ln.Boolean && rn.Boolean)),
                     ({ Kind: ValueKind.Boolean } ln, { Kind: ValueKind.Boolean } rn, BinaryOp.Or) =>
@@ -97,6 +103,8 @@ public static class Evaluator
                         Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '+' expects numbers.")),
                     (_, _, BinaryOp.Eq) =>
                         Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '==' expects operands of the same scalar type.")),
+                    (_, _, BinaryOp.NotEq) =>
+                        Result<Value>.Err(new EvalError("TypeMismatch", range, "Operator '!=' expects operands of the same scalar type.")),
                     _ =>
                         Result<Value>.Err(new EvalError("UnsupportedOp", range, "Binary operator not supported."))
                 });

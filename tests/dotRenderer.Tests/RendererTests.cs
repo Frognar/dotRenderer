@@ -667,6 +667,63 @@ public class RendererTests
             "True");
 
     [Fact]
+    public void Should_Render_InterpolateExpr_Number_NotEqual_True() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryNotEq(Expr.FromNumber(1), Expr.FromNumber(2)),
+                    TextSpan.At(0, 11))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Number_NotEqual_False_WithinEpsilon() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryNotEq(Expr.FromNumber(1.0), Expr.FromNumber(1.0 + 1e-7)),
+                    TextSpan.At(0, 11))
+            ),
+            MapAccessor.Empty,
+            "False");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Boolean_NotEqual() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryNotEq(Expr.FromBoolean(true), Expr.FromBoolean(false)),
+                    TextSpan.At(0, 11))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Render_InterpolateExpr_Text_NotEqual() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryNotEq(Expr.FromString("ab"), Expr.FromString("cd")),
+                    TextSpan.At(0, 11))
+            ),
+            MapAccessor.Empty,
+            "True");
+
+    [Fact]
+    public void Should_Error_When_NotEqual_On_Mismatched_Scalars() =>
+        RendererAssert.FailsToRender(
+            Template.With(
+                Node.FromInterpolateExpr(
+                    Expr.FromBinaryNotEq(Expr.FromNumber(1), Expr.FromBoolean(true)),
+                    TextSpan.At(0, 11))
+            ),
+            MapAccessor.Empty,
+            "TypeMismatch",
+            TextSpan.At(0, 11),
+            "Operator '!=' expects operands of the same scalar type.");
+
+    [Fact]
     public void Should_Error_UnsupportedOp_When_Subtracting_NonNumbers() =>
         RendererAssert.FailsToRender(
             Template.With(
