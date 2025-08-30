@@ -97,7 +97,6 @@ public class RendererTests
             MapAccessor.Empty,
             "AEB");
 
-
     [Fact]
     public void Should_Render_For_Block_By_Iterating_Sequence_And_Binding_Item() =>
         RendererAssert.Render(
@@ -119,6 +118,49 @@ public class RendererTests
                     Value.FromString("b")
                 ))
             ), "XabY");
+
+    [Fact]
+    public void Should_Render_For_Block_By_Iterating_Map_And_Exposing_Key_And_Value() =>
+        RendererAssert.Render(
+            Template.With(
+                Node.FromText("X", TextSpan.At(0, 1)),
+                Node.FromFor(
+                    "kv",
+                    Expr.FromIdent("users"),
+                    [
+                        Node.FromText("(", TextSpan.At(0, 1)),
+                        Node.FromInterpolateExpr(
+                            Expr.FromMember(Expr.FromIdent("kv"), "key"),
+                            TextSpan.At(0, 3)
+                        ),
+                        Node.FromText(":", TextSpan.At(0, 1)),
+                        Node.FromInterpolateExpr(
+                            Expr.FromMember(
+                                Expr.FromMember(Expr.FromIdent("kv"), "value"),
+                                "name"
+                            ),
+                            TextSpan.At(0, 5)
+                        ),
+                        Node.FromText(")", TextSpan.At(0, 1))
+                    ],
+                    TextSpan.At(1, 19)
+                ),
+                Node.FromText("Y", TextSpan.At(0, 1))
+            ),
+            MapAccessor.With(
+                ("users", Value.FromMap(new Dictionary<string, Value>
+                {
+                    ["alice"] = Value.FromMap(new Dictionary<string, Value>
+                    {
+                        ["name"] = Value.FromString("Ala")
+                    }),
+                    ["bob"] = Value.FromMap(new Dictionary<string, Value>
+                    {
+                        ["name"] = Value.FromString("Bolek")
+                    })
+                }))
+            ),
+            "X(alice:Ala)(bob:Bolek)Y");
 
     [Fact]
     public void Should_Render_For_Block_With_Index_Bound_As_Number() =>

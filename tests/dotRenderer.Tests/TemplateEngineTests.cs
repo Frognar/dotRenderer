@@ -120,6 +120,22 @@ public class TemplateEngineTests
             "XabY");
 
     [Fact]
+    public void Should_Render_For_Loop_With_Map_In_TemplateEngine() =>
+        TemplateEngineAssert.Render(
+            "X@for(user in users){(@(user.key):@(user.value.name), @(user.value.age))}Y",
+            MapAccessor.With(
+                ("users", Value.FromMap(
+                    ("Alice", Value.FromMap(
+                        ("name", Value.FromString("Ala")),
+                        ("age", Value.FromNumber(20)))),
+                    ("Bob", Value.FromMap(
+                        ("name", Value.FromString("Bolek")),
+                        ("age", Value.FromNumber(24))))
+                ))
+            ),
+            "X(Alice:Ala, 20)(Bob:Bolek, 24)Y");
+
+    [Fact]
     public void Should_Render_For_Loop_With_DotAccess() =>
         TemplateEngineAssert.Render(
             "X@for(u in users){@(u.name)}Y",

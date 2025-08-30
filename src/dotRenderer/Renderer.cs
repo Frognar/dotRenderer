@@ -164,14 +164,28 @@ public static class Renderer
         }
 
         Value seqVal = seqRes.Value;
-        if (seqVal.Kind != ValueKind.Sequence)
+        ImmutableArray<Value> items;
+        if (seqVal.Kind == ValueKind.Sequence)
+        {
+            items = seqVal.Sequence;
+        }
+        else if (seqVal.Kind == ValueKind.Map)
+        {
+            ImmutableArray<Value>.Builder builder = ImmutableArray.CreateBuilder<Value>(seqVal.Map.Count);
+            foreach (KeyValuePair<string, Value> kv in seqVal.Map.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            {
+                builder.Add(Value.FromMap(("key", Value.FromString(kv.Key)), ("value", kv.Value)));
+            }
+            
+            items = builder.ToImmutable();
+        }
+        else
         {
             return Result<string>.Err(new EvalError(
                 "TypeMismatch", node.Range,
                 $"Expression of @for must evaluate to a sequence, but got {seqVal.Kind}."));
         }
 
-        ImmutableArray<Value> items = seqVal.Sequence;
         if (items.Length == 0)
         {
             return node.Else.Length > 0
