@@ -196,4 +196,31 @@ public class LexerTests
             Token.FromLBrace(TextSpan.At(6, 1)),
             Token.FromText("y", TextSpan.At(7, 1)),
             Token.FromRBrace(TextSpan.At(8, 1)));
+
+    [Fact]
+    public void Should_Treat_Comment_Alone_As_No_Tokens() =>
+        LexerAssert.Lex("@*to jest komentarz*@");
+
+    [Fact]
+    public void Should_Remove_Comment_Between_Text_Fragments() =>
+        LexerAssert.Lex("Hello @*ignore*@world",
+            Token.FromText("Hello ", TextSpan.At(0, 6)),
+            Token.FromText("world", TextSpan.At(16, 5)));
+
+    [Fact]
+    public void Should_Flush_Preceding_Text_When_Lexing_Comment() =>
+        LexerAssert.Lex("X @*c*@Y",
+            Token.FromText("X ", TextSpan.At(0, 2)),
+            Token.FromText("Y", TextSpan.At(7, 1)));
+
+    [Fact]
+    public void Should_Not_Tokenize_At_Inside_Comment() =>
+        LexerAssert.Lex("A@* @name *@B",
+            Token.FromText("A", TextSpan.At(0, 1)),
+            Token.FromText("B", TextSpan.At(12, 1)));
+
+    [Fact]
+    public void Should_Treat_Unclosed_Comment_As_Plain_Text() =>
+        LexerAssert.Lex("A@*",
+            Token.FromText("A@*", TextSpan.At(0, 3)));
 }

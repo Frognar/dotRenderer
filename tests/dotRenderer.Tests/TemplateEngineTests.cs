@@ -59,6 +59,13 @@ public class TemplateEngineTests
             MapAccessor.Empty,
             "ATB");
 
+    [Fact]
+    public void Should_Not_Render_Comments() =>
+        TemplateEngineAssert.Render(
+            "A@*BC*@D",
+            MapAccessor.Empty,
+            "AD");
+
     [Theory]
     [InlineData("A@if(2>1){T}else{E}B", "ATB")]
     [InlineData("A@if(1>2){T}else{E}B", "AEB")]

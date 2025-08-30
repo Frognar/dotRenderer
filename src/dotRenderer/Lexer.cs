@@ -78,6 +78,12 @@ public static class Lexer
         int textStart)
     {
         Token? flush = FlushTextIfAny(s.Text, textStart, s.Pos);
+        (bool matched, State rest) comment = TryLexComment(s);
+        if (comment.matched)
+        {
+            return (true, comment.rest, comment.rest.Pos, NewEmitted(flush));
+        }
+
         (bool matched, State rest, Token token) atExpr = TryLexAtExpr(s);
         if (atExpr.matched)
         {
@@ -133,6 +139,30 @@ public static class Lexer
             emitted.AddRange(tokens);
             return emitted;
         }
+    }
+
+    [Pure]
+    private static (bool matched, State rest) TryLexComment(State s)
+    {
+        int i = s.Pos;
+        int n = s.Length;
+        int j = i + 1;
+        if (i + 1 < n && s.Text[j] == '*')
+        {
+            int k = i + 2;
+            while (k + 1 < n)
+            {
+                if (s.Text[k] == '*' && s.Text[k + 1] == '@')
+                {
+                    int advanceBy = k - i + 2;
+                    return (true, s.Advance(advanceBy));
+                }
+
+                k++;
+            }
+        }
+        
+        return (false, s);
     }
 
     [Pure]
